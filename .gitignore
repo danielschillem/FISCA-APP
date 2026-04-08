@@ -1,0 +1,24 @@
+# Dépendances
+node_modules/
+vendor/
+
+# Build outputs
+.next/
+dist/
+build/
+
+# Environnements
+.env
+.env.local
+.env.*.local
+
+# Go binaires
+backend/fisca-server
+backend/*.exe
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

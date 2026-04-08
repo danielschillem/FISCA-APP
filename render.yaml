@@ -1,0 +1,31 @@
+# Render deployment manifest
+# https://render.com/docs/yaml-spec
+
+services:
+  # ─── Backend Go ────────────────────────────────────────────
+  - type: web
+    name: fisca-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    region: oregon
+    plan: free           # Changer en "starter" pour la prod
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fisca-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: "8080"
+
+  # ─── Base de données PostgreSQL ────────────────────────────
+databases:
+  - name: fisca-db
+    databaseName: fisca
+    user: fisca
+    region: oregon
+    plan: free           # Changer en "starter" pour la prod
+    ipAllowList: []      # Autorise toutes les IPs internes Render
