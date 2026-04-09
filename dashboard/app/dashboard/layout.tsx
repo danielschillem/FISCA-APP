@@ -1,6 +1,7 @@
 'use client'
 import Sidebar from '@/components/Sidebar'
 import Topbar from '@/components/Topbar'
+import OnboardingBanner from '@/components/OnboardingBanner'
 import { useAuthStore } from '@/lib/store'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
@@ -21,6 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div style={{ marginLeft: 'var(--sw)', flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
                 <Topbar />
                 <main style={{ flex: 1, padding: '22px 24px', overflowY: 'auto' }} className="view-enter">
+                    <OnboardingBanner />
                     {children}
                 </main>
             </div>

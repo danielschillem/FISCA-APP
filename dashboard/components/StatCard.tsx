@@ -14,7 +14,7 @@ const COLOR_CLASS: Record<string, string> = {
 interface StatCardProps {
     label: string
     value: string
-    sub?: string
+    sub?: ReactNode
     color?: string
     icon?: ReactNode
 }

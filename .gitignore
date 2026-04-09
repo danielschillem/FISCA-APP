@@ -15,6 +15,7 @@ build/
 # Go binaires
 backend/fisca-server
 backend/*.exe
+backend/err.txt
 
 # Logs
 *.log
@@ -22,3 +23,8 @@ backend/*.exe
 # OS
 .DS_Store
 Thumbs.db
+
+# Playwright
+dashboard/playwright-report/
+dashboard/test-results/
+dashboard/e2e/.auth/

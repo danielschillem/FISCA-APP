@@ -87,6 +87,165 @@ func RunMigrations(pool *pgxpool.Pool) error {
 		date_depot  TIMESTAMPTZ,
 		created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 	);
+
+	CREATE TABLE IF NOT EXISTS bulletins (
+		id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		company_id   UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+		employee_id  UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+		mois         INT NOT NULL,
+		annee        INT NOT NULL,
+		periode      TEXT NOT NULL,
+		nom_employe  TEXT NOT NULL,
+		categorie    TEXT NOT NULL,
+		salaire_base NUMERIC(12,2) NOT NULL DEFAULT 0,
+		anciennete   NUMERIC(12,2) NOT NULL DEFAULT 0,
+		heures_sup   NUMERIC(12,2) NOT NULL DEFAULT 0,
+		logement     NUMERIC(12,2) NOT NULL DEFAULT 0,
+		transport    NUMERIC(12,2) NOT NULL DEFAULT 0,
+		fonction     NUMERIC(12,2) NOT NULL DEFAULT 0,
+		charges      INT NOT NULL DEFAULT 0,
+		cotisation   TEXT NOT NULL DEFAULT 'CNSS',
+		brut_total   NUMERIC(12,2) NOT NULL DEFAULT 0,
+		base_imp     NUMERIC(12,2) NOT NULL DEFAULT 0,
+		iuts_brut    NUMERIC(12,2) NOT NULL DEFAULT 0,
+		iuts_net     NUMERIC(12,2) NOT NULL DEFAULT 0,
+		cot_soc      NUMERIC(12,2) NOT NULL DEFAULT 0,
+		tpa          NUMERIC(12,2) NOT NULL DEFAULT 0,
+		salaire_net  NUMERIC(12,2) NOT NULL DEFAULT 0,
+		created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		UNIQUE (company_id, employee_id, mois, annee)
+	);
+
+	CREATE TABLE IF NOT EXISTS simulations (
+		id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		company_id  UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+		label       TEXT NOT NULL DEFAULT '',
+		cotisation  TEXT NOT NULL DEFAULT 'CNSS',
+		input_data  JSONB NOT NULL,
+		result_data JSONB NOT NULL,
+		created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+
+	CREATE TABLE IF NOT EXISTS tva_declarations (
+		id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		company_id     UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+		periode        TEXT NOT NULL,
+		mois           INT NOT NULL,
+		annee          INT NOT NULL,
+		ca_ttc         NUMERIC(14,2) NOT NULL DEFAULT 0,
+		ca_ht          NUMERIC(14,2) NOT NULL DEFAULT 0,
+		tva_collectee  NUMERIC(14,2) NOT NULL DEFAULT 0,
+		tva_deductible NUMERIC(14,2) NOT NULL DEFAULT 0,
+		tva_nette      NUMERIC(14,2) NOT NULL DEFAULT 0,
+		statut         TEXT NOT NULL DEFAULT 'brouillon',
+		ref            TEXT,
+		created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+
+	CREATE TABLE IF NOT EXISTS tva_lignes (
+		id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		declaration_id UUID NOT NULL REFERENCES tva_declarations(id) ON DELETE CASCADE,
+		type_op        TEXT NOT NULL,
+		description    TEXT NOT NULL,
+		montant_ht     NUMERIC(14,2) NOT NULL DEFAULT 0,
+		taux_tva       NUMERIC(5,2)  NOT NULL DEFAULT 18.00,
+		montant_tva    NUMERIC(14,2) NOT NULL DEFAULT 0,
+		montant_ttc    NUMERIC(14,2) NOT NULL DEFAULT 0
+	);
+
+	CREATE TABLE IF NOT EXISTS workflow_etapes (
+		id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		declaration_id UUID NOT NULL REFERENCES declarations(id) ON DELETE CASCADE,
+		etape          TEXT NOT NULL,
+		commentaire    TEXT NOT NULL DEFAULT '',
+		user_id        UUID NOT NULL REFERENCES users(id),
+		created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+
+	CREATE TABLE IF NOT EXISTS password_reset_tokens (
+		id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		token      TEXT NOT NULL UNIQUE,
+		expires_at TIMESTAMPTZ NOT NULL,
+		used       BOOLEAN NOT NULL DEFAULT FALSE,
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+
+	-- Ajout colonne cotisation sur employees (idempotent)
+	ALTER TABLE employees ADD COLUMN IF NOT EXISTS cotisation TEXT NOT NULL DEFAULT 'CNSS';
+
+	CREATE TABLE IF NOT EXISTS refresh_tokens (
+		id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		token      TEXT NOT NULL UNIQUE,
+		expires_at TIMESTAMPTZ NOT NULL,
+		revoked    BOOLEAN NOT NULL DEFAULT FALSE,
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+
+	CREATE TABLE IF NOT EXISTS retenues_source (
+		id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		company_id      UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+		periode         TEXT NOT NULL,
+		mois            INT  NOT NULL,
+		annee           INT  NOT NULL,
+		beneficiaire    TEXT NOT NULL,
+		type_retenue    TEXT NOT NULL DEFAULT 'services',
+		montant_brut    NUMERIC(14,2) NOT NULL DEFAULT 0,
+		taux_retenue    NUMERIC(5,2)  NOT NULL DEFAULT 20,
+		montant_retenue NUMERIC(14,2) NOT NULL DEFAULT 0,
+		montant_net     NUMERIC(14,2) NOT NULL DEFAULT 0,
+		statut          TEXT NOT NULL DEFAULT 'en_cours',
+		ref             TEXT,
+		created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+
+	CREATE TABLE IF NOT EXISTS cnss_patronal (
+		id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		company_id              UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+		periode                 TEXT NOT NULL,
+		mois                    INT  NOT NULL,
+		annee                   INT  NOT NULL,
+		nb_salaries_cnss        INT  NOT NULL DEFAULT 0,
+		nb_salaries_carfo       INT  NOT NULL DEFAULT 0,
+		base_cnss               NUMERIC(14,2) NOT NULL DEFAULT 0,
+		base_carfo              NUMERIC(14,2) NOT NULL DEFAULT 0,
+		cotisation_pat_cnss     NUMERIC(14,2) NOT NULL DEFAULT 0,
+		cotisation_sal_cnss     NUMERIC(14,2) NOT NULL DEFAULT 0,
+		cotisation_pat_carfo    NUMERIC(14,2) NOT NULL DEFAULT 0,
+		cotisation_sal_carfo    NUMERIC(14,2) NOT NULL DEFAULT 0,
+		total_cnss              NUMERIC(14,2) NOT NULL DEFAULT 0,
+		total_carfo             NUMERIC(14,2) NOT NULL DEFAULT 0,
+		total_general           NUMERIC(14,2) NOT NULL DEFAULT 0,
+		statut                  TEXT NOT NULL DEFAULT 'brouillon',
+		created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		UNIQUE (company_id, mois, annee)
+	);
+
+	-- Index sur les colonnes fréquemment utilisées en WHERE
+	CREATE INDEX IF NOT EXISTS idx_employees_company_id    ON employees(company_id);
+	CREATE INDEX IF NOT EXISTS idx_declarations_company_id ON declarations(company_id);
+	CREATE INDEX IF NOT EXISTS idx_declarations_period     ON declarations(company_id, annee DESC, mois DESC);
+	CREATE TABLE IF NOT EXISTS exercices_fiscaux (
+		id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		company_id   UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+		annee        INT  NOT NULL,
+		date_debut   DATE NOT NULL,
+		date_fin     DATE NOT NULL,
+		statut       TEXT NOT NULL DEFAULT 'en_cours', -- 'en_cours' | 'cloture'
+		date_cloture TIMESTAMPTZ,
+		note         TEXT NOT NULL DEFAULT '',
+		created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		UNIQUE (company_id, annee)
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_exercices_company_id ON exercices_fiscaux(company_id);
+	CREATE INDEX IF NOT EXISTS idx_retenues_company_id     ON retenues_source(company_id);
+	CREATE INDEX IF NOT EXISTS idx_cnss_company_id         ON cnss_patronal(company_id);
+	CREATE INDEX IF NOT EXISTS idx_prt_token               ON password_reset_tokens(token);
+	CREATE INDEX IF NOT EXISTS idx_prt_user_id             ON password_reset_tokens(user_id);
+	CREATE INDEX IF NOT EXISTS idx_rt_token                ON refresh_tokens(token);
+	CREATE INDEX IF NOT EXISTS idx_rt_user_id              ON refresh_tokens(user_id);
 	`
 	_, err := pool.Exec(context.Background(), schema)
 	return err

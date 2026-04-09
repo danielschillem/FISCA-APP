@@ -1,15 +1,30 @@
-# Render deployment manifest
+# render.yaml — FISCA Backend + PostgreSQL
 # https://render.com/docs/yaml-spec
+#
+# Le dashboard Next.js est déployé séparément sur Vercel.
+#
+# ── Secrets à configurer dans le dashboard Render AVANT le premier déploiement ──
+#   ALLOWED_ORIGIN  → URL Vercel de prod, ex: https://fisca-app.vercel.app
+#   SMTP_HOST       → (optionnel) serveur SMTP pour les emails de reset
+#   SMTP_PORT       → (optionnel) 587
+#   SMTP_USER       → (optionnel) identifiant SMTP
+#   SMTP_PASS       → (optionnel) mot de passe SMTP
+#   SMTP_FROM       → (optionnel) adresse expéditeur
+#
+# ── Après déploiement, récupérer dans Render → fisca-backend → Settings :
+#   "Deploy Hook URL" → coller dans GitHub Secret RENDER_DEPLOY_HOOK_BACKEND
 
 services:
-  # ─── Backend Go ────────────────────────────────────────────
+  # ─── Backend Go (Docker) ───────────────────────────────────
   - type: web
     name: fisca-backend
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    region: oregon
-    plan: free           # Changer en "starter" pour la prod
+    region: frankfurt    # Europe — plus proche de l'Afrique de l'Ouest
+    plan: free           # → "starter" en prod (évite le spin-down après 15 min)
+    autoDeploy: true     # Deploy automatique sur push vers la branche main
+    branch: main
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
@@ -17,15 +32,27 @@ services:
           name: fisca-db
           property: connectionString
       - key: JWT_SECRET
-        generateValue: true
+        generateValue: true  # Render génère une valeur aléatoire sécurisée
       - key: PORT
         value: "8080"
+      - key: ALLOWED_ORIGIN
+        sync: false          # Définir manuellement dans le dashboard Render
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
 
-  # ─── Base de données PostgreSQL ────────────────────────────
+# ─── Base de données PostgreSQL ────────────────────────────
 databases:
   - name: fisca-db
     databaseName: fisca
     user: fisca
-    region: oregon
-    plan: free           # Changer en "starter" pour la prod
-    ipAllowList: []      # Autorise toutes les IPs internes Render
+    region: frankfurt    # Même région que le backend
+    plan: free           # → "starter" en prod (backups auto + 1 Go SSD)
+    ipAllowList: []      # 0 entrée = accès uniquement depuis Render (sécurisé)

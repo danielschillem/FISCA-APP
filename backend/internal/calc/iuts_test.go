@@ -70,3 +70,45 @@ func TestCalcSalarie_CARFO(t *testing.T) {
 		t.Errorf("CotSoc CARFO = %v, want %v", res.CotSoc, expected)
 	}
 }
+
+// TestCalcSalarie_AbattementFamilialCap vérifie que l'abattement familial
+// ne dépasse pas 40% de l'IUTS brut, même avec un grand nombre de charges.
+func TestCalcSalarie_AbattementFamilialCap(t *testing.T) {
+	// Salarié avec 100 charges déclarées → abattement théorique = 100 000 FCFA
+	// On s'assure que l'IUTS net >= 60% de l'IUTS brut (plafond 40% respecté)
+	e := calc.SalarieInput{
+		SalaireBase: 150000,
+		Anciennete:  0,
+		Charges:     100, // 100 × 1 000 = 100 000 FCFA d'abattement théorique
+		Cotisation:  "CNSS",
+	}
+	res := calc.CalcSalarie(e)
+	// L'abattement réel ne peut pas dépasser 40% de IUTSBrut
+	maxAllowed := res.IUTSBrut * 0.40
+	actualAbatt := res.IUTSBrut - res.IUTSNet
+	if actualAbatt > maxAllowed+0.01 { // +0.01 pour tolérance d'arrondi
+		t.Errorf("Abattement familial (%v) dépasse le plafond 40%% de IUTSBrut (%v), max autorisé = %v",
+			actualAbatt, res.IUTSBrut, maxAllowed)
+	}
+}
+
+// TestCalcIUTS_HauteTranche vérifie le calcul sur un salaire élevé (tranche 30%).
+func TestCalcIUTS_HauteTranche(t *testing.T) {
+	// Base imposable = 700 000 FCFA
+	// Tranches :
+	//   0–30k     :    0
+	//   30–50k    : 20k × 12% =  2 400
+	//   50–80k    : 30k × 14% =  4 200
+	//   80–120k   : 40k × 16% =  6 400
+	//   120–170k  : 50k × 18% =  9 000
+	//   170–250k  : 80k × 20% = 16 000
+	//   250–400k  :150k × 24% = 36 000
+	//   400–600k  :200k × 28% = 56 000
+	//   600–700k  :100k × 30% = 30 000
+	//   Total = 160 000
+	got := calc.CalcIUTS(700000)
+	want := 160000.0
+	if got != want {
+		t.Errorf("CalcIUTS(700000) = %v, want %v", got, want)
+	}
+}

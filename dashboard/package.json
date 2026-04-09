@@ -7,7 +7,10 @@
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
-        "type-check": "tsc --noEmit"
+        "type-check": "tsc --noEmit",
+        "e2e": "playwright test",
+        "e2e:ui": "playwright test --ui",
+        "e2e:report": "playwright show-report"
     },
     "dependencies": {
         "next": "14.2.3",
@@ -30,6 +33,7 @@
         "eslint-config-next": "14.2.3",
         "tailwindcss": "^3.4.4",
         "autoprefixer": "^10.4.19",
-        "postcss": "^8.4.38"
+        "postcss": "^8.4.38",
+        "@playwright/test": "^1.44.0"
     }
 }

@@ -19,7 +19,7 @@ export default function LoginPage() {
         try {
             const res = await authApi.login({ email, password })
             const data = res.data as AuthResponse
-            setAuth(data.token, data.user)
+            setAuth(data.token, data.user, data.refresh_token)
             router.push('/dashboard')
         } catch {
             toast.error('Identifiants invalides')
@@ -70,6 +70,9 @@ export default function LoginPage() {
                     <p style={{ marginTop: 16, textAlign: 'center', fontSize: 13, color: 'var(--gr5)' }}>
                         Pas de compte ?{' '}
                         <a href="/register" style={{ color: 'var(--g500)', fontWeight: 600 }}>Créer un compte</a>
+                    </p>
+                    <p style={{ marginTop: 8, textAlign: 'center', fontSize: 12, color: 'var(--gr4)' }}>
+                        <a href="/forgot-password" style={{ color: 'var(--gr5)' }}>Mot de passe oublié ?</a>
                     </p>
                 </div>
             </div>

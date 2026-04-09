@@ -5,7 +5,21 @@ import type { Declaration } from '@/types'
 import { fmtFCFA, MOIS_NOMS } from '@/lib/utils'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { CheckCircle2, AlertTriangle, Clock, Trash2, FilePlus } from 'lucide-react'
+import { CheckCircle2, AlertTriangle, Clock, Trash2, FilePlus, Download } from 'lucide-react'
+
+function exportAllCSV(decls: Declaration[]) {
+    const bom = '\uFEFF'
+    const header = 'REFERENCE;PERIODE;SALARIES;BRUT_TOTAL;IUTS;TPA;CSS;TOTAL;STATUT\n'
+    const rows = decls.map(d =>
+        [d.ref ?? '', d.periode, d.nb_salaries, d.brut_total, d.iuts_total,
+        d.tpa_total, d.css_total, d.total, d.statut].join(';')
+    ).join('\n')
+    const blob = new Blob([bom + header + rows], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'fisca-declarations.csv'; a.click()
+    URL.revokeObjectURL(url)
+}
 
 export default function HistoriquePage() {
     const qc = useQueryClient()
@@ -72,7 +86,14 @@ export default function HistoriquePage() {
             <div className="card">
                 <div className="card-header">
                     <h3>Historique des declarations</h3>
-                    <span className="ch-right">{decls.length} declaration(s)</span>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <span className="ch-right">{decls.length} declaration(s)</span>
+                        {decls.length > 0 && (
+                            <button className="btn btn-outline btn-sm" onClick={() => exportAllCSV(decls)}>
+                                <Download size={13} /> Exporter CSV
+                            </button>
+                        )}
+                    </div>
                 </div>
                 <div className="table-wrap" style={{ borderRadius: 0, border: 'none' }}>
                     <table className="data-table">
@@ -103,17 +124,27 @@ export default function HistoriquePage() {
                                     <td className="td-num">{fmtFCFA(d.tpa_total)}</td>
                                     <td className="td-num bold">{fmtFCFA(d.total)}</td>
                                     <td>
-                                        {d.statut === 'ok'       && <span className="badge badge-ok"><CheckCircle2 size={11} />OK</span>}
-                                        {d.statut === 'retard'   && <span className="badge badge-red"><AlertTriangle size={11} />Retard</span>}
+                                        {d.statut === 'ok' && <span className="badge badge-ok"><CheckCircle2 size={11} />OK</span>}
+                                        {d.statut === 'retard' && <span className="badge badge-red"><AlertTriangle size={11} />Retard</span>}
                                         {d.statut === 'en_cours' && <span className="badge badge-blue"><Clock size={11} />En cours</span>}
                                     </td>
                                     <td style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--gr5)' }}>{d.ref || '—'}</td>
                                     <td>
-                                        <button className="btn-icon btn-danger"
-                                            onClick={() => { if (confirm('Supprimer cette declaration ?')) deleteMut.mutate(d.id) }}
-                                            title="Supprimer">
-                                            <Trash2 size={14} />
-                                        </button>
+                                        <div style={{ display: 'flex', gap: 4 }}>
+                                            <a
+                                                href={declarationsApi.exportUrl(d.id)}
+                                                download
+                                                className="btn-icon"
+                                                title="Télécharger CSV DGI"
+                                            >
+                                                <Download size={14} />
+                                            </a>
+                                            <button className="btn-icon btn-danger"
+                                                onClick={() => { if (confirm('Supprimer cette declaration ?')) deleteMut.mutate(d.id) }}
+                                                title="Supprimer">
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

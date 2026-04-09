@@ -1,104 +1,102 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
-import { declarationsApi, employeesApi } from '@/lib/api'
+import { dashboardApi, declarationsApi } from '@/lib/api'
 import { fmtFCFA } from '@/lib/utils'
-import type { Declaration, Employee } from '@/types'
+import type { DashboardData, Declaration } from '@/types'
 import StatCard from '@/components/StatCard'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import {
     AlertTriangle, CheckCircle2, Clock,
     ClipboardList, Calculator, FileText,
     Users, TrendingUp, Send, RefreshCw, BarChart2,
-    Banknote, Receipt,
+    Banknote, Receipt, ArrowUpRight, ArrowDownRight,
 } from 'lucide-react'
 import Link from 'next/link'
-
 const MOIS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
 
+function EvoBadge({ pct }: { pct: number }) {
+    if (!pct) return null
+    const up = pct > 0
+    return (
+        <span style={{ fontSize: 11, color: up ? '#22c55e' : '#ef4444', display: 'inline-flex', alignItems: 'center', gap: 2, marginLeft: 4 }}>
+            {up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+            {Math.abs(pct).toFixed(1)}%
+        </span>
+    )
+}
+
 export default function DashboardPage() {
+    const { data: dash } = useQuery<DashboardData>({
+        queryKey: ['dashboard'],
+        queryFn: () => dashboardApi.get().then(r => r.data),
+        staleTime: 30_000,
+    })
     const { data: decls = [] } = useQuery<Declaration[]>({
         queryKey: ['declarations'],
         queryFn: () => declarationsApi.list().then((r) => r.data),
     })
-    const { data: employees = [] } = useQuery<Employee[]>({
-        queryKey: ['employees'],
-        queryFn: () => employeesApi.list().then((r) => r.data),
-    })
 
-    const ok = decls.filter(d => d.statut === 'ok')
-    const totalIUTS = ok.reduce((s, d) => s + d.iuts_total, 0)
-    const totalTPA = ok.reduce((s, d) => s + d.tpa_total, 0)
-    const totalCSS = ok.reduce((s, d) => s + d.css_total, 0)
-    const enRetard = decls.filter(d => d.statut === 'retard')
+    const mc = dash?.mois_courant
+    const ta = dash?.total_annee
+    const alertes = dash?.alertes_retard ?? []
+    const plan = dash?.plan
 
-    const chartData = ok.slice(0, 6).reverse()
+    const chartData = decls.slice(0, 6).reverse()
         .map(d => ({ name: d.periode.split(' ')[0], iuts: d.iuts_total, tpa: d.tpa_total }))
 
     const nowM = new Date().getMonth()
-    const calMonths = MOIS.map((m, i) => ({
-        label: m,
-        cls: i < nowM ? 'done' : i === nowM ? 'current' : 'pending',
-    }))
+    const calMonths = MOIS.map((m, i) => {
+        const has = decls.some(d => d.mois === i + 1 && d.annee === new Date().getFullYear())
+        return { label: m, cls: i < nowM ? (has ? 'done' : 'missed') : i === nowM ? 'current' : 'pending' }
+    })
 
     return (
         <div>
-            {/* Alerte retards */}
-            {enRetard.length > 0 && (
+            {alertes.length > 0 && (
                 <div className="alert alert-red">
                     <AlertTriangle size={17} />
                     <div>
                         <strong>Déclaration(s) en retard — </strong>
-                        {enRetard.map(d => d.periode).join(', ')} · Déclarez dès que possible pour éviter les pénalités.
+                        {alertes.map(a => a.periode).join(', ')} · Déclarez dès que possible pour éviter les pénalités.
                     </div>
                 </div>
             )}
 
-            {/* Stats */}
             <div className="stats-grid">
-                <StatCard label="Total IUTS versé" value={fmtFCFA(totalIUTS)} sub={`${ok.length} déclaration(s)`} color="green" icon={<Banknote size={48} />} />
-                <StatCard label="Total TPA" value={fmtFCFA(totalTPA)} sub="Taxe patronale apprentissage" color="orange" icon={<Receipt size={48} />} />
-                <StatCard label="CNSS / CARFO" value={fmtFCFA(totalCSS)} sub="Cotisations sociales" color="blue" icon={<TrendingUp size={48} />} />
-                <StatCard label="Effectif" value={String(employees.length)} sub="Employés actifs" color="green" icon={<Users size={48} />} />
+                <StatCard label={`IUTS ${mc?.periode ?? 'mois courant'}`}
+                    value={fmtFCFA(mc?.iuts_total ?? 0)}
+                    sub={<>vs préc. {fmtFCFA(dash?.mois_precedent?.iuts_total ?? 0)}<EvoBadge pct={dash?.evolution_iuts_pct ?? 0} /></>}
+                    color="green" icon={<Banknote size={48} />} />
+                <StatCard label={`TPA ${mc?.periode ?? ''}`}
+                    value={fmtFCFA(mc?.tpa_total ?? 0)}
+                    sub="Taxe patronale apprentissage" color="orange" icon={<Receipt size={48} />} />
+                <StatCard label="Masse salariale annuelle"
+                    value={fmtFCFA(ta?.brut_total ?? 0)}
+                    sub={`IUTS annuel : ${fmtFCFA(ta?.iuts_total ?? 0)}`}
+                    color="blue" icon={<TrendingUp size={48} />} />
+                <StatCard label="Effectif"
+                    value={String(dash?.nb_employes ?? 0)}
+                    sub={plan ? (plan.limite_employes === -1 ? 'Illimité' : `Limite : ${plan.limite_employes}`) : 'Employés actifs'}
+                    color="green" icon={<Users size={48} />} />
             </div>
 
-            {/* Actions rapides */}
             <div className="card">
-                <div className="card-header">
-                    <h3>Actions rapides</h3>
-                </div>
+                <div className="card-header"><h3>Actions rapides</h3></div>
                 <div className="card-body">
                     <div className="quick-actions">
-                        <Link href="/dashboard/saisie" className="qa-btn">
-                            <ClipboardList size={22} />Saisir
-                        </Link>
-                        <Link href="/dashboard/calcul" className="qa-btn">
-                            <Calculator size={22} />Calculer
-                        </Link>
-                        <Link href="/dashboard/historique" className="qa-btn">
-                            <FileText size={22} />Historique
-                        </Link>
-                        <Link href="/dashboard/parametres" className="qa-btn">
-                            <Users size={22} />Employés
-                        </Link>
-                        <button className="qa-btn">
-                            <BarChart2 size={22} />Rapport
-                        </button>
-                        <button className="qa-btn">
-                            <Send size={22} />Télédéclarer
-                        </button>
-                        <button className="qa-btn">
-                            <RefreshCw size={22} />Simuler
-                        </button>
-                        <button className="qa-btn">
-                            <TrendingUp size={22} />Bilan
-                        </button>
+                        <Link href="/dashboard/saisie" className="qa-btn"><ClipboardList size={22} />Saisir</Link>
+                        <Link href="/dashboard/calcul" className="qa-btn"><Calculator size={22} />Calculer</Link>
+                        <Link href="/dashboard/historique" className="qa-btn"><FileText size={22} />Historique</Link>
+                        <Link href="/dashboard/saisie" className="qa-btn"><Users size={22} />Employés</Link>
+                        <Link href="/dashboard/historique" className="qa-btn"><BarChart2 size={22} />Rapport</Link>
+                        <Link href="/dashboard/historique" className="qa-btn"><Send size={22} />Télédéclarer</Link>
+                        <Link href="/dashboard/simulateur" className="qa-btn"><RefreshCw size={22} />Simuler</Link>
+                        <Link href="/dashboard/bulletins" className="qa-btn"><TrendingUp size={22} />Bulletins</Link>
                     </div>
                 </div>
             </div>
 
-            {/* Corps principal */}
             <div className="grid-3">
-                {/* Graphique */}
                 <div>
                     {chartData.length > 0 && (
                         <div className="card">
@@ -119,25 +117,17 @@ export default function DashboardPage() {
                             </div>
                         </div>
                     )}
-
-                    {/* Dernières déclarations */}
                     <div className="card">
                         <div className="card-header">
                             <h3>Historique récent</h3>
                             <Link href="/dashboard/historique" className="btn btn-sm btn-outline">Tout voir</Link>
                         </div>
                         {decls.length === 0 ? (
-                            <div className="card-body">
-                                <p className="text-sm" style={{ color: 'var(--gr5)' }}>Aucune déclaration enregistrée.</p>
-                            </div>
+                            <div className="card-body"><p className="text-sm" style={{ color: 'var(--gr5)' }}>Aucune déclaration enregistrée.</p></div>
                         ) : (
                             <div className="table-wrap">
                                 <table className="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Période</th><th>IUTS</th><th>TPA</th><th>Total</th><th>Statut</th>
-                                        </tr>
-                                    </thead>
+                                    <thead><tr><th>Période</th><th>IUTS</th><th>TPA</th><th>Total</th><th>Statut</th></tr></thead>
                                     <tbody>
                                         {decls.slice(0, 5).map((d) => (
                                             <tr key={d.id}>
@@ -146,9 +136,9 @@ export default function DashboardPage() {
                                                 <td className="td-num">{fmtFCFA(d.tpa_total)}</td>
                                                 <td className="td-num bold">{fmtFCFA(d.total)}</td>
                                                 <td>
-                                                    {d.statut === 'ok' && <span className="badge badge-ok"><CheckCircle2 size={11} />OK</span>}
+                                                    {['ok', 'approuvee'].includes(d.statut) && <span className="badge badge-ok"><CheckCircle2 size={11} />{d.statut === 'approuvee' ? 'Approuvé' : 'OK'}</span>}
                                                     {d.statut === 'retard' && <span className="badge badge-red"><AlertTriangle size={11} />Retard</span>}
-                                                    {d.statut === 'en_cours' && <span className="badge badge-blue"><Clock size={11} />En cours</span>}
+                                                    {!['ok', 'approuvee', 'retard'].includes(d.statut) && <span className="badge badge-blue"><Clock size={11} />{d.statut}</span>}
                                                 </td>
                                             </tr>
                                         ))}
@@ -158,10 +148,7 @@ export default function DashboardPage() {
                         )}
                     </div>
                 </div>
-
-                {/* Colonne droite */}
                 <div>
-                    {/* Calendrier fiscal */}
                     <div className="card">
                         <div className="card-header">
                             <h3>Calendrier fiscal</h3>
@@ -172,39 +159,29 @@ export default function DashboardPage() {
                                 {calMonths.map(({ label, cls }) => (
                                     <div key={label} className={`cal-m ${cls}`}>
                                         {label}
-                                        <span className="cal-badge">{cls === 'done' ? '✓' : cls === 'current' ? '↻' : '·'}</span>
+                                        <span className="cal-badge">{cls === 'done' ? '✓' : cls === 'missed' ? '!' : cls === 'current' ? '↻' : '·'}</span>
                                     </div>
                                 ))}
                             </div>
+                            <p style={{ fontSize: 11, color: 'var(--gr5)', marginTop: 8 }}>Échéance : 20 du mois suivant</p>
                         </div>
                     </div>
-
-                    {/* Activité récente */}
                     <div className="card">
                         <div className="card-header"><h3>Activité récente</h3></div>
                         <div className="card-body">
                             <div className="activity-list">
-                                {ok.slice(0, 4).map(d => (
+                                {decls.slice(0, 5).map(d => (
                                     <div key={d.id} className="act-item">
-                                        <div className="act-dot g"><CheckCircle2 size={14} /></div>
+                                        <div className={`act-dot ${['ok', 'approuve'].includes(d.statut) ? 'g' : d.statut === 'retard' ? 'r' : 'b'}`}>
+                                            {['ok', 'approuve'].includes(d.statut) ? <CheckCircle2 size={14} /> : d.statut === 'retard' ? <AlertTriangle size={14} /> : <Clock size={14} />}
+                                        </div>
                                         <div className="act-text">
-                                            <strong>Déclaration {d.periode}</strong>
+                                            <strong>{d.periode}</strong>
                                             <p>IUTS {fmtFCFA(d.iuts_total)} · TPA {fmtFCFA(d.tpa_total)}</p>
                                         </div>
                                     </div>
                                 ))}
-                                {enRetard.slice(0, 2).map(d => (
-                                    <div key={d.id} className="act-item">
-                                        <div className="act-dot r"><AlertTriangle size={14} /></div>
-                                        <div className="act-text">
-                                            <strong>Retard — {d.periode}</strong>
-                                            <p>Déclaration non finalisée</p>
-                                        </div>
-                                    </div>
-                                ))}
-                                {decls.length === 0 && (
-                                    <p className="text-sm" style={{ color: 'var(--gr5)' }}>Aucune activité récente.</p>
-                                )}
+                                {decls.length === 0 && <p className="text-sm" style={{ color: 'var(--gr5)' }}>Aucune activité.</p>}
                             </div>
                         </div>
                     </div>

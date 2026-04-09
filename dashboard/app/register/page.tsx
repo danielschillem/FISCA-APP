@@ -20,7 +20,7 @@ export default function RegisterPage() {
         try {
             const res = await authApi.register({ email, password, nom })
             const data = res.data as AuthResponse
-            setAuth(data.token, data.user)
+            setAuth(data.token, data.user, data.refresh_token)
             router.push('/dashboard')
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { error?: string } } })
@@ -32,45 +32,62 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="card w-full max-w-sm">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 rounded-xl bg-brand flex items-center justify-center text-white font-bold text-lg">F</div>
-                    <div>
-                        <p className="font-semibold text-gray-900">FISCA</p>
-                        <p className="text-xs text-gray-500">Plateforme Fiscale</p>
+        <div style={{
+            minHeight: '100vh', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', background: 'var(--g900)',
+        }}>
+            <div style={{ width: '100%', maxWidth: 420, padding: '0 16px' }}>
+                <div className="card" style={{ padding: 32 }}>
+                    {/* Logo */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
+                        <div className="logo-icon" style={{ width: 48, height: 48, fontSize: 22 }}>F</div>
+                        <div>
+                            <strong style={{ display: 'block', fontSize: 18, fontWeight: 800, color: 'var(--gr9)' }}>FISCA</strong>
+                            <span style={{ fontSize: 12, color: 'var(--gr5)' }}>Plateforme Fiscale — Burkina Faso</span>
+                        </div>
                     </div>
+
+                    <div style={{ marginBottom: 22 }}>
+                        <h2 style={{ fontSize: 17, fontWeight: 700, color: 'var(--gr9)', marginBottom: 3 }}>Créer un compte</h2>
+                        <p style={{ fontSize: 12, color: 'var(--gr5)' }}>Commencez gratuitement avec le plan Starter</p>
+                    </div>
+
+                    <form onSubmit={handleSubmit}>
+                        <div className="form-group" style={{ marginBottom: 12 }}>
+                            <label>Nom entreprise <span className="req">*</span></label>
+                            <input type="text" required
+                                value={nom} onChange={(e) => setNom(e.target.value)} />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 12 }}>
+                            <label>Email <span className="req">*</span></label>
+                            <input type="email" required
+                                value={email} onChange={(e) => setEmail(e.target.value)} />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 20 }}>
+                            <label>Mot de passe <span className="req">*</span></label>
+                            <input type="password" required minLength={8}
+                                value={password} onChange={(e) => setPassword(e.target.value)} />
+                            <p style={{ fontSize: 11, color: 'var(--gr4)', marginTop: 4 }}>Minimum 8 caractères</p>
+                        </div>
+                        <button type="submit" disabled={loading}
+                            className="btn btn-primary"
+                            style={{ width: '100%', justifyContent: 'center' }}>
+                            {loading ? 'Création…' : 'Créer mon compte'}
+                        </button>
+                    </form>
+
+                    <p style={{ marginTop: 16, textAlign: 'center', fontSize: 13, color: 'var(--gr5)' }}>
+                        Déjà un compte ?{' '}
+                        <a href="/login" style={{ color: 'var(--g500)', fontWeight: 600 }}>Se connecter</a>
+                    </p>
+
+                    <p style={{ marginTop: 14, textAlign: 'center', fontSize: 11, color: 'var(--gr4)' }}>
+                        En créant un compte, vous acceptez nos{' '}
+                        <a href="/cgu" style={{ color: 'var(--gr5)' }}>CGU</a>{' '}
+                        et notre{' '}
+                        <a href="/mentions-legales" style={{ color: 'var(--gr5)' }}>politique de confidentialité</a>.
+                    </p>
                 </div>
-
-                <h1 className="text-xl font-semibold mb-1">Créer un compte</h1>
-                <p className="text-sm text-gray-500 mb-6">Commencez gratuitement avec le plan Starter</p>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nom entreprise</label>
-                        <input className="input" type="text" required
-                            value={nom} onChange={(e) => setNom(e.target.value)} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input className="input" type="email" required
-                            value={email} onChange={(e) => setEmail(e.target.value)} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
-                        <input className="input" type="password" required minLength={8}
-                            value={password} onChange={(e) => setPassword(e.target.value)} />
-                        <p className="text-xs text-gray-400 mt-1">Minimum 8 caractères</p>
-                    </div>
-                    <button type="submit" disabled={loading} className="btn-primary w-full">
-                        {loading ? 'Création…' : 'Créer mon compte'}
-                    </button>
-                </form>
-
-                <p className="mt-4 text-center text-sm text-gray-500">
-                    Déjà un compte ?{' '}
-                    <a href="/login" className="text-brand font-medium hover:underline">Se connecter</a>
-                </p>
             </div>
         </div>
     )

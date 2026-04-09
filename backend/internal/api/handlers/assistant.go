@@ -1,0 +1,142 @@
+package handlers
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/fisca-app/backend/internal/api/middleware"
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+type AssistantHandler struct {
+	DB *pgxpool.Pool
+}
+
+func NewAssistantHandler(db *pgxpool.Pool) *AssistantHandler {
+	return &AssistantHandler{DB: db}
+}
+
+// POST /api/assistant
+func (h *AssistantHandler) Chat(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
+
+	var req struct {
+		Message string `json:"message"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || strings.TrimSpace(req.Message) == "" {
+		jsonError(w, "message requis", http.StatusBadRequest)
+		return
+	}
+	if len(req.Message) > 2000 {
+		jsonError(w, "Message trop long (max 2000 caractères)", http.StatusBadRequest)
+		return
+	}
+
+	// Construire le contexte fiscal de l'utilisateur
+	context := h.buildContext(r, userID)
+
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		// Pas d'IA configurée — réponse de secours
+		jsonOK(w, map[string]string{
+			"reply": "L'assistant IA n'est pas encore configuré. Contactez votre administrateur pour activer la clé API OpenAI (variable d'environnement OPENAI_API_KEY).",
+		})
+		return
+	}
+
+	reply, err := callOpenAI(apiKey, context, req.Message)
+	if err != nil {
+		jsonError(w, "Erreur assistant IA : "+err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	jsonOK(w, map[string]string{"reply": reply})
+}
+
+// buildContext construit un résumé textuel des données fiscales de l'entreprise
+// pour enrichir le prompt système.
+func (h *AssistantHandler) buildContext(r *http.Request, userID string) string {
+	var companyID, nomEntreprise, ifu string
+	h.DB.QueryRow(r.Context(),
+		`SELECT c.id, c.nom, COALESCE(c.ifu,'')
+		 FROM companies c WHERE c.user_id=$1 LIMIT 1`, userID,
+	).Scan(&companyID, &nomEntreprise, &ifu)
+
+	var nbEmployes int
+	h.DB.QueryRow(r.Context(),
+		`SELECT COUNT(*) FROM employees WHERE company_id=$1`, companyID).Scan(&nbEmployes)
+
+	now := time.Now()
+	var iutsTotal, tpaTotal, brutTotal float64
+	var nbDecl int
+	h.DB.QueryRow(r.Context(),
+		`SELECT COALESCE(SUM(iuts_total),0), COALESCE(SUM(tpa_total),0),
+		        COALESCE(SUM(brut_total),0), COUNT(*)
+		 FROM declarations WHERE company_id=$1 AND annee=$2`, companyID, now.Year(),
+	).Scan(&iutsTotal, &tpaTotal, &brutTotal, &nbDecl)
+
+	return fmt.Sprintf(`Contexte entreprise FISCA (Burkina Faso) :
+- Entreprise : %s (IFU: %s)
+- Nombre d'employés : %d
+- Année fiscale : %d
+- Déclarations IUTS déposées cette année : %d
+- Masse salariale brute annuelle : %.0f FCFA
+- IUTS total annuel : %.0f FCFA
+- TPA total annuel : %.0f FCFA
+- Régime : IUTS/TPA selon le Code des impôts Burkina Faso (LF 2020)
+Tu es un assistant fiscal spécialisé dans la fiscalité des entreprises au Burkina Faso. 
+Réponds en français, de manière concise et précise. 
+Ne fournis pas de conseils juridiques définitifs — recommande de consulter un expert-comptable pour les cas complexes.`,
+		nomEntreprise, ifu, nbEmployes, now.Year(), nbDecl, brutTotal, iutsTotal, tpaTotal)
+}
+
+// callOpenAI appelle l'API OpenAI Chat Completions.
+func callOpenAI(apiKey, systemContext, userMessage string) (string, error) {
+	payload := map[string]any{
+		"model": "gpt-4o-mini",
+		"messages": []map[string]string{
+			{"role": "system", "content": systemContext},
+			{"role": "user", "content": userMessage},
+		},
+		"max_tokens":  800,
+		"temperature": 0.4,
+	}
+	body, _ := json.Marshal(payload)
+
+	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("OpenAI HTTP %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	var result struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+	}
+	if err := json.Unmarshal(respBody, &result); err != nil || len(result.Choices) == 0 {
+		return "", fmt.Errorf("réponse OpenAI invalide")
+	}
+	return result.Choices[0].Message.Content, nil
+}
