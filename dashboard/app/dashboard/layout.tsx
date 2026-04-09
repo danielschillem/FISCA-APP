@@ -8,12 +8,15 @@ import { useEffect } from 'react'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const token = useAuthStore((s) => s.token)
+    const hasHydrated = useAuthStore((s) => s._hasHydrated)
     const router = useRouter()
 
     useEffect(() => {
-        if (!token) router.replace('/login')
-    }, [token, router])
+        if (hasHydrated && !token) router.replace('/login')
+    }, [token, hasHydrated, router])
 
+    // Attendre l'hydration Zustand avant d'afficher ou rediriger
+    if (!hasHydrated) return null
     if (!token) return null
 
     return (
