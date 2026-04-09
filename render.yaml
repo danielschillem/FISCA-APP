@@ -1,18 +1,24 @@
-# render.yaml — FISCA Backend + PostgreSQL
+# render.yaml — FISCA Backend
 # https://render.com/docs/yaml-spec
 #
-# Le dashboard Next.js est déployé séparément sur Vercel.
+# La base de données PostgreSQL est gérée SÉPARÉMENT (DB Render existante ou Neon).
 #
-# ── Secrets à configurer dans le dashboard Render AVANT le premier déploiement ──
-#   ALLOWED_ORIGIN  → URL Vercel de prod, ex: https://fisca-app.vercel.app
-#   SMTP_HOST       → (optionnel) serveur SMTP pour les emails de reset
-#   SMTP_PORT       → (optionnel) 587
-#   SMTP_USER       → (optionnel) identifiant SMTP
-#   SMTP_PASS       → (optionnel) mot de passe SMTP
-#   SMTP_FROM       → (optionnel) adresse expéditeur
+# ── Secrets à configurer dans le dashboard Render → fisca-backend → Environment ──
+#   DATABASE_URL  → Connection string PostgreSQL (voir instructions ci-dessous)
+#   ALLOWED_ORIGIN → https://fisca-app.vercel.app
+#   SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS / SMTP_FROM → (optionnel)
 #
-# ── Après déploiement, récupérer dans Render → fisca-backend → Settings :
-#   "Deploy Hook URL" → coller dans GitHub Secret RENDER_DEPLOY_HOOK_BACKEND
+# ── Option A : Utiliser votre DB Render existante ──────────────────────────────
+#   Render Dashboard → votre DB existante → Info → "Internal Database URL"
+#   Copier cette URL → la coller dans DATABASE_URL de fisca-backend
+#
+# ── Option B : Créer une DB Neon gratuite (recommandé) ────────────────────────
+#   1. neon.tech → New project → copier la "Connection string"
+#   2. La coller dans DATABASE_URL de fisca-backend
+#
+# ── Après déploiement ─────────────────────────────────────────────────────────
+#   fisca-backend → Settings → Deploy Hook URL
+#   → GitHub repo → Settings → Secrets → RENDER_DEPLOY_HOOK_BACKEND
 
 services:
   # ─── Backend Go (Docker) ───────────────────────────────────
@@ -21,22 +27,20 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    region: frankfurt    # Europe — plus proche de l'Afrique de l'Ouest
-    plan: free           # → "starter" en prod (évite le spin-down après 15 min)
-    autoDeploy: true     # Deploy automatique sur push vers la branche main
+    region: frankfurt
+    plan: free
+    autoDeploy: true
     branch: main
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: fisca-db
-          property: connectionString
+        sync: false          # ← Définir manuellement (DB existante ou Neon)
       - key: JWT_SECRET
-        generateValue: true  # Render génère une valeur aléatoire sécurisée
+        generateValue: true
       - key: PORT
         value: "8080"
       - key: ALLOWED_ORIGIN
-        sync: false          # Définir manuellement dans le dashboard Render
+        value: "https://fisca-app.vercel.app"
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
@@ -47,12 +51,3 @@ services:
         sync: false
       - key: SMTP_FROM
         sync: false
-
-# ─── Base de données PostgreSQL ────────────────────────────
-databases:
-  - name: fisca-db
-    databaseName: fisca
-    user: fisca
-    region: frankfurt    # Même région que le backend
-    plan: free           # → "starter" en prod (backups auto + 1 Go SSD)
-    ipAllowList: []      # 0 entrée = accès uniquement depuis Render (sécurisé)
