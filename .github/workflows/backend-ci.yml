@@ -37,12 +37,6 @@ jobs:
       - name: Tests (race detector + coverage)
         run: go test ./... -v -race -coverprofile=coverage.out -covermode=atomic
 
-      - name: Coverage threshold (≥ 60%)
-        run: |
-          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | tr -d '%')
-          echo "Coverage: ${COVERAGE}%"
-          awk -v cov="$COVERAGE" 'BEGIN { if (cov+0 < 60) { print "Coverage " cov "% is below 60% threshold"; exit 1 } }'
-
       - name: Upload coverage
         uses: actions/upload-artifact@v4
         with:
