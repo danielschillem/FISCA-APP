@@ -1,20 +1,11 @@
-# render.yaml — FISCA Backend
+# render.yaml — FISCA Backend + PostgreSQL
 # https://render.com/docs/yaml-spec
 #
-# La base de données PostgreSQL est gérée SÉPARÉMENT (DB Render existante ou Neon).
+# Le dashboard Next.js est déployé séparément sur Vercel.
 #
 # ── Secrets à configurer dans le dashboard Render → fisca-backend → Environment ──
-#   DATABASE_URL  → Connection string PostgreSQL (voir instructions ci-dessous)
-#   ALLOWED_ORIGIN → https://fisca-app.vercel.app
+#   ALLOWED_ORIGIN → https://fisca-app.vercel.app  (déjà pré-rempli ci-dessous)
 #   SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS / SMTP_FROM → (optionnel)
-#
-# ── Option A : Utiliser votre DB Render existante ──────────────────────────────
-#   Render Dashboard → votre DB existante → Info → "Internal Database URL"
-#   Copier cette URL → la coller dans DATABASE_URL de fisca-backend
-#
-# ── Option B : Créer une DB Neon gratuite (recommandé) ────────────────────────
-#   1. neon.tech → New project → copier la "Connection string"
-#   2. La coller dans DATABASE_URL de fisca-backend
 #
 # ── Après déploiement ─────────────────────────────────────────────────────────
 #   fisca-backend → Settings → Deploy Hook URL
@@ -28,13 +19,15 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     region: frankfurt
-    plan: free
+    plan: starter          # Plan payant — pas de spin-down après 15 min
     autoDeploy: true
     branch: main
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
-        sync: false          # ← Définir manuellement (DB existante ou Neon)
+        fromDatabase:
+          name: fisca-db
+          property: connectionString
       - key: JWT_SECRET
         generateValue: true
       - key: PORT
@@ -51,3 +44,12 @@ services:
         sync: false
       - key: SMTP_FROM
         sync: false
+
+# ─── Base de données PostgreSQL ────────────────────────────
+databases:
+  - name: fisca-db
+    databaseName: fisca
+    user: fisca
+    region: frankfurt
+    plan: starter          # Plan payant — backups automatiques inclus
+    ipAllowList: []        # Accès uniquement depuis les services Render internes
