@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/fisca-app/backend/internal/api/middleware"
@@ -100,4 +101,40 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	h.DB.Exec(r.Context(), `UPDATE refresh_tokens SET revoked=TRUE WHERE user_id=$1`, userID)
 
 	jsonOK(w, map[string]string{"message": "Mot de passe modifié avec succès."})
+}
+
+// PATCH /api/me/plan — upgrade plan (protégé par ADMIN_SECRET header)
+func (h *UserHandler) SetPlan(w http.ResponseWriter, r *http.Request) {
+	// Vérifie le secret admin
+	adminSecret := strings.TrimSpace(r.Header.Get("X-Admin-Secret"))
+	expected := strings.TrimSpace(os.Getenv("ADMIN_SECRET"))
+	if expected == "" || adminSecret != expected {
+		jsonError(w, "Non autorisé", http.StatusForbidden)
+		return
+	}
+
+	userID := middleware.GetUserID(r)
+	var req struct {
+		Plan string `json:"plan"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, "Données invalides", http.StatusBadRequest)
+		return
+	}
+	valid := map[string]bool{"starter": true, "pro": true, "enterprise": true}
+	if !valid[req.Plan] {
+		jsonError(w, "Plan invalide (starter|pro|enterprise)", http.StatusBadRequest)
+		return
+	}
+
+	var u models.User
+	err := h.DB.QueryRow(r.Context(),
+		`UPDATE users SET plan=$1 WHERE id=$2 RETURNING id, email, plan, created_at`,
+		req.Plan, userID,
+	).Scan(&u.ID, &u.Email, &u.Plan, &u.CreatedAt)
+	if err != nil {
+		jsonError(w, "Utilisateur introuvable", http.StatusNotFound)
+		return
+	}
+	jsonOK(w, u)
 }

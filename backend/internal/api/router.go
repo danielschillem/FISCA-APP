@@ -85,6 +85,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			r.Get("/me", userH.Me)
 			r.Put("/me", userH.UpdateMe)
 			r.Put("/me/password", userH.ChangePassword)
+			r.Patch("/me/plan", userH.SetPlan)
 
 			// Dashboard KPIs
 			r.Get("/dashboard", dashH.Get)
