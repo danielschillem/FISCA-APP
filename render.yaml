@@ -33,6 +33,8 @@ services:
         value: "8080"
       - key: ALLOWED_ORIGIN
         value: "https://fisca-app.vercel.app"
+      - key: ADMIN_SECRET
+        sync: false        # → définir manuellement dans Render Dashboard
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
