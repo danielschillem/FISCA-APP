@@ -28,8 +28,8 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 	// CORS — origines autorisées
 	allowedOrigins := []string{
 		"https://*.vercel.app",
+		"https://*.netlify.app", // frontend Netlify (prod + previews)
 		"http://localhost:3000", // frontend Vite (dev) / frontend Docker
-		"http://localhost:3001", // dashboard Next.js (Docker)
 		"http://localhost:5173", // frontend Vite dev server
 	}
 	if extra := os.Getenv("ALLOWED_ORIGIN"); extra != "" {
