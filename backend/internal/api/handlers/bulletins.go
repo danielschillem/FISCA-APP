@@ -199,7 +199,7 @@ func (h *BulletinHandler) Get(w http.ResponseWriter, r *http.Request) {
 		&b.ID, &b.CompanyID, &b.EmployeeID, &b.Mois, &b.Annee, &b.Periode,
 		&b.NomEmploye, &b.Categorie, &b.SalaireBase, &b.Anciennete, &b.HeuresSup,
 		&b.Logement, &b.Transport, &b.Fonction, &b.Charges, &b.Cotisation,
-		&b.BrutTotal, &b.BaseImp, &b.IUTSBrut, &b.IUTSNet, &b.CotSoc, &b.TPA, &b.SalaireNet, &b.CreatedAt,
+		&b.BrutTotal, &b.BaseImp, &b.IUTSBrut, &b.IUTSNet, &b.CotSoc, &b.TPA, &b.FSP, &b.SalaireNet, &b.CreatedAt,
 	)
 	if err != nil {
 		jsonError(w, "Bulletin introuvable", http.StatusNotFound)
@@ -242,7 +242,7 @@ func (h *BulletinHandler) Export(w http.ResponseWriter, r *http.Request) {
 		&b.ID, &b.CompanyID, &b.EmployeeID, &b.Mois, &b.Annee, &b.Periode,
 		&b.NomEmploye, &b.Categorie, &b.SalaireBase, &b.Anciennete, &b.HeuresSup,
 		&b.Logement, &b.Transport, &b.Fonction, &b.Charges, &b.Cotisation,
-		&b.BrutTotal, &b.BaseImp, &b.IUTSBrut, &b.IUTSNet, &b.CotSoc, &b.TPA, &b.SalaireNet, &b.CreatedAt,
+		&b.BrutTotal, &b.BaseImp, &b.IUTSBrut, &b.IUTSNet, &b.CotSoc, &b.TPA, &b.FSP, &b.SalaireNet, &b.CreatedAt,
 	)
 	if err != nil {
 		jsonError(w, "Bulletin introuvable", http.StatusNotFound)

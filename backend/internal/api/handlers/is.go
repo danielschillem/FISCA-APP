@@ -95,7 +95,7 @@ func (h *ISHandler) Create(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "Entreprise introuvable", http.StatusNotFound)
 		return
 	}
-	if !h.checkPlan(r, "enterprise") {
+	if !h.checkPlan(r, "enterprise", "moral_enterprise") {
 		jsonError(w, "Le module IS nécessite le plan Enterprise.", http.StatusPaymentRequired)
 		return
 	}
@@ -111,12 +111,18 @@ func (h *ISHandler) Create(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "annee (≥ 2000) et ca (≥ 0) requis", http.StatusBadRequest)
 		return
 	}
-	if req.Regime != "simplifie" {
+	// Normaliser le régime pour correspondre aux clés attendues par CalcMFP :
+	// "simplifie" → "RSI" (minimum 300 000 FCFA), tout autre → "RNI" (minimum 1 000 000 FCFA)
+	mfpRegime := "RNI"
+	if req.Regime == "simplifie" || req.Regime == "RSI" {
+		req.Regime = "simplifie"
+		mfpRegime = "RSI"
+	} else {
 		req.Regime = "reel"
 	}
 
 	isRes := calc.CalcIS(req.Benefice, req.AdhesionCGA)
-	mfpRes := calc.CalcMFP(req.CA, req.Regime, req.AdhesionCGA)
+	mfpRes := calc.CalcMFP(req.CA, mfpRegime, req.AdhesionCGA)
 	isDu := math.Max(isRes.IS, mfpRes.MFPDu)
 	ref := fmt.Sprintf("IS-%d-%04d", req.Annee, time.Now().UnixNano()%10000)
 

@@ -114,7 +114,7 @@ func (h *TVAHandler) Create(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "Entreprise introuvable", http.StatusNotFound)
 		return
 	}
-	if !h.checkPlan(r, "pro", "enterprise") {
+	if !h.checkPlan(r, "pro", "physique_pro", "enterprise", "moral_team", "moral_enterprise") {
 		jsonError(w, "Le module TVA nécessite le plan Pro ou Enterprise.", http.StatusPaymentRequired)
 		return
 	}

@@ -68,11 +68,8 @@ type PlanInfo struct {
 // GET /api/dashboard
 func (h *DashboardHandler) Get(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
-
-	var companyID string
-	err := h.DB.QueryRow(r.Context(),
-		`SELECT id FROM companies WHERE user_id=$1 LIMIT 1`, userID).Scan(&companyID)
-	if err != nil {
+	companyID := middleware.GetCompanyID(r)
+	if companyID == "" {
 		jsonError(w, "Entreprise introuvable", http.StatusNotFound)
 		return
 	}
@@ -99,7 +96,7 @@ func (h *DashboardHandler) Get(w http.ResponseWriter, r *http.Request) {
 	var plan string
 	h.DB.QueryRow(r.Context(), `SELECT plan FROM users WHERE id=$1`, userID).Scan(&plan)
 	limiteEmp := 10
-	if plan == "pro" || plan == "enterprise" {
+	if plan == "pro" || plan == "physique_pro" || plan == "enterprise" || plan == "moral_team" || plan == "moral_enterprise" {
 		limiteEmp = -1
 	}
 	data.PlanInfo = PlanInfo{Plan: plan, NbEmployes: data.NbEmployes, LimiteEmp: limiteEmp}

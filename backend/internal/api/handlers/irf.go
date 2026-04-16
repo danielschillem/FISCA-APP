@@ -88,13 +88,16 @@ func (h *IRFHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /api/irf [Plan: Pro+]
+// loyer_brut : montant mensuel du loyer brut en FCFA.
+// Le calcul est effectué sur ce montant (base mensuelle, CGI 2025 Art. 121-126).
+// Pour un loyer annuel, diviser par 12 avant de soumettre.
 func (h *IRFHandler) Create(w http.ResponseWriter, r *http.Request) {
 	companyID, err := h.companyID(r)
 	if err != nil {
 		jsonError(w, "Entreprise introuvable", http.StatusNotFound)
 		return
 	}
-	if !h.checkPlan(r, "pro", "enterprise") {
+	if !h.checkPlan(r, "pro", "physique_pro", "enterprise", "moral_team", "moral_enterprise") {
 		jsonError(w, "Le module IRF nécessite le plan Pro ou Enterprise.", http.StatusPaymentRequired)
 		return
 	}

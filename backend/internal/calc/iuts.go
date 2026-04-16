@@ -24,6 +24,7 @@ var iutsTranches = []tranche{
 
 // Abattement forfaitaire CGI 2025 Art. 111
 // SMIG mensuel Burkina Faso (arrêté 2023, en vigueur 2025)
+// Réservé pour future utilisation (exonération plancher SMIG, non encore codifiée dans CGI 2025).
 const SMIG = 34_664.0 // FCFA/mois
 
 const (

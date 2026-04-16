@@ -16,21 +16,29 @@ import (
 )
 
 // Taux de retenue à la source BF — CGI 2025
-// Clés conservées pour compatibilité base de données.
+// Les clés CGI 2025 (majuscules) correspondent au calculateur stateless /api/calcul/ras.
+// Les clés légacy (minuscules) sont conservées pour compatibilité avec les enregistrements existants.
 var TauxRetenue = map[string]float64{
-	// Art. 206 CGI 2025 : résident avec IFU → 5 %
-	// (résident sans IFU → utiliser type "autre" à 25 %)
-	"services": 5.0,
-	// IRF CGI 2025 Art. 121-126 : abatt. 50 % + 18 %/25 % progressif.
-	// Taux effectif minimum = 9 % (loyer ≤ 200 000 FCFA/mois).
-	// Pour loyers importants, utiliser le calculateur IRF intégré.
-	"loyer": 9.0,
-	// IRCM CGI 2025 Art. 140 — dividendes : 12,5 %
-	"dividendes": 12.5,
-	// IRCM CGI 2025 Art. 140 — intérêts/créances : 25 %
-	"interets": 25.0,
-	// Art. 206 CGI 2025 : résident sans IFU / non-résident
-	"autre": 25.0,
+	// ── CGI 2025 Art. 206-226 (clés canoniques) ──────────────────────────
+	"RESIDENT_IFU":        5.0,  // résident avec IFU : 5 %
+	"RESIDENT_IFU_IMMO":   1.0,  // résident IFU immo/TP : 1 %
+	"RESIDENT_SANS_IFU":   25.0, // résident sans IFU : 25 %
+	"TRAVAIL_TEMPORAIRE":  2.0,  // travail temporaire : 2 %
+	"NON_RESIDENT":        20.0, // non-résident : 20 % (pas de seuil d'exonération)
+	"NON_RESIDENT_CEDEAO": 10.0, // non-résident CEDEAO transport : 10 %
+	"NONDETER_VACATION":   2.0,  // non-déterminé vacation/manuel : 2 %
+	"NONDETER_PUBLIC":     5.0,  // non-déterminé entité publique : 5 %
+	"NONDETER_SALARIE":    10.0, // non-déterminé salarié/intellectuel : 10 %
+	"COMMANDE_PUBLIQUE":   5.0,  // commande publique : 5 %
+	"COMMANDE_PUB_BIENS":  1.0,  // commande pub. biens/TP : 1 %
+	// ── Clés légacy (rétro-compat enregistrements existants) ─────────────
+	// IRF CGI 2025 Art. 121-126 : taux effectif minimum 9 % (loyer ≤ 200k FCFA/mois).
+	// Pour loyers importants, utiliser le module IRF dédié (/api/irf).
+	"services":   5.0,  // → RESIDENT_IFU
+	"loyer":      9.0,  // → approximation IRF simple (utiliser /api/irf pour calcul exact)
+	"dividendes": 12.5, // → IRCM CGI 2025 Art. 140 dividendes
+	"interets":   25.0, // → IRCM CGI 2025 Art. 140 créances
+	"autre":      25.0, // → RESIDENT_SANS_IFU
 }
 
 type RetenueHandler struct {

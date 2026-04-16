@@ -15,6 +15,7 @@ import (
 var workflowTransitions = map[string][]string{
 	"en_cours":    {"soumis"},
 	"ok":          {"soumis"},
+	"retard":      {"soumis"}, // déclaration en retard : peut quand même être soumise
 	"soumis":      {"en_revision", "approuve", "rejete"},
 	"en_revision": {"approuve", "rejete"},
 }
