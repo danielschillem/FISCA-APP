@@ -8,8 +8,6 @@ import {
     Briefcase, Users, Star, Zap, AlertCircle,
 } from 'lucide-react';
 
-// ─── Plans disponibles ────────────────────────────────────────
-
 const PHYSIQUE_PLANS = [
     {
         id: 'physique_starter',
@@ -106,10 +104,7 @@ export default function RegisterPage() {
         <div className="flex items-center justify-center gap-2 mb-8">
             {[1, 2, 3].map((s) => (
                 <div key={s} className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${s < step ? 'bg-green-600 text-white' :
-                        s === step ? 'bg-green-600 text-white ring-4 ring-green-100' :
-                            'bg-gray-200 text-gray-400'
-                        }`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${s < step ? 'bg-green-600 text-white' : s === step ? 'bg-green-600 text-white ring-4 ring-green-100' : 'bg-gray-200 text-gray-400'}`}>
                         {s < step ? <CheckCircle2 className="w-4 h-4" /> : s}
                     </div>
                     {s < 3 && <div className={`w-8 h-0.5 ${s < step ? 'bg-green-600' : 'bg-gray-200'}`} />}
@@ -120,20 +115,16 @@ export default function RegisterPage() {
 
     return (
         <div className="min-h-screen flex">
-            {/* ── Panneau gauche : background image ── */}
             <div
                 className="hidden lg:flex lg:w-5/12 xl:w-1/2 flex-col justify-between relative overflow-hidden"
                 style={{ backgroundImage: "url('/register_bg.jpg')", backgroundSize: 'cover', backgroundPosition: 'center' }}
             >
-                {/* Overlay sombre pour lisibilité */}
                 <div className="absolute inset-0 bg-black/50" />
                 <div className="relative z-10 p-10 flex flex-col h-full justify-between">
-                    {/* Logo */}
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center text-white text-lg font-extrabold">F</div>
                         <span className="text-white text-xl font-extrabold tracking-wide">FISCA</span>
                     </div>
-                    {/* Accroche centrale */}
                     <div>
                         <h2 className="text-3xl xl:text-4xl font-extrabold text-white leading-tight mb-4">
                             Créez votre compte<br />et simplifiez<br />votre fiscalité
@@ -142,14 +133,11 @@ export default function RegisterPage() {
                             Déclarations, calculs CGI 2025, bulletins de paie et gestion multi-sociétés — tout en un.
                         </p>
                     </div>
-                    {/* Badge bas */}
                     <p className="text-white/50 text-xs">Plateforme fiscale · Burkina Faso · CGI 2025</p>
                 </div>
             </div>
 
-            {/* ── Panneau droit : formulaire multi-étapes ── */}
             <div className="flex-1 flex flex-col items-center justify-start overflow-y-auto bg-gray-50 py-12 px-4 sm:px-8">
-                {/* Logo mobile */}
                 <div className="lg:hidden text-center mb-8">
                     <div className="w-12 h-12 bg-green-600 rounded-2xl flex items-center justify-center text-white text-xl font-bold mx-auto mb-3 shadow-lg">F</div>
                     <h1 className="text-2xl font-extrabold text-gray-900">FISCA</h1>
@@ -159,40 +147,33 @@ export default function RegisterPage() {
                 <div className="w-full max-w-2xl">
                     <StepIndicator />
 
-                    {/* ── Étape 1 : Type de compte ── */}
                     {step === 1 && (
                         <div>
                             <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Quel est votre profil ?</h2>
                             <p className="text-gray-500 text-sm text-center mb-8">Choisissez le type de compte qui correspond à votre situation</p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <button
-                                    onClick={() => { setUserType('physique'); setPlan(''); setStep(2); }}
-                                    className="group bg-white border-2 border-gray-200 hover:border-green-500 rounded-2xl p-6 text-left transition-all hover:shadow-md"
-                                >
+                                <button onClick={() => { setUserType('physique'); setPlan(''); setStep(2); }} className="group bg-white border-2 border-gray-200 hover:border-green-500 rounded-2xl p-6 text-left transition-all hover:shadow-md">
                                     <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-600 transition-colors">
                                         <User className="w-6 h-6 text-green-600 group-hover:text-white transition-colors" />
                                     </div>
                                     <h3 className="font-bold text-gray-900 mb-1">Personne Physique</h3>
                                     <p className="text-sm text-gray-500 mb-3">Auto-entrepreneur, profession libérale, gérant unique</p>
                                     <ul className="text-xs text-gray-400 space-y-1">
-                                        <li>✓ Compte solo : vous seul</li>
-                                        <li>✓ Toutes les déclarations fiscales</li>
-                                        <li>✓ Calculateur CGI 2025</li>
+                                        <li>Compte solo</li>
+                                        <li>Toutes les déclarations fiscales</li>
+                                        <li>Calculateur CGI 2025</li>
                                     </ul>
                                 </button>
-                                <button
-                                    onClick={() => { setUserType('morale'); setPlan(''); setStep(2); }}
-                                    className="group bg-white border-2 border-gray-200 hover:border-blue-500 rounded-2xl p-6 text-left transition-all hover:shadow-md"
-                                >
+                                <button onClick={() => { setUserType('morale'); setPlan(''); setStep(2); }} className="group bg-white border-2 border-gray-200 hover:border-blue-500 rounded-2xl p-6 text-left transition-all hover:shadow-md">
                                     <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-600 transition-colors">
                                         <Building2 className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
                                     </div>
                                     <h3 className="font-bold text-gray-900 mb-1">Personne Morale</h3>
                                     <p className="text-sm text-gray-500 mb-3">Entreprise, cabinet, structure avec plusieurs utilisateurs</p>
                                     <ul className="text-xs text-gray-400 space-y-1">
-                                        <li>✓ Multi-utilisateurs avec rôles</li>
-                                        <li>✓ Plusieurs sociétés gérées</li>
-                                        <li>✓ Admin interne + workflow</li>
+                                        <li>Multi-utilisateurs avec rôles</li>
+                                        <li>Plusieurs sociétés gérées</li>
+                                        <li>Admin interne et workflow</li>
                                     </ul>
                                 </button>
                             </div>
@@ -203,7 +184,6 @@ export default function RegisterPage() {
                         </div>
                     )}
 
-                    {/* ── Étape 2 : Plan ── */}
                     {step === 2 && (
                         <div>
                             <button onClick={() => setStep(1)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
@@ -217,11 +197,7 @@ export default function RegisterPage() {
                                 {(userType === 'physique' ? PHYSIQUE_PLANS : MORAL_PLANS).map((p) => {
                                     const Icon = p.icon;
                                     return (
-                                        <button
-                                            key={p.id}
-                                            onClick={() => { setPlan(p.id); setStep(3); }}
-                                            className="bg-white border-2 border-gray-200 hover:border-green-500 rounded-2xl p-6 text-left transition-all hover:shadow-md"
-                                        >
+                                        <button key={p.id} onClick={() => { setPlan(p.id); setStep(3); }} className="bg-white border-2 border-gray-200 hover:border-green-500 rounded-2xl p-6 text-left transition-all hover:shadow-md">
                                             <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${p.color} flex items-center justify-center mb-4`}>
                                                 <Icon className="w-5 h-5 text-white" />
                                             </div>
@@ -246,7 +222,6 @@ export default function RegisterPage() {
                         </div>
                     )}
 
-                    {/* ── Étape 3 : Informations ── */}
                     {step === 3 && (
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
                             <button onClick={() => setStep(2)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
@@ -269,45 +244,18 @@ export default function RegisterPage() {
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1">{nomLabel}</label>
-                                    <input
-                                        type="text"
-                                        value={form.nom}
-                                        onChange={(e) => setForm((f) => ({ ...f, nom: e.target.value }))}
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                                        placeholder={nomPlaceholder}
-                                        required
-                                    />
+                                    <input type="text" value={form.nom} onChange={(e) => setForm((f) => ({ ...f, nom: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" placeholder={nomPlaceholder} required />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1">Adresse email</label>
-                                    <input
-                                        type="email"
-                                        value={form.email}
-                                        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                                        placeholder="vous@entreprise.bf"
-                                        required
-                                        autoComplete="email"
-                                    />
+                                    <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="vous@entreprise.bf" required autoComplete="email" />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1">Mot de passe</label>
-                                    <input
-                                        type="password"
-                                        value={form.password}
-                                        onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                                        placeholder="8 caractères minimum"
-                                        required
-                                        autoComplete="new-password"
-                                    />
+                                    <input type="password" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="8 caractères minimum" required autoComplete="new-password" />
                                 </div>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-                                >
-                                    {loading ? 'Création en cours…' : (<>Créer mon compte <ArrowRight className="w-4 h-4" /></>)}
+                                <button type="submit" disabled={loading} className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+                                    {loading ? 'Création en cours...' : (<>Créer mon compte <ArrowRight className="w-4 h-4" /></>)}
                                 </button>
                             </form>
 
@@ -321,5 +269,4 @@ export default function RegisterPage() {
             </div>
         </div>
     );
-}
 }
