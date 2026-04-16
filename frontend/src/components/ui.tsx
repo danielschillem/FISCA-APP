@@ -12,25 +12,25 @@ interface StatCardProps {
 }
 
 const colorMap = {
-    green: { bg: 'bg-green-50', text: 'text-green-700', icon: 'bg-green-100' },
-    orange: { bg: 'bg-orange-50', text: 'text-orange-700', icon: 'bg-orange-100' },
-    blue: { bg: 'bg-blue-50', text: 'text-blue-700', icon: 'bg-blue-100' },
-    red: { bg: 'bg-red-50', text: 'text-red-700', icon: 'bg-red-100' },
-    gray: { bg: 'bg-gray-50', text: 'text-gray-700', icon: 'bg-gray-100' },
+    green: { border: 'border-l-green-500', text: 'text-green-600', icon: 'bg-green-50 text-green-600' },
+    orange: { border: 'border-l-orange-500', text: 'text-orange-600', icon: 'bg-orange-50 text-orange-600' },
+    blue: { border: 'border-l-blue-500', text: 'text-blue-600', icon: 'bg-blue-50 text-blue-600' },
+    red: { border: 'border-l-red-500', text: 'text-red-600', icon: 'bg-red-50 text-red-600' },
+    gray: { border: 'border-l-gray-400', text: 'text-gray-700', icon: 'bg-gray-100 text-gray-500' },
 };
 
 export function StatCard({ label, value, sub, color = 'green', icon }: StatCardProps) {
     const c = colorMap[color];
     return (
-        <div className={`${c.bg} rounded-xl p-5 flex items-start gap-4`}>
+        <div className={`bg-white rounded-xl border border-gray-100 border-l-4 ${c.border} shadow-sm p-5 flex items-start gap-4 hover:shadow-md transition-shadow duration-200`}>
             {icon && (
-                <div className={`${c.icon} ${c.text} w-10 h-10 rounded-lg flex items-center justify-center text-lg flex-shrink-0`}>
+                <div className={`${c.icon} w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0`}>
                     {icon}
                 </div>
             )}
-            <div>
-                <p className="text-xs font-medium text-gray-500 mb-0.5">{label}</p>
-                <p className={`text-xl font-bold ${c.text}`}>{value}</p>
+            <div className="min-w-0">
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{label}</p>
+                <p className={`text-2xl font-bold tracking-tight ${c.text}`}>{value}</p>
                 {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
             </div>
         </div>
@@ -64,10 +64,10 @@ interface CardProps {
 }
 export function Card({ title, children, className = '', action }: CardProps) {
     return (
-        <div className={`bg-white rounded-xl border border-gray-200 ${className}`}>
+        <div className={`bg-white rounded-xl border border-gray-100 shadow-sm ${className}`}>
             {(title || action) && (
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                    {title && <h3 className="font-semibold text-gray-900 text-sm">{title}</h3>}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+                    {title && <h3 className="font-semibold text-gray-800 text-sm">{title}</h3>}
                     {action}
                 </div>
             )}
@@ -81,13 +81,13 @@ interface BtnProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     size?: 'sm' | 'md';
 }
 export function Btn({ children, variant = 'primary', size = 'md', className = '', ...props }: BtnProps) {
-    const base = 'inline-flex items-center gap-1.5 font-medium rounded-lg transition-colors disabled:opacity-60';
+    const base = 'inline-flex items-center gap-1.5 font-medium rounded-lg transition-all duration-150 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed';
     const sizes = { sm: 'px-3 py-1.5 text-xs', md: 'px-4 py-2 text-sm' };
     const variants = {
-        primary: 'bg-green-600 hover:bg-green-700 text-white',
+        primary: 'bg-green-600 hover:bg-green-700 text-white shadow-sm hover:shadow-md',
         secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-700',
-        danger: 'bg-red-600 hover:bg-red-700 text-white',
-        outline: 'border border-gray-300 hover:bg-gray-50 text-gray-700',
+        danger: 'bg-red-600 hover:bg-red-700 text-white shadow-sm',
+        outline: 'border border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-700',
     };
     return (
         <button className={`${base} ${sizes[size]} ${variants[variant]} ${className}`} {...props}>
@@ -166,8 +166,11 @@ export function Table({ columns, children, className = '' }: TableProps) {
 
 export function Spinner() {
     return (
-        <div className="flex items-center justify-center p-8">
-            <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+        <div className="flex items-center justify-center p-12">
+            <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                <p className="text-xs text-gray-400">Chargement…</p>
+            </div>
         </div>
     );
 }

@@ -1,8 +1,16 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '../../lib/api';
 import { useAuthStore } from '../../lib/store';
 import type { AuthResponse } from '../../types';
+import { ShieldCheck, BarChart2, FileCheck, Calculator } from 'lucide-react';
+
+const FEATURES = [
+    { Icon: BarChart2, text: 'Tableaux de bord fiscaux en temps rÃ©el' },
+    { Icon: FileCheck, text: 'Bulletins de paie & dÃ©clarations IUTS' },
+    { Icon: Calculator, text: 'Calculateur CGI 2025 â€” tous les impÃ´ts BF' },
+    { Icon: ShieldCheck, text: 'DonnÃ©es sÃ©curisÃ©es Â· Conforme OHADA' },
+];
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -30,76 +38,138 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center p-4">
-            <div className="w-full max-w-sm">
+        <div className="min-h-screen flex">
+            {/* Left panel â€” brand / features (desktop only) */}
+            <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 flex-col justify-between p-10 relative overflow-hidden"
+                style={{ background: 'linear-gradient(145deg, #0f172a 0%, #0d2818 60%, #14532d 100%)' }}>
+                {/* Background pattern */}
+                <div className="absolute inset-0 opacity-5" style={{
+                    backgroundImage: 'radial-gradient(circle at 25px 25px, white 2px, transparent 0)',
+                    backgroundSize: '50px 50px',
+                }} />
+
                 {/* Logo */}
-                <div className="text-center mb-8">
-                    <div className="w-14 h-14 bg-green-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mx-auto mb-3">
+                <div className="relative flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg"
+                        style={{ background: 'linear-gradient(135deg, #16a34a, #059669)' }}>
                         F
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900">FISCA</h1>
-                    <p className="text-gray-500 text-sm mt-1">Plateforme Fiscale Burkina Faso</p>
+                    <div>
+                        <span className="font-bold text-white text-lg tracking-wide">FISCA</span>
+                        <p className="text-green-400/70 text-xs">Plateforme Fiscale</p>
+                    </div>
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-6">Connexion</h2>
+                {/* Hero */}
+                <div className="relative">
+                    <h2 className="text-3xl font-bold text-white leading-tight mb-3">
+                        GÃ©rez votre fiscalitÃ©<br />
+                        <span className="text-green-400">en toute simplicitÃ©</span>
+                    </h2>
+                    <p className="text-slate-400 text-sm mb-8">
+                        Conforme au Code GÃ©nÃ©ral des ImpÃ´ts 2025 â€” Burkina Faso
+                    </p>
+                    <div className="space-y-3">
+                        {FEATURES.map(({ Icon, text }) => (
+                            <div key={text} className="flex items-center gap-3">
+                                <div className="w-7 h-7 rounded-lg bg-green-500/15 flex items-center justify-center flex-shrink-0">
+                                    <Icon className="w-4 h-4 text-green-400" />
+                                </div>
+                                <span className="text-slate-300 text-sm">{text}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
 
-                    {error && (
-                        <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg mb-4 border border-red-100">
-                            {error}
-                        </div>
-                    )}
+                {/* Footer */}
+                <p className="relative text-slate-600 text-xs">
+                    Â© 2025 FISCA Â· CGI 2025 Â· Burkina Faso
+                </p>
+            </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                                placeholder="vous@entreprise.bf"
-                                required
-                                autoComplete="email"
-                            />
+            {/* Right panel â€” form */}
+            <div className="flex-1 flex items-center justify-center p-6 bg-gray-50">
+                <div className="w-full max-w-sm">
+                    {/* Mobile logo */}
+                    <div className="lg:hidden text-center mb-8">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-xl mx-auto mb-3 shadow"
+                            style={{ background: 'linear-gradient(135deg, #16a34a, #059669)' }}>
+                            F
                         </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Mot de passe</label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                                placeholder="••••••••"
-                                required
-                                autoComplete="current-password"
-                            />
+                        <h1 className="text-xl font-bold text-gray-900">FISCA</h1>
+                        <p className="text-gray-500 text-sm">Plateforme Fiscale Burkina Faso</p>
+                    </div>
+
+                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                        <div className="mb-6">
+                            <h2 className="text-xl font-bold text-gray-900">Connexion</h2>
+                            <p className="text-sm text-gray-400 mt-1">Bienvenue, entrez vos identifiants</p>
                         </div>
-                        <div className="flex justify-end">
-                            <Link to="/forgot-password" className="text-xs text-green-600 hover:underline">
-                                Mot de passe oublié ?
+
+                        {error && (
+                            <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg mb-4 border border-red-100 flex items-center gap-2">
+                                <span className="w-4 h-4 rounded-full bg-red-100 flex items-center justify-center text-[10px] font-bold flex-shrink-0">!</span>
+                                {error}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">E-mail</label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent focus:bg-white transition-all"
+                                    placeholder="vous@entreprise.bf"
+                                    required
+                                    autoComplete="email"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Mot de passe</label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent focus:bg-white transition-all"
+                                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                                    required
+                                    autoComplete="current-password"
+                                />
+                            </div>
+                            <div className="flex justify-end">
+                                <Link to="/forgot-password" className="text-xs text-green-600 hover:text-green-700 hover:underline font-medium">
+                                    Mot de passe oubliÃ© ?
+                                </Link>
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full text-white font-semibold py-2.5 rounded-xl text-sm transition-all duration-150 active:scale-[0.98] disabled:opacity-60 shadow-sm hover:shadow-md"
+                                style={{ background: loading ? '#16a34a99' : 'linear-gradient(135deg, #16a34a, #059669)' }}
+                            >
+                                {loading ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                        Connexionâ€¦
+                                    </span>
+                                ) : 'Se connecter'}
+                            </button>
+                        </form>
+
+                        <p className="text-center text-xs text-gray-400 mt-6">
+                            Pas encore de compte ?{' '}
+                            <Link to="/register" className="text-green-600 font-semibold hover:underline">
+                                S'inscrire
                             </Link>
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors disabled:opacity-60"
-                        >
-                            {loading ? 'Connexion…' : 'Se connecter'}
-                        </button>
-                    </form>
+                        </p>
+                    </div>
 
-                    <p className="text-center text-xs text-gray-500 mt-6">
-                        Pas encore de compte ?{' '}
-                        <Link to="/register" className="text-green-600 font-medium hover:underline">
-                            S'inscrire
-                        </Link>
+                    <p className="text-center text-[11px] text-gray-400 mt-5">
+                        CGI 2025 Â· Burkina Faso Â· DonnÃ©es sÃ©curisÃ©es ðŸ”’
                     </p>
                 </div>
-
-                <p className="text-center text-[11px] text-gray-400 mt-6">
-                    CGI 2025 · Burkina Faso · Données sécurisées
-                </p>
             </div>
         </div>
     );

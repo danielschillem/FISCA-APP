@@ -39,7 +39,7 @@ export default function AppLayout() {
     const meta = PAGE_META[location.pathname] ?? { title: 'FISCA' };
 
     return (
-        <div className="flex h-screen overflow-hidden">
+        <div className="flex h-screen overflow-hidden bg-slate-50">
             <Sidebar />
             <div
                 className={`flex-1 flex flex-col min-w-0 overflow-y-auto transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'ml-0'
