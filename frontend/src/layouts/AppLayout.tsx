@@ -8,7 +8,7 @@ import { useLocation } from 'react-router-dom';
 const PAGE_META: Record<string, { title: string; subtitle?: string }> = {
     '/dashboard': { title: 'Tableau de bord', subtitle: 'Exercice fiscal en cours' },
     '/saisie': { title: 'Saisie mensuelle', subtitle: 'Rémunérations et cotisations' },
-    '/calcul': { title: 'Calcul IUTS / TPA', subtitle: 'CGI 2025 — Burkina Faso' },
+    '/calcul': { title: 'Calculateur Fiscal', subtitle: 'CGI 2025 — Burkina Faso' },
     '/rapport': { title: 'Rapport du mois', subtitle: 'Aperçu et génération du document' },
     '/bulletins': { title: 'Bulletins de paie', subtitle: 'Export PDF individuel' },
     '/simulateur': { title: 'Simulateur fiscal', subtitle: 'Scénarios et comparaison A/B' },

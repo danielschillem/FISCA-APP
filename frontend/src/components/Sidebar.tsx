@@ -29,7 +29,7 @@ const navSections: { label: string; items: NavItem[] }[] = [
         items: [
             { to: '/dashboard', label: 'Tableau de bord', Icon: LayoutDashboard, feat: null },
             { to: '/saisie', label: 'Saisie mensuelle', Icon: PenLine, feat: 'saisie' },
-            { to: '/calcul', label: 'Calcul IUTS / TPA', Icon: Calculator, feat: 'calcul' },
+            { to: '/calcul', label: 'Calculateur Fiscal', Icon: Calculator, feat: 'calcul' },
             { to: '/rapport', label: 'Rapport du mois', Icon: FileText, feat: 'rapport' },
         ],
     },
