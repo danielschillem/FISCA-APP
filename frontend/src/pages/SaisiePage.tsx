@@ -429,6 +429,14 @@ function EmployeeCard({ employee: emp, index, cotisation, onDelete }: EmployeeCa
         cotisation,
     });
 
+    // Sauvegarde l'objet employé COMPLET (pas juste un champ)
+    // pour éviter que le backend Go zero-init les champs absents du JSON.
+    const saveAll = (patch: Partial<Employee>) => {
+        const merged = { ...e, ...patch };
+        setE(merged);
+        update.mutate(merged);
+    };
+
     const field = (
         label: string,
         key: keyof Employee,
@@ -446,7 +454,7 @@ function EmployeeCard({ employee: emp, index, cotisation, onDelete }: EmployeeCa
                     const val = type === 'number' ? +ev.target.value : ev.target.value;
                     setE((prev) => ({ ...prev, [key]: val }));
                 }}
-                onBlur={() => update.mutate({ [key]: e[key] })}
+                onBlur={() => update.mutate({ ...e })}  // envoie l'objet complet
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             />
         </div>
@@ -475,8 +483,7 @@ function EmployeeCard({ employee: emp, index, cotisation, onDelete }: EmployeeCa
                         value={e.categorie}
                         onChange={(ev) => {
                             const val = ev.target.value as 'Cadre' | 'Non-cadre';
-                            setE((p) => ({ ...p, categorie: val }));
-                            update.mutate({ categorie: val });
+                            saveAll({ categorie: val });
                         }}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-green-500 focus:outline-none"
                     >
@@ -490,7 +497,7 @@ function EmployeeCard({ employee: emp, index, cotisation, onDelete }: EmployeeCa
                         type="number" min={0} max={4}
                         value={e.charges}
                         onChange={(ev) => setE((p) => ({ ...p, charges: +ev.target.value }))}
-                        onBlur={() => update.mutate({ charges: e.charges })}
+                        onBlur={() => update.mutate({ ...e })}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
                     />
                 </div>

@@ -72,7 +72,13 @@ export const useAppStore = create<AppState>((set) => ({
     toggleNotif: () => set((s) => ({ notifOpen: !s.notifOpen })),
 }));
 
-// Keep plan in sync with user.plan when user is set
+// Sync plan depuis useAuthStore vers useAppStore.
+// On initialise immédiatement (persist hydrate AVANT l'enregistrement du subscriber),
+// puis on reste à l'écoute des changements ultérieurs (login, refresh, impersonate).
+{
+    const initialPlan = useAuthStore.getState().user?.plan;
+    if (initialPlan) useAppStore.getState().setPlan(initialPlan as Plan);
+}
 useAuthStore.subscribe((state) => {
     if (state.user?.plan) {
         useAppStore.getState().setPlan(state.user.plan as Plan);
