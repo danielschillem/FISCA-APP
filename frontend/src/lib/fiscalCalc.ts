@@ -1,10 +1,10 @@
 ﻿// ─── Fiscal calculation utilities (mirroring CGI 2025 engine) ─
 
 export const fmt = (n: number): string =>
-    `${Math.round(n).toLocaleString('fr-BF')} FCFA`;
+    `${Math.round(n).toLocaleString('fr-FR')} FCFA`;
 
 export const fmtN = (n: number): string =>
-    Math.round(n).toLocaleString('fr-BF');
+    Math.round(n).toLocaleString('fr-FR');
 
 export const pct = (n: number): string =>
     (n * 100).toFixed(1) + ' %';

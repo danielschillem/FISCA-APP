@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { declarationApi } from '../lib/api';
+import { declarationApi, companyApi } from '../lib/api';
 import { fmtN } from '../lib/fiscalCalc';
 import { Card, Btn, Badge, Spinner } from '../components/ui';
 import type { Declaration } from '../types';
@@ -177,6 +177,12 @@ export default function DeclarationsPage() {
     const [deleting, setDeleting] = useState<string | null>(null);
     const qc = useQueryClient();
 
+    const { data: company } = useQuery({
+        queryKey: ['company'],
+        queryFn: () => companyApi.get().then((r) => r.data),
+        staleTime: Infinity,
+    });
+
     const { data: declarations = [], isLoading } = useQuery<Declaration[]>({
         queryKey: ['declarations', annee],
         queryFn: () => declarationApi.list(annee).then((r) => r.data ?? []),
@@ -287,7 +293,7 @@ export default function DeclarationsPage() {
                                     <Btn
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => generatePDF(d)}
+                                        onClick={() => generatePDF(d, company?.nom)}
                                         title="Télécharger résumé PDF"
                                     >
                                         <FileDown className="w-4 h-4" /> PDF
