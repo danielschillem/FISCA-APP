@@ -32,7 +32,7 @@ export default function LoginPage() {
             const res = await authApi.login({ email, password });
             const data: AuthResponse = res.data;
             setAuth(data.token, data.user);
-            navigate('/dashboard');
+            navigate(data.user.role === 'super_admin' ? '/admin' : '/dashboard');
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
             setError(msg ?? 'Identifiants invalides');

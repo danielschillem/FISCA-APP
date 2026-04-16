@@ -30,11 +30,12 @@ const PAGE_META: Record<string, { title: string; subtitle?: string }> = {
 };
 
 export default function AppLayout() {
-    const { token } = useAuthStore();
+    const { token, user } = useAuthStore();
     const { sidebarOpen } = useAppStore();
     const location = useLocation();
 
     if (!token) return <Navigate to="/login" replace />;
+    if (user?.role === 'super_admin') return <Navigate to="/admin" replace />;
 
     const meta = PAGE_META[location.pathname] ?? { title: 'FISCA' };
 
