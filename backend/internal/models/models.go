@@ -76,6 +76,8 @@ type User struct {
 	Email        string    `json:"email" db:"email"`
 	PasswordHash string    `json:"-" db:"password_hash"`
 	Plan         string    `json:"plan" db:"plan"` // "starter" | "pro" | "enterprise"
+	Role         string    `json:"role" db:"role"` // "user" | "super_admin"
+	IsActive     bool      `json:"is_active" db:"is_active"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 }
 
@@ -390,5 +392,69 @@ type Notification struct {
 	Titre     string    `json:"titre"`
 	Message   string    `json:"message"`
 	Lu        bool      `json:"lu"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// ─── SUPER ADMIN ──────────────────────────────────────────────
+
+type License struct {
+	ID           string     `json:"id"`
+	UserID       string     `json:"user_id"`
+	Plan         string     `json:"plan"`   // "starter"|"pro"|"enterprise"|"custom"
+	Status       string     `json:"status"` // "trial"|"active"|"suspended"|"expired"
+	TrialEndsAt  *time.Time `json:"trial_ends_at"`
+	ExpiresAt    *time.Time `json:"expires_at"`
+	MaxCompanies int        `json:"max_companies"`
+	MaxEmployees int        `json:"max_employees"`
+	Notes        string     `json:"notes"`
+	CreatedBy    *string    `json:"created_by"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+}
+
+type AuditLog struct {
+	ID         string          `json:"id"`
+	AdminID    string          `json:"admin_id"`
+	AdminEmail string          `json:"admin_email,omitempty"`
+	Action     string          `json:"action"`
+	TargetType string          `json:"target_type"`
+	TargetID   *string         `json:"target_id"`
+	Details    json.RawMessage `json:"details"`
+	CreatedAt  time.Time       `json:"created_at"`
+}
+
+type AdminStats struct {
+	TotalUsers      int     `json:"total_users"`
+	ActiveUsers     int     `json:"active_users"`
+	SuspendedUsers  int     `json:"suspended_users"`
+	TrialUsers      int     `json:"trial_users"`
+	PlanStarter     int     `json:"plan_starter"`
+	PlanPro         int     `json:"plan_pro"`
+	PlanEnterprise  int     `json:"plan_enterprise"`
+	TotalCompanies  int     `json:"total_companies"`
+	ActiveCompanies int     `json:"active_companies"`
+	NewUsersLast30d int     `json:"new_users_last30d"`
+	EstimatedMRR    float64 `json:"estimated_mrr"`
+}
+
+type AdminUser struct {
+	ID           string    `json:"id"`
+	Email        string    `json:"email"`
+	Plan         string    `json:"plan"`
+	Role         string    `json:"role"`
+	IsActive     bool      `json:"is_active"`
+	CompanyCount int       `json:"company_count"`
+	CreatedAt    time.Time `json:"created_at"`
+	License      *License  `json:"license,omitempty"`
+}
+
+type AdminCompany struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`
+	UserEmail string    `json:"user_email"`
+	Nom       string    `json:"nom"`
+	IFU       string    `json:"ifu"`
+	Secteur   string    `json:"secteur"`
+	IsActive  bool      `json:"is_active"`
 	CreatedAt time.Time `json:"created_at"`
 }

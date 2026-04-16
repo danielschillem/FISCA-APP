@@ -1,19 +1,20 @@
-# render.yaml — FISCA Backend
+# render.yaml — FISCA Backend + Frontend
 # https://render.com/docs/yaml-spec
 #
 # Base de données : Neon PostgreSQL (gratuit, déjà créé)
-# Dashboard Next.js : Vercel https://fisca-app.vercel.app
 #
 # ── PROCÉDURE DE DÉPLOIEMENT ──────────────────────────────────────────────────
 # 1. Render Dashboard → New → Blueprint → repo danielschillem/FISCA-APP
-# 2. Render crée fisca-backend (service web Docker)
-# 3. Après création, aller dans fisca-backend → Environment → ajouter :
-#    DATABASE_URL = postgresql://neondb_owner:npg_RgjhPUx4ra3u@ep-curly-feather-alu1ikkd.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require
-# 4. Save Changes → le service redémarre et se connecte à Neon
+# 2. Render crée fisca-backend + fisca-frontend
+# 3. fisca-backend → Environment → ajouter :
+#    DATABASE_URL = <URL Neon PostgreSQL>
+#    OPENAI_API_KEY = sk-... (optionnel, pour l'assistant IA)
+# 4. fisca-frontend → Settings → Custom Domain (ex: app.fisca.bf)
 # 5. fisca-backend → Settings → Deploy Hook URL
 #    → GitHub Secrets → RENDER_DEPLOY_HOOK_BACKEND
 
 services:
+  # ── Backend Go ────────────────────────────────────────────────────────────
   - type: web
     name: fisca-backend
     runtime: docker
@@ -26,15 +27,17 @@ services:
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
-        sync: false        # → coller l'URL Neon manuellement (voir procédure ci-dessus)
+        sync: false        # → coller l'URL Neon manuellement
       - key: JWT_SECRET
         generateValue: true
       - key: PORT
         value: "8080"
       - key: ALLOWED_ORIGIN
-        value: "https://fisca-app.vercel.app"
+        sync: false        # → ex: https://fisca-frontend.onrender.com,https://app.fisca.bf
       - key: ADMIN_SECRET
-        sync: false        # → définir manuellement dans Render Dashboard
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false        # → clé API OpenAI pour l'assistant IA (optionnel)
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
@@ -45,3 +48,22 @@ services:
         sync: false
       - key: SMTP_FROM
         sync: false
+
+  # ── Frontend Vite (nginx) ─────────────────────────────────────────────────
+  - type: web
+    name: fisca-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    region: frankfurt
+    plan: free
+    autoDeploy: true
+    branch: main
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: fisca-backend
+          type: web
+          property: host
+          transform: "https://{value}/api"
+

@@ -54,10 +54,10 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	var user models.User
 	err = h.DB.QueryRow(r.Context(),
-		`INSERT INTO users (email, password_hash) VALUES ($1, $2)
-		 RETURNING id, email, plan, created_at`,
+		`INSERT INTO users (email, password_hash, role, is_active) VALUES ($1, $2, 'user', TRUE)
+		 RETURNING id, email, plan, role, is_active, created_at`,
 		req.Email, string(hash),
-	).Scan(&user.ID, &user.Email, &user.Plan, &user.CreatedAt)
+	).Scan(&user.ID, &user.Email, &user.Plan, &user.Role, &user.IsActive, &user.CreatedAt)
 	if err != nil {
 		jsonError(w, "Email déjà utilisé", http.StatusConflict)
 		return
@@ -69,7 +69,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		user.ID, req.Nom,
 	)
 
-	token, err := generateToken(user.ID)
+	token, err := generateToken(user.ID, user.Role)
 	if err != nil {
 		jsonError(w, "Erreur génération token", http.StatusInternalServerError)
 		return
@@ -91,11 +91,16 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	var user models.User
 	err := h.DB.QueryRow(r.Context(),
-		`SELECT id, email, password_hash, plan, created_at FROM users WHERE email=$1`,
+		`SELECT id, email, password_hash, plan, role, is_active, created_at FROM users WHERE email=$1`,
 		req.Email,
-	).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Plan, &user.CreatedAt)
+	).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Plan, &user.Role, &user.IsActive, &user.CreatedAt)
 	if err != nil {
 		jsonError(w, "Identifiants invalides", http.StatusUnauthorized)
+		return
+	}
+
+	if !user.IsActive {
+		jsonError(w, "Compte suspendu — contactez l'administrateur", http.StatusForbidden)
 		return
 	}
 
@@ -104,7 +109,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := generateToken(user.ID)
+	token, err := generateToken(user.ID, user.Role)
 	if err != nil {
 		jsonError(w, "Erreur génération token", http.StatusInternalServerError)
 		return
@@ -114,12 +119,13 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, models.AuthResponse{Token: token, RefreshToken: refreshToken, User: user})
 }
 
-func generateToken(userID string) (string, error) {
+func generateToken(userID, role string) (string, error) {
 	secret := []byte(os.Getenv("JWT_SECRET"))
 	claims := jwt.MapClaims{
-		"sub": userID,
-		"iat": time.Now().Unix(),
-		"exp": time.Now().Add(24 * time.Hour).Unix(), // access token court-durée ; renouvelé via refresh
+		"sub":  userID,
+		"role": role,
+		"iat":  time.Now().Unix(),
+		"exp":  time.Now().Add(24 * time.Hour).Unix(), // access token court-durée ; renouvelé via refresh
 	}
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secret)
 }
@@ -166,10 +172,15 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	var user models.User
 	h.DB.QueryRow(r.Context(),
-		`SELECT id, email, plan, created_at FROM users WHERE id=$1`, userID,
-	).Scan(&user.ID, &user.Email, &user.Plan, &user.CreatedAt)
+		`SELECT id, email, plan, role, is_active, created_at FROM users WHERE id=$1`, userID,
+	).Scan(&user.ID, &user.Email, &user.Plan, &user.Role, &user.IsActive, &user.CreatedAt)
 
-	token, err := generateToken(userID)
+	if !user.IsActive {
+		jsonError(w, "Compte suspendu", http.StatusForbidden)
+		return
+	}
+
+	token, err := generateToken(userID, user.Role)
 	if err != nil {
 		jsonError(w, "Erreur génération token", http.StatusInternalServerError)
 		return

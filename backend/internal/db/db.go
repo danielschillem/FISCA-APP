@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Connect initialise le pool de connexions PostgreSQL.
@@ -362,7 +363,82 @@ func RunMigrations(pool *pgxpool.Pool) error {
 		read_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 		PRIMARY KEY (user_id, notif_id)
 	);
+
+	-- ─── Super Admin (idempotent) ─────────────────────────────────────────────
+
+	ALTER TABLE users ADD COLUMN IF NOT EXISTS role      TEXT    NOT NULL DEFAULT 'user';
+	ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
+	ALTER TABLE companies ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
+
+	CREATE TABLE IF NOT EXISTS licenses (
+		id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		user_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+		plan          TEXT NOT NULL DEFAULT 'starter',
+		status        TEXT NOT NULL DEFAULT 'trial',
+		trial_ends_at TIMESTAMPTZ,
+		expires_at    TIMESTAMPTZ,
+		max_companies INT  NOT NULL DEFAULT 1,
+		max_employees INT  NOT NULL DEFAULT 50,
+		notes         TEXT NOT NULL DEFAULT '',
+		created_by    UUID REFERENCES users(id),
+		created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+
+	CREATE TABLE IF NOT EXISTS audit_logs (
+		id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		admin_id    UUID NOT NULL REFERENCES users(id),
+		action      TEXT NOT NULL,
+		target_type TEXT NOT NULL DEFAULT '',
+		target_id   TEXT,
+		details     JSONB NOT NULL DEFAULT '{}',
+		created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_licenses_user_id    ON licenses(user_id);
+	CREATE INDEX IF NOT EXISTS idx_audit_logs_admin    ON audit_logs(admin_id);
+	CREATE INDEX IF NOT EXISTS idx_audit_logs_created  ON audit_logs(created_at DESC);
 	`
 	_, err := pool.Exec(context.Background(), schema)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Seed super admin depuis les variables d'environnement (idempotent)
+	return seedSuperAdmin(pool)
+}
+
+// seedSuperAdmin crée le super admin à partir des variables d'env SUPERADMIN_EMAIL + SUPERADMIN_PASSWORD.
+// Opération idempotente : si le compte existe déjà, rien ne se passe.
+func seedSuperAdmin(pool *pgxpool.Pool) error {
+	email := os.Getenv("SUPERADMIN_EMAIL")
+	password := os.Getenv("SUPERADMIN_PASSWORD")
+	if email == "" || password == "" {
+		return nil // Super admin non configuré — OK en dev
+	}
+
+	var exists bool
+	pool.QueryRow(context.Background(),
+		`SELECT EXISTS(SELECT 1 FROM users WHERE email=$1 AND role='super_admin')`, email,
+	).Scan(&exists)
+	if exists {
+		return nil
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("seed super admin: hash password: %w", err)
+	}
+
+	_, err = pool.Exec(context.Background(),
+		`INSERT INTO users (email, password_hash, plan, role, is_active)
+		 VALUES ($1, $2, 'enterprise', 'super_admin', TRUE)
+		 ON CONFLICT (email) DO UPDATE SET role='super_admin', is_active=TRUE`,
+		email, string(hash),
+	)
+	if err != nil {
+		return fmt.Errorf("seed super admin: insert: %w", err)
+	}
+	fmt.Printf("[SUPERADMIN] Compte super admin créé : %s\n", email)
+	return nil
 }

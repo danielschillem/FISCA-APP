@@ -6,8 +6,9 @@ import { fmt, calcEmploye } from '../lib/fiscalCalc';
 import type { Bulletin, Employee } from '../types';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { MOIS_FR } from '../types';
-import { Zap, Download, Lock, FileSpreadsheet } from 'lucide-react';
+import { Zap, Download, Lock, FileSpreadsheet, FileText } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { exportBulletinPDF, exportAllBulletinsPDF } from '../lib/pdfBulletin';
 
 export default function BulletinsPage() {
     const { plan } = useAppStore();
@@ -77,28 +78,37 @@ function BulletinsContent() {
                 <div className="flex items-center gap-3 ml-auto">
                     <p className="text-sm text-gray-500">{bulletins.length} bulletin(s)</p>
                     {bulletins.length > 0 && (
-                        <Btn
-                            variant="outline"
-                            onClick={() => {
-                                const rows = bulletins.map((b) => ({
-                                    Employé: b.nom_employe,
-                                    Période: b.periode,
-                                    Catégorie: b.categorie,
-                                    Régime: b.cotisation,
-                                    'Brut (FCFA)': b.brut_total,
-                                    'IUTS net (FCFA)': b.iuts_net,
-                                    'Cotisation sociale (FCFA)': b.cotisation_sociale,
-                                    'TPA (FCFA)': b.tpa, 'FSP 1 % (FCFA)': b.fsp ?? 0, 'Net à payer (FCFA)': b.salaire_net,
-                                }));
-                                const ws = XLSX.utils.json_to_sheet(rows);
-                                const wb = XLSX.utils.book_new();
-                                XLSX.utils.book_append_sheet(wb, ws, 'Bulletins');
-                                XLSX.writeFile(wb, `bulletins-${MOIS_FR[mois - 1]}-${annee}.xlsx`);
-                            }}
-                            title="Exporter tous les bulletins en XLSX"
-                        >
-                            <FileSpreadsheet className="w-4 h-4" /> Export XLSX
-                        </Btn>
+                        <>
+                            <Btn
+                                variant="outline"
+                                onClick={() => exportAllBulletinsPDF(bulletins)}
+                                title="Exporter tous les bulletins en PDF"
+                            >
+                                <FileText className="w-4 h-4" /> PDF
+                            </Btn>
+                            <Btn
+                                variant="outline"
+                                onClick={() => {
+                                    const rows = bulletins.map((b) => ({
+                                        Employé: b.nom_employe,
+                                        Période: b.periode,
+                                        Catégorie: b.categorie,
+                                        Régime: b.cotisation,
+                                        'Brut (FCFA)': b.brut_total,
+                                        'IUTS net (FCFA)': b.iuts_net,
+                                        'Cotisation sociale (FCFA)': b.cotisation_sociale,
+                                        'TPA (FCFA)': b.tpa, 'FSP 1 % (FCFA)': b.fsp ?? 0, 'Net à payer (FCFA)': b.salaire_net,
+                                    }));
+                                    const ws = XLSX.utils.json_to_sheet(rows);
+                                    const wb = XLSX.utils.book_new();
+                                    XLSX.utils.book_append_sheet(wb, ws, 'Bulletins');
+                                    XLSX.writeFile(wb, `bulletins-${MOIS_FR[mois - 1]}-${annee}.xlsx`);
+                                }}
+                                title="Exporter tous les bulletins en XLSX"
+                            >
+                                <FileSpreadsheet className="w-4 h-4" /> XLSX
+                            </Btn>
+                        </>
                     )}
                     <Btn onClick={() => generate.mutate()} disabled={generate.isPending}>
                         {generate.isPending ? 'Génération…' : <><Zap className="w-4 h-4" /> Générer bulletins</>}
@@ -146,14 +156,6 @@ function PreviewBulletin({ employee: e, index }: { employee: Employee; index: nu
 }
 
 function BulletinCard({ bulletin: b }: { bulletin: Bulletin }) {
-    const exportPDF = () => bulletinApi.export(b.id).then((r) => {
-        const url = URL.createObjectURL(r.data);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Bulletin-${b.nom_employe}-${b.periode}.pdf`;
-        a.click();
-    });
-
     return (
         <Card>
             <div className="flex items-center justify-between mb-4">
@@ -162,7 +164,9 @@ function BulletinCard({ bulletin: b }: { bulletin: Bulletin }) {
                     <p className="text-xs text-gray-500">{b.periode} · {b.categorie}</p>
                 </div>
                 <div className="flex gap-2">
-                    <Btn size="sm" variant="outline" onClick={exportPDF}><Download className="w-3.5 h-3.5" /> PDF</Btn>
+                    <Btn size="sm" variant="outline" onClick={() => exportBulletinPDF(b)}>
+                        <FileText className="w-3.5 h-3.5" /> PDF
+                    </Btn>
                 </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

@@ -12,8 +12,9 @@ import (
 type contextKey string
 
 const UserIDKey contextKey = "userID"
+const RoleKey contextKey = "userRole"
 
-// Authenticate vérifie le JWT Bearer et injecte userID dans le contexte.
+// Authenticate vérifie le JWT Bearer et injecte userID + role dans le contexte.
 func Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		header := r.Header.Get("Authorization")
@@ -48,13 +49,37 @@ func Authenticate(next http.Handler) http.Handler {
 			return
 		}
 
+		role, _ := claims["role"].(string)
+		if role == "" {
+			role = "user"
+		}
+
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
+		ctx = context.WithValue(ctx, RoleKey, role)
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// RequireSuperAdmin bloque les requêtes dont le role JWT n'est pas "super_admin".
+func RequireSuperAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		role, _ := r.Context().Value(RoleKey).(string)
+		if role != "super_admin" {
+			http.Error(w, `{"error":"accès interdit — super admin requis"}`, http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 
 // GetUserID extrait le userID du contexte.
 func GetUserID(r *http.Request) string {
 	v, _ := r.Context().Value(UserIDKey).(string)
+	return v
+}
+
+// GetUserRole extrait le role du contexte.
+func GetUserRole(r *http.Request) string {
+	v, _ := r.Context().Value(RoleKey).(string)
 	return v
 }
