@@ -73,6 +73,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 	isH := handlers.NewISHandler(db)
 	cmeH := handlers.NewCMEHandler(db)
 	patenteH := handlers.NewPatenteHandler(db)
+	bilanH := handlers.NewBilanHandler(db)
 
 	// Routes publiques
 	r.Route("/api", func(r chi.Router) {
@@ -115,6 +116,8 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 
 			// Notifications
 			r.Get("/notifications", notifH.List)
+			r.Put("/notifications/read-all", notifH.ReadAll)
+			r.Put("/notifications/{id}/read", notifH.ReadOne)
 
 			// Assistant IA [Plan: Pro+] — rate limit 10 req/min (API OpenAI coûteuse)
 			assistantRateLimit := mw.RateLimit(10, 10.0/60)
@@ -254,6 +257,9 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			r.Patch("/patente/{id}/valider", patenteH.Valider)
 			r.Delete("/patente/{id}", patenteH.Delete)
 			r.Get("/patente/{id}/export", patenteH.Export)
+
+			// Bilan fiscal annuel agrégé [Plan: Pro+]
+			r.Get("/bilan", bilanH.Get)
 		})
 	})
 

@@ -220,9 +220,16 @@ export const dashboardApi = {
     get: () => api.get('/dashboard'),
 };
 
+// ── Bilan fiscal annuel ───────────────────────────────────────
+export const bilanApi = {
+    get: (annee?: number) => api.get('/bilan', { params: annee ? { annee } : undefined }),
+};
+
 // ── Notifications ─────────────────────────────────────────────
 export const notificationApi = {
     list: () => api.get('/notifications'),
+    readOne: (id: string) => api.put(`/notifications/${id}/read`),
+    readAll: (ids: string[]) => api.put('/notifications/read-all', { ids }),
 };
 
 // ── Workflow ─────────────────────────────────────────────────

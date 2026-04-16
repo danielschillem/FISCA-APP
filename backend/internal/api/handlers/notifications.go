@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/fisca-app/backend/internal/api/middleware"
+	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -26,6 +28,7 @@ type Notification struct {
 	Periode string `json:"periode,omitempty"`
 	Ref     string `json:"ref,omitempty"`
 	Lien    string `json:"lien,omitempty"`
+	Lu      bool   `json:"lu"`
 }
 
 // GET /api/notifications
@@ -183,5 +186,57 @@ func (h *NotificationHandler) List(w http.ResponseWriter, r *http.Request) {
 	if notifications == nil {
 		notifications = []Notification{}
 	}
+
+	// Marquer les notifications déjà lues
+	readRows, err := h.DB.Query(r.Context(),
+		`SELECT notif_id FROM user_notif_reads WHERE user_id=$1`, userID)
+	if err == nil {
+		defer readRows.Close()
+		readSet := map[string]bool{}
+		for readRows.Next() {
+			var nid string
+			if readRows.Scan(&nid) == nil {
+				readSet[nid] = true
+			}
+		}
+		for i := range notifications {
+			notifications[i].Lu = readSet[notifications[i].ID]
+		}
+	}
+
 	jsonOK(w, notifications)
+}
+
+// PUT /api/notifications/:id/read
+func (h *NotificationHandler) ReadOne(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
+	notifID := chi.URLParam(r, "id")
+	if notifID == "" {
+		jsonError(w, "ID manquant", http.StatusBadRequest)
+		return
+	}
+	h.DB.Exec(r.Context(), //nolint:errcheck
+		`INSERT INTO user_notif_reads(user_id, notif_id) VALUES($1,$2) ON CONFLICT DO NOTHING`,
+		userID, notifID)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// PUT /api/notifications/read-all
+func (h *NotificationHandler) ReadAll(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
+
+	var body struct {
+		IDs []string `json:"ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || len(body.IDs) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	for _, id := range body.IDs {
+		h.DB.Exec(r.Context(), //nolint:errcheck
+			`INSERT INTO user_notif_reads(user_id, notif_id) VALUES($1,$2) ON CONFLICT DO NOTHING`,
+			userID, id)
+	}
+	w.WriteHeader(http.StatusNoContent)
 }

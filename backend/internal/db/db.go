@@ -353,6 +353,15 @@ func RunMigrations(pool *pgxpool.Pool) error {
 	CREATE INDEX IF NOT EXISTS idx_is_company_id      ON is_declarations(company_id);
 	CREATE INDEX IF NOT EXISTS idx_cme_company_id     ON cme_declarations(company_id);
 	CREATE INDEX IF NOT EXISTS idx_patente_company_id ON patente_declarations(company_id);
+
+	-- ─── Sprint 2 : suivi lectures notifications ─────────────────────────────
+
+	CREATE TABLE IF NOT EXISTS user_notif_reads (
+		user_id  UUID NOT NULL,
+		notif_id TEXT NOT NULL,
+		read_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		PRIMARY KEY (user_id, notif_id)
+	);
 	`
 	_, err := pool.Exec(context.Background(), schema)
 	return err

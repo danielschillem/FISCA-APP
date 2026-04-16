@@ -308,6 +308,23 @@ export interface Notification {
     periode?: string;
     ref?: string;
     lien?: string;
+    lu: boolean;
+}
+
+export interface BilanData {
+    annee: number;
+    iuts: number;
+    tpa: number;
+    css: number;
+    ras: number;
+    tva: number;
+    cnss_patronal: number;
+    irf: number;
+    ircm: number;
+    is: number;
+    cme: number;
+    patente: number;
+    total: number;
 }
 
 export interface User {
