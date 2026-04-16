@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useAuthStore, useAppStore } from '../lib/store';
 import { authApi } from '../lib/api';
 import { PLAN_FEATURES, PLAN_LIMITS, type Plan } from '../types';
@@ -55,13 +56,21 @@ export default function AbonnementPage() {
     const { plan, setPlan } = useAppStore();
     const { user } = useAuthStore();
 
+    const [planError, setPlanError] = useState('');
+
     const switchPlan = async (p: Plan) => {
+        setPlanError('');
         try {
             await authApi.setPlan(p);
             setPlan(p);
-        } catch {
-            // In demo mode just switch locally
-            setPlan(p);
+        } catch (err: unknown) {
+            const status = (err as { response?: { status?: number } })?.response?.status;
+            if (status === 403) {
+                setPlanError('Changement de plan réservé à l\'administrateur. Contactez votre admin.');
+            } else {
+                // Demo / réseau : basculer localement
+                setPlan(p);
+            }
         }
     };
 
@@ -88,6 +97,12 @@ export default function AbonnementPage() {
                     </div>
                 </div>
             </Card>
+
+            {planError && (
+                <div className="rounded-lg bg-orange-50 border border-orange-200 px-4 py-3 text-sm text-orange-800">
+                    {planError}
+                </div>
+            )}
 
             {/* Plan cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

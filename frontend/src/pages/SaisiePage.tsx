@@ -18,6 +18,8 @@ export default function SaisiePage() {
     const [success, setSuccess] = useState('');
     const [importMsg, setImportMsg] = useState('');
     const [copyingN1, setCopyingN1] = useState(false);
+    const [page, setPage] = useState(1);
+    const LIMIT = 50;
     const importRef = useRef<HTMLInputElement>(null);
 
     const { plan } = useAppStore();
@@ -25,10 +27,13 @@ export default function SaisiePage() {
 
     const qc = useQueryClient();
 
-    const { data: employees = [], isLoading } = useQuery<Employee[]>({
-        queryKey: ['employees'],
-        queryFn: () => employeeApi.list().then((r) => r.data),
+    const { data: empResponse, isLoading } = useQuery({
+        queryKey: ['employees', page],
+        queryFn: () => employeeApi.list(page, LIMIT),
     });
+    const employees: Employee[] = empResponse?.data ?? [];
+    const totalEmployees = parseInt(empResponse?.headers?.['x-total-count'] ?? '0', 10);
+    const totalPages = Math.max(1, Math.ceil(totalEmployees / LIMIT));
 
     const addEmployee = useMutation({
         mutationFn: (data: object) => employeeApi.create(data),
@@ -267,11 +272,30 @@ export default function SaisiePage() {
                         <EmployeeCard
                             key={emp.id}
                             employee={emp}
-                            index={idx}
+                            index={(page - 1) * LIMIT + idx}
                             cotisation={cotisation}
                             onDelete={() => deleteEmployee.mutate(emp.id)}
                         />
                     ))
+                )}
+
+                {/* Pagination controls */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between py-2 px-1">
+                        <p className="text-xs text-gray-500">{totalEmployees} employé(s) · Page {page} / {totalPages}</p>
+                        <div className="flex gap-2">
+                            <button
+                                disabled={page <= 1}
+                                onClick={() => setPage((p) => p - 1)}
+                                className="px-3 py-1 text-xs border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
+                            >← Préc.</button>
+                            <button
+                                disabled={page >= totalPages}
+                                onClick={() => setPage((p) => p + 1)}
+                                className="px-3 py-1 text-xs border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
+                            >Suiv. →</button>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>

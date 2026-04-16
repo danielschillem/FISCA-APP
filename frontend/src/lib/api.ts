@@ -47,7 +47,7 @@ export const authApi = {
 
 // ── Employees ─────────────────────────────────────────────────
 export const employeeApi = {
-    list: () => api.get('/employees'),
+    list: (page = 1, limit = 50) => api.get('/employees', { params: { page, limit } }),
     create: (data: object) => api.post('/employees', data),
     update: (id: string, data: object) => api.put(`/employees/${id}`, data),
     delete: (id: string) => api.delete(`/employees/${id}`),
