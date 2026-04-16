@@ -10,6 +10,10 @@ import {
     calcIRCM,
     calcRAS,
     calcCME,
+    calcPenalite,
+    calcIS,
+    calcMFP,
+    calcPatente,
 } from './fiscalCalc'
 
 // ─── calcIUTS ─────────────────────────────────────────────────
@@ -156,6 +160,33 @@ describe('calcEmploye — bulletin salarial', () => {
         expect(res.exoLog).toBe(75_000)
         expect(res.exoTrans).toBe(30_000)
         expect(res.exoFonct).toBe(50_000)
+    })
+
+    it('netAPayer = remBrute − IUTS − CNSS − FSP (formule compl\u00e8te BF)', () => {
+        // FSP = 1 % \u00d7 (brute \u2212 IUTS \u2212 CNSS), pr\u00e9lev\u00e9 sur le salaire net
+        const inputs = [
+            { salaire_base: 150_000, anciennete: 7_500, heures_sup: 0, logement: 30_000, transport: 15_000, fonction: 0, charges: 1, categorie: 'Non-cadre' as const, cotisation: 'CNSS' as const },
+            { salaire_base: 400_000, anciennete: 0, heures_sup: 0, logement: 75_000, transport: 30_000, fonction: 50_000, charges: 3, categorie: 'Cadre' as const, cotisation: 'CARFO' as const },
+        ]
+        for (const e of inputs) {
+            const r = calcEmploye(e)
+            const netAvantFSP = r.remBrute - r.iutsNet - r.cotSoc
+            const fspExpected = Math.round(netAvantFSP * 0.01)
+            expect(r.fsp).toBe(fspExpected)
+            expect(r.netAPayer).toBe(netAvantFSP - fspExpected)
+        }
+    })
+
+    it('FSP = 1 % du net avant FSP (d\u00e9cret pr\u00e9sidentiel BF 2023)', () => {
+        const r = calcEmploye({
+            salaire_base: 200_000, anciennete: 0, heures_sup: 0,
+            logement: 0, transport: 0, fonction: 0,
+            charges: 0, categorie: 'Non-cadre', cotisation: 'CNSS',
+        })
+        const netAvantFSP = r.remBrute - r.iutsNet - r.cotSoc
+        expect(r.fsp).toBe(Math.round(netAvantFSP * 0.01))
+        // Le FSP est bien un entier FCFA
+        expect(Number.isInteger(r.fsp)).toBe(true)
     })
 })
 
@@ -323,3 +354,142 @@ describe('calcCME — Contribution Micro-Entreprises', () => {
         expect(res.cme).toBe(resA.cme)
     })
 })
+
+// ─── calcPenalite — CGI 2025 Art. 607 ─────────────────────────
+
+describe('calcPenalite — pénalités de retard', () => {
+    it('0 mois → 0', () => {
+        expect(calcPenalite(100_000, 0)).toBe(0)
+    })
+
+    it('montant 0 → 0', () => {
+        expect(calcPenalite(0, 3)).toBe(0)
+    })
+
+    it('1 mois → majoration 10 % + intérêts 1 % = 11 000 sur 100 000', () => {
+        // majoration = 10 000, intérêts = 1 000, total = 11 000
+        expect(calcPenalite(100_000, 1)).toBe(11_000)
+    })
+
+    it('3 mois → majoration 16 % + intérêts 3 % = 19 000 sur 100 000', () => {
+        // tauxMaj = 10 % + 2×3 % = 16 %; interets = 1 %×3 = 3 %
+        expect(calcPenalite(100_000, 3)).toBe(19_000)
+    })
+
+    it('plancher minimum 5 000 FCFA pour un très petit montant', () => {
+        // montant 1 000, 1 mois → 11 %, total = 110 < 5 000 → plancher = 5 000
+        expect(calcPenalite(1_000, 1)).toBe(5_000)
+    })
+
+    it('plafond 100 % du montant dû pour un retard très long', () => {
+        // Très long retard → total calculé dépasse 100 % → plafonné au montant dû
+        const montant = 1_000_000
+        const penalite = calcPenalite(montant, 100)
+        expect(penalite).toBeLessThanOrEqual(montant)
+    })
+
+    it('résultat toujours entier (pas de centimes en FCFA)', () => {
+        expect(Number.isInteger(calcPenalite(123_456, 2))).toBe(true)
+        expect(Number.isInteger(calcPenalite(77_777, 5))).toBe(true)
+    })
+})
+
+// ─── calcIS — IS/IBICA CGI 2025 Art. 42 ──────────────────────
+
+describe('calcIS — impôt sur les sociétés', () => {
+    it('taux 27.5 % sans CGA', () => {
+        const r = calcIS(100_000_000, false)
+        expect(r.is).toBe(27_500_000)
+    })
+
+    it('réduction CGA 30 % → 70 % de 27.5 %', () => {
+        const r = calcIS(100_000_000, true)
+        // 27 500 000 × 70 % = 19 250 000
+        expect(r.is).toBe(19_250_000)
+    })
+
+    it('bénéfice 0 → IS 0', () => {
+        expect(calcIS(0, false).is).toBe(0)
+    })
+
+    it('bénéfice 0 avec CGA → IS 0', () => {
+        expect(calcIS(0, true).is).toBe(0)
+    })
+
+    it('benefice retourné inchangé', () => {
+        const r = calcIS(50_000_000, false)
+        expect(r.benefice).toBe(50_000_000)
+    })
+})
+
+// ─── calcMFP — minimum forfaitaire de perception ──────────────
+
+describe('calcMFP — minimum forfaitaire de perception', () => {
+    it('CA faible → minimum 1 M (régime réel)', () => {
+        // CA 10M → 0.5 % = 50k < 1M → MFPDu = 1M
+        const r = calcMFP(10_000_000, 'reel', false)
+        expect(r.mfpDu).toBe(1_000_000)
+    })
+
+    it('CA faible → minimum 300k (régime RSI)', () => {
+        const r = calcMFP(1_000_000, 'RSI', false)
+        expect(r.mfpDu).toBe(300_000)
+    })
+
+    it('CA élevé → calculé dépasse le minimum', () => {
+        // CA 500M → 0.5 % = 2.5M > 1M → MFPDu = 2.5M
+        const r = calcMFP(500_000_000, 'reel', false)
+        expect(r.mfpDu).toBe(2_500_000)
+    })
+
+    it('réduction CGA 50 %', () => {
+        const r = calcMFP(500_000_000, 'reel', true)
+        expect(r.mfpDu).toBe(1_250_000)
+    })
+
+    it('mfpCalcule = CA × 0.5 %', () => {
+        const r = calcMFP(400_000_000, 'reel', false)
+        expect(r.mfpCalcule).toBe(2_000_000)
+    })
+
+    it('mfpMinimum RSI = 300 000', () => {
+        expect(calcMFP(0, 'RSI', false).mfpMinimum).toBe(300_000)
+    })
+
+    it('mfpMinimum réel = 1 000 000', () => {
+        expect(calcMFP(0, 'reel', false).mfpMinimum).toBe(1_000_000)
+    })
+})
+
+// ─── calcPatente — contribution des patentes ──────────────────
+
+describe('calcPatente — droits fixes et proportionnels', () => {
+    it('CA ≤ 5M → droit fixe 10 000', () => {
+        expect(calcPatente(5_000_000, 0).droitFixe).toBe(10_000)
+    })
+
+    it('CA = 200M → droit fixe 350 000', () => {
+        expect(calcPatente(200_000_000, 0).droitFixe).toBe(350_000)
+    })
+
+    it('droit proportionnel = 1 % de la valeur locative', () => {
+        // VL = 1 200 000 → 1 % = 12 000
+        expect(calcPatente(5_000_000, 1_200_000).droitProp).toBe(12_000)
+    })
+
+    it('totalPatente = droitFixe + droitProp', () => {
+        const r = calcPatente(20_000_000, 2_400_000)
+        expect(r.totalPatente).toBe(r.droitFixe + r.droitProp)
+    })
+
+    it('sans valeur locative → droitProp = 0', () => {
+        expect(calcPatente(5_000_000, 0).droitProp).toBe(0)
+    })
+
+    it('droit fixe croît avec le CA', () => {
+        const r1 = calcPatente(5_000_000, 0)
+        const r2 = calcPatente(100_000_000, 0)
+        expect(r2.droitFixe).toBeGreaterThan(r1.droitFixe)
+    })
+})
+
