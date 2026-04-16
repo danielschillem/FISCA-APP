@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { dashboardApi, declarationApi } from '../lib/api';
 import { StatCard, Card, Badge, Spinner } from '../components/ui';
-import { fmt, calcPenalite } from '../lib/fiscalCalc';
+import { fmt, fmtN, calcPenalite } from '../lib/fiscalCalc';
 import { MOIS_FR } from '../types';
 import { BarChart2, TrendingUp, Users, User, AlertTriangle, CheckCircle2, Clock, Minus, CalendarDays, ArrowRight } from 'lucide-react';
 import { getProchaines, TYPE_COLORS, type Echeance } from '../lib/fiscalCalendar';
@@ -204,6 +204,48 @@ export default function DashboardPage() {
                     <ArrowRight className="w-3.5 h-3.5" />
                 </button>
             </Card>
+
+            {/* Synthèse annuelle IUTS par mois */}
+            {declarations.length > 0 && (() => {
+                const maxVal = Math.max(...declarations.map((d: { iuts_total: number }) => d.iuts_total ?? 0), 1);
+                return (
+                    <Card title={`Synthèse annuelle ${anneeActuelle} — IUTS mensuel`}>
+                        <div className="space-y-2">
+                            {MOIS_COURT.map((m, idx) => {
+                                const decl = declarations.find((d: { mois: number }) => d.mois === idx + 1);
+                                const val = (decl as { iuts_total?: number } | undefined)?.iuts_total ?? 0;
+                                const pct = Math.round((val / maxVal) * 100);
+                                const barBg = !decl
+                                    ? 'bg-gray-200'
+                                    : (decl as { statut: string }).statut === 'ok' ? 'bg-green-400'
+                                    : (decl as { statut: string }).statut === 'retard' ? 'bg-red-400'
+                                    : 'bg-amber-400';
+                                const isCurrentMonth = idx === moisActuel;
+                                return (
+                                    <div key={m} className={`flex items-center gap-3 rounded-lg px-2 py-1 ${isCurrentMonth ? 'bg-blue-50' : ''}`}>
+                                        <span className={`text-[11px] w-8 shrink-0 font-medium ${isCurrentMonth ? 'text-blue-600' : 'text-gray-400'}`}>{m}</span>
+                                        <div className="flex-1 bg-gray-100 rounded-full h-3.5 overflow-hidden">
+                                            <div
+                                                className={`h-3.5 rounded-full transition-all duration-300 ${barBg}`}
+                                                style={{ width: pct > 0 ? `${pct}%` : '4px' }}
+                                            />
+                                        </div>
+                                        <span className="text-[11px] font-mono text-gray-600 w-24 text-right shrink-0">
+                                            {val > 0 ? fmtN(val) : '—'}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div className="flex gap-4 mt-4 text-[11px] text-gray-500">
+                            <span><span className="inline-block w-2 h-2 bg-green-400 rounded-full mr-1" />Déclaré</span>
+                            <span><span className="inline-block w-2 h-2 bg-red-400 rounded-full mr-1" />Retard</span>
+                            <span><span className="inline-block w-2 h-2 bg-amber-400 rounded-full mr-1" />En cours</span>
+                            <span><span className="inline-block w-2 h-2 bg-gray-200 rounded-full mr-1" />Attendu</span>
+                        </div>
+                    </Card>
+                );
+            })()}
         </div>
     );
 }

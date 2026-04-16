@@ -34,6 +34,7 @@ const CMEPage = lazy(() => import('./pages/CMEPage'));
 const ISPage = lazy(() => import('./pages/ISPage'));
 const PatentePage = lazy(() => import('./pages/PatentePage'));
 const CalendrierFiscalPage = lazy(() => import('./pages/CalendrierFiscalPage'));
+const ChecklistPage = lazy(() => import('./pages/ChecklistPage'));
 
 // Admin pages — lazy loaded
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
@@ -84,6 +85,7 @@ function App() {
               <Route path="/cnss-patronal" element={<CNSSPatronalPage />} />
               <Route path="/cme" element={<CMEPage />} />
               <Route path="/calendrier" element={<CalendrierFiscalPage />} />
+              <Route path="/checklist" element={<ChecklistPage />} />
               <Route path="/is" element={<ISPage />} />
               <Route path="/patente" element={<PatentePage />} />
               <Route path="/historique" element={<HistoriquePage />} />
