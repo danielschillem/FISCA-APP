@@ -2,13 +2,14 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { getEcheancesAnnee } from '../lib/fiscalCalendar';
 import { useAuthStore, useAppStore } from '../lib/store';
+import { usePermissions } from '../lib/permissions';
 import { PLAN_FEATURES, type Plan } from '../types';
 import { authApi } from '../lib/api';
 import {
     LayoutDashboard, PenLine, Calculator, FileText, FileCheck,
     Sliders, Receipt, Home, TrendingUp, Bot, Building2, GitBranch,
     BarChart2, Users, Store, BookOpen, Scroll, History, BarChart,
-    Star, Settings, Lock, LogOut, CalendarDays, ClipboardList, type LucideIcon,
+    Star, Settings, Lock, LogOut, CalendarDays, ClipboardList, UserCog, type LucideIcon,
 } from 'lucide-react';
 
 const PLAN_COLORS: Record<Plan, string> = {
@@ -85,6 +86,7 @@ export default function Sidebar() {
     const { plan, sidebarOpen, toggleSidebar } = useAppStore();
     const navigate = useNavigate();
     const planFeatures = PLAN_FEATURES[plan];
+    const { isAuditeur, roleLabel, roleBadgeColor } = usePermissions();
 
     const handleLogout = async () => {
         try { await authApi.logout(); } catch { /* ignore */ }
@@ -218,7 +220,13 @@ export default function Sidebar() {
                         </div>
                         <div className="min-w-0 flex-1">
                             <p className="text-xs font-medium text-slate-300 truncate">{user?.email ?? 'Utilisateur'}</p>
-                            <p className="text-[10px]" style={{ color: planColor }}>{PLAN_LABELS[plan]}</p>
+                            {roleLabel ? (
+                                <p className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold inline-block mt-0.5 border ${roleBadgeColor}`}>
+                                    {isAuditeur ? 'Lecture seule' : roleLabel}
+                                </p>
+                            ) : (
+                                <p className="text-[10px]" style={{ color: planColor }}>{PLAN_LABELS[plan]}</p>
+                            )}
                         </div>
                         <button
                             onClick={handleLogout}

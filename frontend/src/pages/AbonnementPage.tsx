@@ -1,169 +1,276 @@
-﻿import { useState } from 'react';
-import { useAuthStore, useAppStore } from '../lib/store';
-import { authApi } from '../lib/api';
-import { PLAN_FEATURES, PLAN_LIMITS, type Plan } from '../types';
-import { Card, Btn } from '../components/ui';
-import { Check } from 'lucide-react';
+﻿import { useAuthStore, useAppStore } from '../lib/store';
+import { usePermissions } from '../lib/permissions';
+import { Card } from '../components/ui';
+import {
+    Check, X, ArrowUpRight, Users, User, Building2, Lock, Zap, Star,
+} from 'lucide-react';
 
-const PLANS: { id: Plan; label: string; price: string; priceDetail: string; color: string; desc: string }[] = [
+// ─── Plan definitions ─────────────────────────────────────────
+
+const PHYSIQUE_PLANS = [
     {
-        id: 'starter',
-        label: 'Starter',
+        id: 'physique_starter',
+        label: 'Solo Starter',
         price: 'Gratuit',
-        priceDetail: '+ 2 000 FCFA / rapport',
-        color: '#6b7280',
-        desc: 'Pour les auto-entrepreneurs et micro-entreprises',
+        priceDetail: 'Toujours gratuit',
+        color: '#64748b',
+        accent: 'border-slate-300',
+        icon: User,
+        desc: 'Pour les auto-entrepreneurs et travailleurs indépendants.',
+        features: [
+            { label: 'Tableau de bord fiscal', ok: true },
+            { label: '3 employés maximum', ok: true },
+            { label: 'Calcul IUTS / TPA (CGI 2025)', ok: true },
+            { label: 'Rapport mensuel', ok: true },
+            { label: 'Export CSV', ok: true },
+            { label: 'Historique 3 mois', ok: true },
+            { label: 'Bulletins de paie PDF', ok: false },
+            { label: 'Simulateur fiscal A/B', ok: false },
+            { label: 'Assistant IA fiscal', ok: false },
+            { label: 'TVA / IRF / IS', ok: false },
+        ],
     },
     {
-        id: 'pro',
-        label: 'Pro',
-        price: '15 000 FCFA',
-        priceDetail: '/ mois · rapports inclus',
-        color: '#24a05a',
-        desc: 'Pour les PME et cabinets comptables',
+        id: 'physique_pro',
+        label: 'Solo Pro',
+        price: '10 000 FCFA',
+        priceDetail: '/ mois · engagement mensuel',
+        color: '#16a34a',
+        accent: 'border-green-400',
+        icon: Zap,
+        recommended: true,
+        desc: 'Pour les professionnels et les petites entreprises en croissance.',
+        features: [
+            { label: 'Tableau de bord fiscal', ok: true },
+            { label: '10 employés maximum', ok: true },
+            { label: 'Calcul IUTS / TPA / CNSS (CGI 2025)', ok: true },
+            { label: 'Bulletins de paie PDF', ok: true },
+            { label: 'Simulateur fiscal A/B', ok: true },
+            { label: 'Module TVA complet', ok: true },
+            { label: 'IRF / IRCM', ok: true },
+            { label: 'Assistant IA fiscal', ok: true },
+            { label: 'Historique 12 mois', ok: true },
+            { label: 'Multi-sociétés', ok: false },
+        ],
+    },
+];
+
+const MORAL_PLANS = [
+    {
+        id: 'moral_team',
+        label: 'Équipe',
+        price: '25 000 FCFA',
+        priceDetail: '/ mois · jusqu\'à 5 utilisateurs',
+        color: '#2563eb',
+        accent: 'border-blue-400',
+        icon: Users,
+        desc: 'Pour les équipes, cabinets comptables et PME multi-entités.',
+        features: [
+            { label: '5 utilisateurs internes', ok: true },
+            { label: '2 sociétés maximum', ok: true },
+            { label: '200 employés maximum', ok: true },
+            { label: 'Rôles : comptable, RH, auditeur', ok: true },
+            { label: 'Toutes les fonctions fiscales', ok: true },
+            { label: 'Workflow approbation', ok: true },
+            { label: 'Retenue à la source', ok: true },
+            { label: 'IS / CME / Patentes', ok: true },
+            { label: 'Historique 24 mois', ok: true },
+            { label: 'Sociétés / utilisateurs illimités', ok: false },
+        ],
     },
     {
-        id: 'enterprise',
+        id: 'moral_enterprise',
         label: 'Entreprise',
         price: 'Sur devis',
-        priceDetail: 'engagement annuel',
-        color: '#f97316',
-        desc: 'Pour les grands comptes et groupes multi-entités',
+        priceDetail: 'engagement annuel · SLA garanti',
+        color: '#ea580c',
+        accent: 'border-orange-400',
+        icon: Building2,
+        desc: 'Pour les grands comptes, groupes multi-entités et intégrateurs.',
+        features: [
+            { label: 'Utilisateurs illimités', ok: true },
+            { label: 'Sociétés illimitées', ok: true },
+            { label: 'Employés illimités', ok: true },
+            { label: 'Rôles personnalisés', ok: true },
+            { label: 'API & Webhooks', ok: true },
+            { label: 'Archivage 10 ans', ok: true },
+            { label: 'Connexion DGI (beta)', ok: true },
+            { label: 'SLA 99,9 % garanti', ok: true },
+            { label: 'Support dédié', ok: true },
+            { label: 'Historique illimité', ok: true },
+        ],
     },
 ];
 
-const FEAT_MATRIX: { label: string; starter: string | boolean; pro: string | boolean; ent: string | boolean }[] = [
-    { label: 'Employés', starter: '5 max', pro: '50 max', ent: 'Illimité' },
-    { label: 'IUTS / TPA (calcul)', starter: true, pro: true, ent: true },
-    { label: 'Rapports mensuels', starter: 'Payant', pro: 'Inclus', ent: 'Inclus' },
-    { label: 'Bulletins de paie PDF', starter: false, pro: true, ent: true },
-    { label: 'Simulateur fiscal A/B', starter: false, pro: true, ent: true },
-    { label: 'Module TVA complet', starter: false, pro: true, ent: true },
-    { label: 'IRF : Revenus fonciers', starter: false, pro: true, ent: true },
-    { label: 'IRCM : Capitaux mobiliers', starter: false, pro: true, ent: true },
-    { label: 'Assistant IA fiscal', starter: false, pro: true, ent: true },
-    { label: 'Export CSV / XLSX', starter: true, pro: true, ent: true },
-    { label: 'Multi-sociétés', starter: false, pro: false, ent: true },
-    { label: 'Workflow approbation', starter: false, pro: false, ent: true },
-    { label: 'Retenue à la source', starter: false, pro: false, ent: true },
-    { label: 'CNSS patronal complet', starter: false, pro: false, ent: true },
-    { label: 'CME / IS / Patentes', starter: false, pro: false, ent: true },
-    { label: 'API & Webhooks', starter: false, pro: false, ent: true },
-    { label: 'Archivage 10 ans', starter: false, pro: false, ent: true },
-];
+const UPGRADE_ORDER: Record<string, string> = {
+    physique_starter: 'physique_pro',
+    physique_pro: 'moral_team',
+    moral_team: 'moral_enterprise',
+    starter: 'physique_pro',
+    pro: 'moral_team',
+    enterprise: 'moral_enterprise',
+};
+
+type PlanDef = typeof PHYSIQUE_PLANS[0];
 
 export default function AbonnementPage() {
-    const { plan, setPlan } = useAppStore();
     const { user } = useAuthStore();
+    const { plan } = useAppStore();
+    const { isAuditeur, roleLabel } = usePermissions();
 
-    const [planError, setPlanError] = useState('');
+    const currentPlan = user?.plan ?? plan;
+    const userType = user?.user_type ?? 'physique';
+    const nextPlan = UPGRADE_ORDER[currentPlan];
 
-    const switchPlan = async (p: Plan) => {
-        setPlanError('');
-        try {
-            await authApi.setPlan(p);
-            setPlan(p);
-        } catch (err: unknown) {
-            const status = (err as { response?: { status?: number } })?.response?.status;
-            if (status === 403) {
-                setPlanError('Changement de plan réservé à l\'administrateur. Contactez votre admin.');
-            } else {
-                // Demo / réseau : basculer localement
-                setPlan(p);
-            }
-        }
+    const allPlans: PlanDef[] = [...PHYSIQUE_PLANS, ...MORAL_PLANS];
+    const currentDef = allPlans.find((p) => p.id === currentPlan);
+
+    const handleUpgrade = (planId: string) => {
+        const subject = planId === 'moral_enterprise'
+            ? 'Devis%20Plan%20Entreprise'
+            : `Upgrade%20vers%20${planId}`;
+        const body = planId === 'moral_enterprise'
+            ? 'Bonjour%2C%20je%20souhaite%20obtenir%20un%20devis%20pour%20le%20plan%20Entreprise.'
+            : `Bonjour%2C%20je%20souhaite%20passer%20au%20plan%20${planId}.`;
+        window.open(`mailto:contact@fisca.bf?subject=${subject}&body=${body}`, '_blank');
     };
 
-    const cell = (val: string | boolean, highlight: boolean) => {
-        if (val === true) return <td key="c" className="py-2.5 px-4 text-center text-green-600 font-bold"><Check className="w-4 h-4 mx-auto" /></td>;
-        if (val === false) return <td key="c" className="py-2.5 px-4 text-center text-gray-300">:</td>;
-        return <td key="c" className={`py-2.5 px-4 text-center text-xs ${highlight ? 'font-semibold' : ''}`}>{val}</td>;
+    const PlanCard = ({ p, isActive }: { p: PlanDef; isActive: boolean }) => {
+        const Icon = p.icon;
+        const isNextUpgrade = p.id === nextPlan;
+        const recommended = (p as { recommended?: boolean }).recommended;
+        return (
+            <div className={`relative rounded-2xl border-2 p-5 flex flex-col gap-4 transition-all ${isActive ? p.accent + ' shadow-lg' : 'border-gray-200'} ${recommended && !isActive ? 'ring-2 ring-green-300' : ''}`}>
+                {recommended && !isActive && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span className="bg-green-500 text-white text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                            <Star className="w-3 h-3" /> Recommandé
+                        </span>
+                    </div>
+                )}
+                {isActive && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span className="text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1 text-white" style={{ background: p.color }}>
+                            <Check className="w-3 h-3" /> Plan actif
+                        </span>
+                    </div>
+                )}
+                {/* Header */}
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ background: p.color }}>
+                        <Icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-gray-900 text-base">{p.label}</h3>
+                        <p className="text-[11px] text-gray-400">{p.desc}</p>
+                    </div>
+                </div>
+                {/* Prix */}
+                <div>
+                    <p className="text-2xl font-black" style={{ color: p.color }}>{p.price}</p>
+                    <p className="text-xs text-gray-400">{p.priceDetail}</p>
+                </div>
+                {/* Features */}
+                <ul className="space-y-1.5 flex-1">
+                    {p.features.map((f) => (
+                        <li key={f.label} className={`flex items-center gap-2 text-xs ${f.ok ? 'text-gray-700' : 'text-gray-300'}`}>
+                            {f.ok
+                                ? <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                                : <X className="w-3.5 h-3.5 text-gray-200 flex-shrink-0" />
+                            }
+                            {f.label}
+                        </li>
+                    ))}
+                </ul>
+                {/* CTA */}
+                {isActive ? (
+                    <div className="text-center text-sm font-semibold py-2 rounded-xl" style={{ background: p.color + '18', color: p.color }}>
+                        Votre plan actuel
+                    </div>
+                ) : isAuditeur ? (
+                    <div className="flex items-center justify-center gap-2 text-xs text-gray-400 py-2 rounded-xl bg-gray-50 border border-gray-100">
+                        <Lock className="w-3.5 h-3.5" /> Contactez votre administrateur
+                    </div>
+                ) : (
+                    <button
+                        onClick={() => handleUpgrade(p.id)}
+                        className="flex items-center justify-center gap-2 text-sm font-semibold py-2.5 rounded-xl text-white transition-all hover:opacity-90 active:scale-95"
+                        style={{ background: isNextUpgrade ? p.color : '#94a3b8' }}
+                    >
+                        {p.id === 'moral_enterprise' ? 'Demander un devis' : `Passer à ${p.label}`}
+                        <ArrowUpRight className="w-4 h-4" />
+                    </button>
+                )}
+            </div>
+        );
     };
 
     return (
-        <div className="space-y-6">
-            {/* Current plan */}
-            <Card>
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg"
-                        style={{ background: PLANS.find((p2) => p2.id === plan)?.color ?? '#6b7280' }}>
-                        {plan[0].toUpperCase()}
-                    </div>
-                    <div>
-                        <p className="font-semibold text-gray-900">
-                            Plan actuel : {PLANS.find((p2) => p2.id === plan)?.label}
-                        </p>
-                        <p className="text-xs text-gray-500">{user?.email}</p>
-                    </div>
+        <div className="space-y-8 max-w-5xl">
+            {/* Plan actuel résumé */}
+            <div className="rounded-2xl border-2 p-5 flex items-center gap-4" style={{ borderColor: currentDef?.color ?? '#94a3b8' }}>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0"
+                    style={{ background: currentDef?.color ?? '#94a3b8' }}>
+                    {currentDef && (() => { const Icon = currentDef.icon; return <Icon className="w-6 h-6" />; })()}
                 </div>
-            </Card>
-
-            {planError && (
-                <div className="rounded-lg bg-orange-50 border border-orange-200 px-4 py-3 text-sm text-orange-800">
-                    {planError}
+                <div className="flex-1">
+                    <p className="text-xs text-gray-500 font-medium">Plan actif</p>
+                    <p className="font-bold text-gray-900 text-lg">{currentDef?.label ?? currentPlan}</p>
+                    <p className="text-xs text-gray-400">{user?.email}</p>
                 </div>
-            )}
-
-            {/* Plan cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {PLANS.map((p2) => (
-                    <div
-                        key={p2.id}
-                        className={`rounded-xl border-2 p-5 transition-all ${plan === p2.id ? 'shadow-md' : 'border-gray-200'
-                            }`}
-                        style={plan === p2.id ? { borderColor: p2.color } : {}}
+                {roleLabel && (
+                    <div className="text-right">
+                        <p className="text-xs text-gray-400 mb-1">Votre rôle</p>
+                        <span className="text-xs font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-600">{roleLabel}</span>
+                    </div>
+                )}
+                {nextPlan && !isAuditeur && (
+                    <button
+                        onClick={() => handleUpgrade(nextPlan)}
+                        className="ml-4 flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 flex-shrink-0"
+                        style={{ background: allPlans.find((p) => p.id === nextPlan)?.color ?? '#16a34a' }}
                     >
-                        <div className="flex items-center gap-2 mb-3">
-                            <span className="w-8 h-8 rounded-lg text-white text-sm font-bold flex items-center justify-center"
-                                style={{ background: p2.color }}>
-                                {p2.label[0]}
-                            </span>
-                            <span className="font-bold text-gray-900">{p2.label}</span>
-                            {plan === p2.id && (
-                                <span className="ml-auto text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">Actif</span>
-                            )}
-                        </div>
-                        <p className="text-2xl font-bold text-gray-900 mb-0.5" style={{ color: p2.color }}>{p2.price}</p>
-                        <p className="text-xs text-gray-400 mb-3">{p2.priceDetail}</p>
-                        <p className="text-xs text-gray-500 mb-4">{p2.desc}</p>
-                        <Btn
-                            className="w-full justify-center"
-                            style={{ background: p2.color, borderColor: p2.color }}
-                            onClick={() => switchPlan(p2.id)}
-                            disabled={plan === p2.id}
-                        >
-                            {plan === p2.id ? 'Plan actuel' : `Passer à ${p2.label}`}
-                        </Btn>
-                    </div>
-                ))}
+                        Upgrader <ArrowUpRight className="w-4 h-4" />
+                    </button>
+                )}
             </div>
 
-            {/* Feature matrix */}
-            <Card title="Comparaison des fonctionnalités">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="text-xs font-semibold text-gray-500 border-b border-gray-200">
-                                <th className="text-left py-3 px-4">Fonctionnalité</th>
-                                {PLANS.map((p2) => (
-                                    <th key={p2.id} className="text-center py-3 px-4" style={{ color: p2.color }}>
-                                        {p2.label}
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {FEAT_MATRIX.map((f) => (
-                                <tr key={f.label} className="hover:bg-gray-50">
-                                    <td className="py-2.5 px-4 text-gray-700">{f.label}</td>
-                                    {cell(f.starter, plan === 'starter')}
-                                    {cell(f.pro, plan === 'pro')}
-                                    {cell(f.ent, plan === 'enterprise')}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+            {/* Personne Physique */}
+            <div>
+                <div className="flex items-center gap-3 mb-4">
+                    <User className="w-5 h-5 text-gray-400" />
+                    <h2 className="text-base font-bold text-gray-900">Personne Physique — Solo</h2>
+                    <span className="text-xs text-gray-400 hidden sm:block">Auto-entrepreneur, indépendant</span>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {PHYSIQUE_PLANS.map((p) => (
+                        <PlanCard key={p.id} p={p} isActive={currentPlan === p.id} />
+                    ))}
+                </div>
+            </div>
+
+            {/* Personne Morale */}
+            <div>
+                <div className="flex items-center gap-3 mb-4">
+                    <Building2 className="w-5 h-5 text-gray-400" />
+                    <h2 className="text-base font-bold text-gray-900">Personne Morale — Organisation</h2>
+                    <span className="text-xs text-gray-400 hidden sm:block">Entreprise, cabinet, groupe multi-entités</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {MORAL_PLANS.map((p) => (
+                        <PlanCard key={p.id} p={p} isActive={currentPlan === p.id} />
+                    ))}
+                </div>
+            </div>
+
+            {/* Note légale */}
+            <Card>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                    Tous les prix sont en <strong>FCFA</strong> et s'entendent hors taxes. Les paiements sont traités via
+                    Mobile Money (Orange Money, Moov) ou virement bancaire. Pour toute question ou devis personnalisé, contactez{' '}
+                    <a href="mailto:contact@fisca.bf" className="text-green-600 hover:underline font-medium">contact@fisca.bf</a>.
+                    FISCA est conforme au <strong>CGI 2025</strong> (Burkina Faso) et aux normes <strong>OHADA</strong>.
+                </p>
             </Card>
         </div>
     );

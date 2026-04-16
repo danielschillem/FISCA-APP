@@ -2,15 +2,48 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { dashboardApi, declarationApi } from '../lib/api';
+import { useAuthStore } from '../lib/store';
+import { usePermissions } from '../lib/permissions';
 import { StatCard, Card, Badge, Spinner } from '../components/ui';
 import { fmt, fmtN, calcPenalite } from '../lib/fiscalCalc';
 import { MOIS_FR } from '../types';
-import { BarChart2, TrendingUp, Users, User, AlertTriangle, CheckCircle2, Clock, Minus, CalendarDays, ArrowRight } from 'lucide-react';
+import {
+    BarChart2, TrendingUp, Users, User, AlertTriangle, CheckCircle2,
+    Clock, Minus, CalendarDays, ArrowRight, Eye, FileText, Receipt,
+    Home, BookOpen, PenLine, FileCheck, GitBranch, History,
+} from 'lucide-react';
 import { getProchaines, TYPE_COLORS, type Echeance } from '../lib/fiscalCalendar';
 
 const MOIS_COURT = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 
+// Liens rapides selon le rôle
+const QUICK_LINKS: Record<string, { to: string; label: string; icon: React.ElementType; color: string }[]> = {
+    comptable: [
+        { to: '/saisie', label: 'Saisie mensuelle', icon: PenLine, color: 'text-green-600 bg-green-50' },
+        { to: '/tva', label: 'Module TVA', icon: Receipt, color: 'text-blue-600 bg-blue-50' },
+        { to: '/irf', label: 'IRF Fonciers', icon: Home, color: 'text-purple-600 bg-purple-50' },
+        { to: '/is', label: 'IS / MFP', icon: BookOpen, color: 'text-orange-600 bg-orange-50' },
+        { to: '/workflow', label: 'Workflow', icon: GitBranch, color: 'text-gray-600 bg-gray-50' },
+        { to: '/historique', label: 'Historique', icon: History, color: 'text-gray-600 bg-gray-50' },
+    ],
+    gestionnaire_rh: [
+        { to: '/saisie', label: 'Saisie mensuelle', icon: PenLine, color: 'text-green-600 bg-green-50' },
+        { to: '/bulletins', label: 'Bulletins de paie', icon: FileCheck, color: 'text-blue-600 bg-blue-50' },
+        { to: '/cnss-patronal', label: 'CNSS Patronal', icon: Users, color: 'text-purple-600 bg-purple-50' },
+        { to: '/simulateur', label: 'Simulateur', icon: BarChart2, color: 'text-orange-600 bg-orange-50' },
+    ],
+    auditeur: [
+        { to: '/historique', label: 'Historique fiscal', icon: History, color: 'text-gray-600 bg-gray-50' },
+        { to: '/workflow', label: 'Workflow (lecture)', icon: GitBranch, color: 'text-blue-600 bg-blue-50' },
+        { to: '/bilan', label: 'Bilan annuel', icon: BarChart2, color: 'text-green-600 bg-green-50' },
+        { to: '/rapport', label: 'Rapports', icon: FileText, color: 'text-purple-600 bg-purple-50' },
+    ],
+};
+
 export default function DashboardPage() {
+    const { user } = useAuthStore();
+    const { isAuditeur, isComptable, isGestionnaireRH, roleLabel, roleBadgeColor } = usePermissions();
+
     const { data: kpi, isLoading: kpiLoading } = useQuery({
         queryKey: ['dashboard'],
         queryFn: () => dashboardApi.get().then((r) => r.data),
@@ -35,8 +68,38 @@ export default function DashboardPage() {
 
     if (kpiLoading) return <Spinner />;
 
+    const orgRole = user?.org_role;
+    const quickLinks = orgRole ? (QUICK_LINKS[orgRole] ?? []) : [];
+
     return (
         <div className="space-y-6">
+            {/* Bannière de rôle org (membres d'une organisation) */}
+            {roleLabel && (
+                <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${isAuditeur ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'}`}>
+                    <Eye className={`w-4 h-4 shrink-0 ${isAuditeur ? 'text-amber-500' : 'text-slate-400'}`} />
+                    <div className="flex-1">
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${roleBadgeColor}`}>
+                            {roleLabel}
+                        </span>
+                        {isAuditeur && (
+                            <span className="ml-2 text-xs text-amber-700">
+                                Vous avez un accès en lecture seule. Les actions de création et modification sont désactivées.
+                            </span>
+                        )}
+                        {isComptable && (
+                            <span className="ml-2 text-xs text-slate-500">
+                                Gestion des déclarations fiscales, TVA, IRF, IS.
+                            </span>
+                        )}
+                        {isGestionnaireRH && (
+                            <span className="ml-2 text-xs text-slate-500">
+                                Gestion des employés, saisies de paie et bulletins.
+                            </span>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Alert retards */}
             {retards.length > 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 flex items-start gap-3">
@@ -55,36 +118,42 @@ export default function DashboardPage() {
                 </div>
             )}
 
-            {/* KPI cards */}
+            {/* Raccourcis rapides selon le rôle */}
+            {quickLinks.length > 0 && (
+                <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Accès rapide</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                        {quickLinks.map(({ to, label, icon: Icon, color }) => (
+                            <button
+                                key={to}
+                                onClick={() => navigate(to)}
+                                className={`flex flex-col items-center gap-2 px-3 py-3 rounded-xl text-xs font-medium border border-transparent hover:border-current/20 transition-all ${color}`}
+                            >
+                                <Icon className="w-5 h-5" />
+                                <span className="text-center leading-tight">{label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* KPI cards — ordre adapté selon le rôle */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                <StatCard
-                    label="IUTS Net"
-                    value={fmt(kpi?.iuts_total ?? 0)}
-                    sub={`${MOIS_FR[moisActuel]} ${now.getFullYear()}`}
-                    color="green"
-                    icon={<BarChart2 className="w-5 h-5" />}
-                />
-                <StatCard
-                    label="TPA (3 %)"
-                    value={fmt(kpi?.tpa_total ?? 0)}
-                    sub={`${kpi?.nb_salaries ?? 0} salarié(s)`}
-                    color="blue"
-                    icon={<TrendingUp className="w-5 h-5" />}
-                />
-                <StatCard
-                    label="Cotisations CNSS/CARFO"
-                    value={fmt(kpi?.css_total ?? 0)}
-                    sub="Part salariale"
-                    color="orange"
-                    icon={<Users className="w-5 h-5" />}
-                />
-                <StatCard
-                    label="Salariés"
-                    value={String(kpi?.nb_salaries ?? 0)}
-                    sub="Employés actifs"
-                    color="gray"
-                    icon={<User className="w-5 h-5" />}
-                />
+                {isGestionnaireRH ? (
+                    <>
+                        <StatCard label="Salariés" value={String(kpi?.nb_salaries ?? 0)} sub="Employés actifs" color="green" icon={<User className="w-5 h-5" />} />
+                        <StatCard label="Cotisations CNSS/CARFO" value={fmt(kpi?.css_total ?? 0)} sub="Part salariale" color="blue" icon={<Users className="w-5 h-5" />} />
+                        <StatCard label="IUTS Net" value={fmt(kpi?.iuts_total ?? 0)} sub={`${MOIS_FR[moisActuel]} ${now.getFullYear()}`} color="orange" icon={<BarChart2 className="w-5 h-5" />} />
+                        <StatCard label="TPA (3 %)" value={fmt(kpi?.tpa_total ?? 0)} sub={`${kpi?.nb_salaries ?? 0} salarié(s)`} color="gray" icon={<TrendingUp className="w-5 h-5" />} />
+                    </>
+                ) : (
+                    <>
+                        <StatCard label="IUTS Net" value={fmt(kpi?.iuts_total ?? 0)} sub={`${MOIS_FR[moisActuel]} ${now.getFullYear()}`} color="green" icon={<BarChart2 className="w-5 h-5" />} />
+                        <StatCard label="TPA (3 %)" value={fmt(kpi?.tpa_total ?? 0)} sub={`${kpi?.nb_salaries ?? 0} salarié(s)`} color="blue" icon={<TrendingUp className="w-5 h-5" />} />
+                        <StatCard label="Cotisations CNSS/CARFO" value={fmt(kpi?.css_total ?? 0)} sub="Part salariale" color="orange" icon={<Users className="w-5 h-5" />} />
+                        <StatCard label="Salariés" value={String(kpi?.nb_salaries ?? 0)} sub="Employés actifs" color="gray" icon={<User className="w-5 h-5" />} />
+                    </>
+                )}
             </div>
 
             {/* Calendrier fiscal + Activité */}

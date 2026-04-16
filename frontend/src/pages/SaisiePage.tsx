@@ -4,6 +4,7 @@ import { employeeApi, declarationApi, bulletinApi } from '../lib/api';
 import { calcEmploye, fmt, fmtN } from '../lib/fiscalCalc';
 import type { Employee, Bulletin } from '../types';
 import { Card, Btn, Badge, Spinner, useAppStore, PLAN_FEATURES } from '../components/ui';
+import { usePermissions } from '../lib/permissions';
 import { MOIS_FR } from '../types';
 import { FileText, CheckCircle2, AlertCircle, X, Download, Upload, Copy } from 'lucide-react';
 
@@ -24,6 +25,7 @@ export default function SaisiePage() {
 
     const { plan } = useAppStore();
     const canCopyN1 = PLAN_FEATURES[plan]?.has('n1-copy');
+    const { canManageEmployees, canManageDeclarations, isAuditeur } = usePermissions();
 
     const qc = useQueryClient();
 
@@ -184,13 +186,15 @@ export default function SaisiePage() {
                         >
                             <Download className="w-4 h-4" /> Export CSV
                         </Btn>
-                        <Btn
-                            variant="outline"
-                            onClick={() => importRef.current?.click()}
-                            title="Importer des employés depuis un fichier CSV"
-                        >
-                            <Upload className="w-4 h-4" /> Import CSV
-                        </Btn>
+                        {canManageEmployees && (
+                            <Btn
+                                variant="outline"
+                                onClick={() => importRef.current?.click()}
+                                title="Importer des employés depuis un fichier CSV"
+                            >
+                                <Upload className="w-4 h-4" /> Import CSV
+                            </Btn>
+                        )}
                         <input
                             ref={importRef}
                             type="file"
@@ -198,7 +202,7 @@ export default function SaisiePage() {
                             className="hidden"
                             onChange={handleImport}
                         />
-                        {canCopyN1 && (
+                        {canCopyN1 && canManageEmployees && (
                             <Btn
                                 variant="outline"
                                 onClick={handleCopyN1}
@@ -208,26 +212,34 @@ export default function SaisiePage() {
                                 <Copy className="w-4 h-4" /> {copyingN1 ? 'Copie…' : 'Copier N-1'}
                             </Btn>
                         )}
-                        <Btn
-                            variant="outline"
-                            onClick={() => addEmployee.mutate({
-                                nom: 'Nouvel Employé',
-                                categorie: 'Non-cadre',
-                                cotisation: 'CNSS',
-                                charges: 0,
-                                salaire_base: 100000,
-                                anciennete: 0,
-                                heures_sup: 0,
-                                logement: 0,
-                                transport: 0,
-                                fonction: 0,
-                            })}
-                        >
-                            + Ajouter employé
-                        </Btn>
-                        <Btn onClick={handleGenerate} disabled={saving || employees.length === 0}>
-                            {saving ? 'Génération…' : <><FileText className="w-4 h-4" /> Générer déclaration</>}
-                        </Btn>
+                        {canManageEmployees && (
+                            <Btn
+                                variant="outline"
+                                onClick={() => addEmployee.mutate({
+                                    nom: 'Nouvel Employé',
+                                    categorie: 'Non-cadre',
+                                    cotisation: 'CNSS',
+                                    charges: 0,
+                                    salaire_base: 100000,
+                                    anciennete: 0,
+                                    heures_sup: 0,
+                                    logement: 0,
+                                    transport: 0,
+                                    fonction: 0,
+                                })}
+                            >
+                                + Ajouter employé
+                            </Btn>
+                        )}
+                        {canManageDeclarations ? (
+                            <Btn onClick={handleGenerate} disabled={saving || employees.length === 0}>
+                                {saving ? 'Génération…' : <><FileText className="w-4 h-4" /> Générer déclaration</>}
+                            </Btn>
+                        ) : (
+                            <Btn disabled title={isAuditeur ? 'Accès lecture seule' : 'Droits insuffisants'}>
+                                <FileText className="w-4 h-4" /> Générer déclaration
+                            </Btn>
+                        )}
                     </div>
                 </div>
                 {success && (
