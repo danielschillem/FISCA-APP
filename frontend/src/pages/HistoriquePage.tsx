@@ -46,7 +46,7 @@ export default function HistoriquePage() {
                     {([
                         { id: 'tableau', label: 'Tableau', Icon: FileSpreadsheet },
                         { id: 'graphique', label: 'Graphique', Icon: BarChart2 },
-                        { id: 'comparaison', label: `N-1 vs N`, Icon: GitCompare },
+                        { id: 'comparaison', label: `Évolution N-1 / N`, Icon: GitCompare },
                     ] as const).map(({ id, label, Icon }) => (
                         <button
                             key={id}

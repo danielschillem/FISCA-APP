@@ -52,7 +52,7 @@ const navSections: { label: string; items: NavItem[] }[] = [
             { to: '/simulateur', label: 'Simulateur fiscal', Icon: Sliders, feat: 'simulateur' },
             { to: '/tva', label: 'Module TVA', Icon: Receipt, feat: 'tva' },
             { to: '/irf', label: 'IRF - Revenus fonciers', Icon: Home, feat: 'irf' },
-            { to: '/ircm', label: 'IRCM - Capitaux mob.', Icon: TrendingUp, feat: 'ircm' },
+            { to: '/ircm', label: 'IRCM - Capitaux mobiliers', Icon: TrendingUp, feat: 'ircm' },
             { to: '/assistant', label: 'Assistant IA', Icon: Bot, feat: 'assistant' },
         ],
     },

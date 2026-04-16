@@ -8,7 +8,7 @@ type Module = 'iuts' | 'irf' | 'ircm' | 'cme' | 'patente' | 'is';
 const MODULES: { id: Module; label: string; Icon: LucideIcon }[] = [
     { id: 'iuts', label: 'IUTS / TPA / CNSS', Icon: Briefcase },
     { id: 'irf', label: 'IRF : Revenus Fonciers', Icon: Home },
-    { id: 'ircm', label: 'IRCM : Capitaux Mob.', Icon: TrendingUp },
+    { id: 'ircm', label: 'IRCM : Capitaux mobiliers', Icon: TrendingUp },
     { id: 'cme', label: 'CME : Micro-Entreprises', Icon: Store },
     { id: 'patente', label: 'Patentes', Icon: Scroll },
     { id: 'is', label: 'IS / MFP', Icon: BookOpen },
@@ -252,7 +252,7 @@ function IRCMCalc() {
 
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <Card title="IRCM : Impôt sur Revenus Capitaux Mob. (CGI 2025 Art. 140)">
+            <Card title="IRCM : Impôt sur les revenus des capitaux mobiliers (CGI 2025 Art. 140)">
                 <Select
                     label="Type de revenu"
                     options={TYPES}

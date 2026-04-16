@@ -40,7 +40,7 @@ const FEAT_MATRIX: { label: string; starter: string | boolean; pro: string | boo
     { label: 'Simulateur fiscal A/B', starter: false, pro: true, ent: true },
     { label: 'Module TVA complet', starter: false, pro: true, ent: true },
     { label: 'IRF : Revenus fonciers', starter: false, pro: true, ent: true },
-    { label: 'IRCM : Capitaux mob.', starter: false, pro: true, ent: true },
+    { label: 'IRCM : Capitaux mobiliers', starter: false, pro: true, ent: true },
     { label: 'Assistant IA fiscal', starter: false, pro: true, ent: true },
     { label: 'Export CSV / XLSX', starter: true, pro: true, ent: true },
     { label: 'Multi-sociétés', starter: false, pro: false, ent: true },
