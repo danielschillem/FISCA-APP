@@ -69,6 +69,49 @@ export interface Declaration {
     created_at: string;
 }
 
+export interface DashboardMois {
+    mois: number;
+    annee: number;
+    periode: string;
+    brut_total: number;
+    iuts_total: number;
+    tpa_total: number;
+    css_total: number;
+    total: number;
+    nb_salaries: number;
+    statut: string;
+}
+
+export interface DashboardKPI {
+    nb_employes: number;
+    nb_declarations: number;
+    mois_courant: DashboardMois;
+    mois_precedent: DashboardMois;
+    evolution_iuts_pct: number;
+    evolution_brut_pct: number;
+    total_annee: {
+        annee: number;
+        brut_total: number;
+        iuts_total: number;
+        tpa_total: number;
+        css_total: number;
+        total: number;
+    };
+    alertes_retard: {
+        declaration_id: string;
+        ref: string;
+        periode: string;
+        mois: number;
+        annee: number;
+        statut: string;
+    }[];
+    plan: {
+        plan: string;
+        nb_employes: number;
+        limite_employes: number;
+    };
+}
+
 export interface Bulletin {
     id: string;
     company_id: string;

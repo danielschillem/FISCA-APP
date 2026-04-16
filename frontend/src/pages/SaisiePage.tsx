@@ -217,11 +217,11 @@ export default function SaisiePage() {
                             <Btn
                                 variant="outline"
                                 onClick={() => addEmployee.mutate({
-                                    nom: 'Nouvel Employé',
+                                    nom: 'Nouvel employé',
                                     categorie: 'Non-cadre',
                                     cotisation: 'CNSS',
                                     charges: 0,
-                                    salaire_base: 100000,
+                                    salaire_base: 0,
                                     anciennete: 0,
                                     heures_sup: 0,
                                     logement: 0,
@@ -358,44 +358,44 @@ export default function SaisiePage() {
 
             {/* Vue Saisie : cartes éditables */}
             {vue === 'saisie' && (
-            <div className="space-y-4">
-                {employees.length === 0 ? (
-                    <Card>
-                        <p className="text-center text-gray-400 py-8">
-                            Aucun employé. Cliquez sur « Ajouter employé » pour commencer.
-                        </p>
-                    </Card>
-                ) : (
-                    employees.map((emp, idx) => (
-                        <EmployeeCard
-                            key={emp.id}
-                            employee={emp}
-                            index={(page - 1) * LIMIT + idx}
-                            cotisation={cotisation}
-                            onDelete={() => deleteEmployee.mutate(emp.id)}
-                        />
-                    ))
-                )}
+                <div className="space-y-4">
+                    {employees.length === 0 ? (
+                        <Card>
+                            <p className="text-center text-gray-400 py-8">
+                                Aucun employé. Cliquez sur « Ajouter employé » pour commencer.
+                            </p>
+                        </Card>
+                    ) : (
+                        employees.map((emp, idx) => (
+                            <EmployeeCard
+                                key={emp.id}
+                                employee={emp}
+                                index={(page - 1) * LIMIT + idx}
+                                cotisation={cotisation}
+                                onDelete={() => deleteEmployee.mutate(emp.id)}
+                            />
+                        ))
+                    )}
 
-                {/* Pagination controls */}
-                {totalPages > 1 && (
-                    <div className="flex items-center justify-between py-2 px-1">
-                        <p className="text-xs text-gray-500">{totalEmployees} employé(s) · Page {page} / {totalPages}</p>
-                        <div className="flex gap-2">
-                            <button
-                                disabled={page <= 1}
-                                onClick={() => setPage((p) => p - 1)}
-                                className="px-3 py-1 text-xs border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
-                            >← Préc.</button>
-                            <button
-                                disabled={page >= totalPages}
-                                onClick={() => setPage((p) => p + 1)}
-                                className="px-3 py-1 text-xs border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
-                            >Suiv. →</button>
+                    {/* Pagination controls */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between py-2 px-1">
+                            <p className="text-xs text-gray-500">{totalEmployees} employé(s) · Page {page} / {totalPages}</p>
+                            <div className="flex gap-2">
+                                <button
+                                    disabled={page <= 1}
+                                    onClick={() => setPage((p) => p - 1)}
+                                    className="px-3 py-1 text-xs border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
+                                >← Préc.</button>
+                                <button
+                                    disabled={page >= totalPages}
+                                    onClick={() => setPage((p) => p + 1)}
+                                    className="px-3 py-1 text-xs border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
+                                >Suiv. →</button>
+                            </div>
                         </div>
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
             )}
         </div>
     );

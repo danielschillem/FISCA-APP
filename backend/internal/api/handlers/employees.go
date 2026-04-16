@@ -22,12 +22,17 @@ func NewEmployeeHandler(db *pgxpool.Pool) *EmployeeHandler {
 	return &EmployeeHandler{DB: db}
 }
 
-// getCompanyID retourne l'ID de l'entreprise de l'utilisateur connecté.
+// getCompanyID retourne l'ID de l'entreprise depuis le contexte middleware,
+// avec fallback sur une requête directe si absent (compatibilité).
 func (h *EmployeeHandler) getCompanyID(r *http.Request) (string, error) {
+	if id := middleware.GetCompanyID(r); id != "" {
+		return id, nil
+	}
+	// Fallback : requête directe par user_id (utilisateurs physiques sans header)
 	userID := middleware.GetUserID(r)
 	var companyID string
 	err := h.DB.QueryRow(r.Context(),
-		`SELECT id FROM companies WHERE user_id=$1 LIMIT 1`,
+		`SELECT id FROM companies WHERE user_id=$1 ORDER BY nom LIMIT 1`,
 		userID,
 	).Scan(&companyID)
 	return companyID, err

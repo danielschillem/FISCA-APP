@@ -7,6 +7,7 @@ import { usePermissions } from '../lib/permissions';
 import { StatCard, Card, Badge, Spinner } from '../components/ui';
 import { fmt, fmtN, calcPenalite } from '../lib/fiscalCalc';
 import { MOIS_FR } from '../types';
+import type { DashboardKPI } from '../types';
 import {
     BarChart2, TrendingUp, Users, User, AlertTriangle, CheckCircle2,
     Clock, Minus, CalendarDays, ArrowRight, Eye, FileText, Receipt,
@@ -44,7 +45,7 @@ export default function DashboardPage() {
     const { user } = useAuthStore();
     const { isAuditeur, isComptable, isGestionnaireRH, roleLabel, roleBadgeColor } = usePermissions();
 
-    const { data: kpi, isLoading: kpiLoading } = useQuery({
+    const { data: kpi, isLoading: kpiLoading } = useQuery<DashboardKPI>({
         queryKey: ['dashboard'],
         queryFn: () => dashboardApi.get().then((r) => r.data),
     });
@@ -141,17 +142,17 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 {isGestionnaireRH ? (
                     <>
-                        <StatCard label="Salariés" value={String(kpi?.nb_salaries ?? 0)} sub="Employés actifs" color="green" icon={<User className="w-5 h-5" />} />
-                        <StatCard label="Cotisations CNSS/CARFO" value={fmt(kpi?.css_total ?? 0)} sub="Part salariale" color="blue" icon={<Users className="w-5 h-5" />} />
-                        <StatCard label="IUTS Net" value={fmt(kpi?.iuts_total ?? 0)} sub={`${MOIS_FR[moisActuel]} ${now.getFullYear()}`} color="orange" icon={<BarChart2 className="w-5 h-5" />} />
-                        <StatCard label="TPA (3 %)" value={fmt(kpi?.tpa_total ?? 0)} sub={`${kpi?.nb_salaries ?? 0} salarié(s)`} color="gray" icon={<TrendingUp className="w-5 h-5" />} />
+                        <StatCard label="Salariés" value={String(kpi?.nb_employes ?? 0)} sub="Employés actifs" color="green" icon={<User className="w-5 h-5" />} />
+                        <StatCard label="Cotisations CNSS/CARFO" value={fmt(kpi?.mois_courant?.css_total ?? 0)} sub="Part salariale" color="blue" icon={<Users className="w-5 h-5" />} />
+                        <StatCard label="IUTS Net" value={fmt(kpi?.mois_courant?.iuts_total ?? 0)} sub={`${MOIS_FR[moisActuel]} ${now.getFullYear()}`} color="orange" icon={<BarChart2 className="w-5 h-5" />} />
+                        <StatCard label="TPA (3 %)" value={fmt(kpi?.mois_courant?.tpa_total ?? 0)} sub={`${kpi?.nb_employes ?? 0} salarié(s)`} color="gray" icon={<TrendingUp className="w-5 h-5" />} />
                     </>
                 ) : (
                     <>
-                        <StatCard label="IUTS Net" value={fmt(kpi?.iuts_total ?? 0)} sub={`${MOIS_FR[moisActuel]} ${now.getFullYear()}`} color="green" icon={<BarChart2 className="w-5 h-5" />} />
-                        <StatCard label="TPA (3 %)" value={fmt(kpi?.tpa_total ?? 0)} sub={`${kpi?.nb_salaries ?? 0} salarié(s)`} color="blue" icon={<TrendingUp className="w-5 h-5" />} />
-                        <StatCard label="Cotisations CNSS/CARFO" value={fmt(kpi?.css_total ?? 0)} sub="Part salariale" color="orange" icon={<Users className="w-5 h-5" />} />
-                        <StatCard label="Salariés" value={String(kpi?.nb_salaries ?? 0)} sub="Employés actifs" color="gray" icon={<User className="w-5 h-5" />} />
+                        <StatCard label="IUTS Net" value={fmt(kpi?.mois_courant?.iuts_total ?? 0)} sub={`${MOIS_FR[moisActuel]} ${now.getFullYear()}`} color="green" icon={<BarChart2 className="w-5 h-5" />} />
+                        <StatCard label="TPA (3 %)" value={fmt(kpi?.mois_courant?.tpa_total ?? 0)} sub={`${kpi?.nb_employes ?? 0} salarié(s)`} color="blue" icon={<TrendingUp className="w-5 h-5" />} />
+                        <StatCard label="Cotisations CNSS/CARFO" value={fmt(kpi?.mois_courant?.css_total ?? 0)} sub="Part salariale" color="orange" icon={<Users className="w-5 h-5" />} />
+                        <StatCard label="Salariés" value={String(kpi?.nb_employes ?? 0)} sub="Employés actifs" color="gray" icon={<User className="w-5 h-5" />} />
                     </>
                 )}
             </div>
