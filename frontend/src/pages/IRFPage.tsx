@@ -51,11 +51,11 @@ function IRFContent() {
 
     return (
         <div className="max-w-3xl space-y-6">
-            <Card title="IRF — Impôt sur les Revenus Fonciers">
-                <p className="text-xs text-gray-500 mb-4">CGI 2025 — Art. 121-126 · Abattement 50 % · Taux progressif 18 % / 25 %</p>
+            <Card title="IRF ï¿½ Impï¿½t sur les Revenus Fonciers">
+                <p className="text-xs text-gray-500 mb-4">CGI 2025 ï¿½ Art. 121-126 ï¿½ Abattement 50 % ï¿½ Taux progressif 18 % / 25 %</p>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Année fiscale</label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Annï¿½e fiscale</label>
                         <input type="number" value={annee} onChange={(e) => setAnnee(+e.target.value)}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
                     </div>
@@ -69,16 +69,16 @@ function IRFContent() {
                     <Btn onClick={calc}>Calculer</Btn>
                     {result && (
                         <Btn variant="outline" onClick={() => createMut.mutate()} disabled={createMut.isPending}>
-                            {createMut.isPending ? 'Enregistrement…' : <><Save className="w-4 h-4" /> Enregistrer</>}
+                            {createMut.isPending ? 'Enregistrementï¿½' : <><Save className="w-4 h-4" /> Enregistrer</>}
                         </Btn>
                     )}
                 </div>
                 {createMut.isError && <p className="text-xs text-red-600 mt-2">Erreur lors de l'enregistrement</p>}
-                {createMut.isSuccess && <p className="text-xs text-green-600 mt-2">Déclaration enregistrée ?</p>}
+                {createMut.isSuccess && <p className="text-xs text-green-600 mt-2">Dï¿½claration enregistrï¿½e ?</p>}
             </Card>
 
             {result && (
-                <Card title="Résultat IRF">
+                <Card title="Rï¿½sultat IRF">
                     <div className="space-y-2">
                         {[
                             { l: 'Loyer brut', v: fmt(result.loyerBrut) },
@@ -102,7 +102,7 @@ function IRFContent() {
 
             <Card title={`Historique IRF`}>
                 <div className="flex items-center gap-3 mb-3">
-                    <label className="text-xs text-gray-600">Année :</label>
+                    <label className="text-xs text-gray-600">Annï¿½e :</label>
                     <select value={annee} onChange={(e) => setAnnee(+e.target.value)}
                         className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none">
                         {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map((y) => (
@@ -111,15 +111,15 @@ function IRFContent() {
                     </select>
                 </div>
                 {isLoading ? <Spinner /> : history.length === 0 ? (
-                    <p className="text-xs text-gray-400 py-4 text-center">Aucune déclaration IRF pour {annee}</p>
+                    <p className="text-xs text-gray-400 py-4 text-center">Aucune dï¿½claration IRF pour {annee}</p>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-xs">
                             <thead>
                                 <tr className="text-gray-500 border-b border-gray-100">
-                                    <th className="text-left py-2">Réf.</th>
+                                    <th className="text-left py-2">Rï¿½f.</th>
                                     <th className="text-right py-2">Loyer brut</th>
-                                    <th className="text-right py-2">IRF dû</th>
+                                    <th className="text-right py-2">IRF dï¿½</th>
                                     <th className="text-center py-2">Statut</th>
                                     <th className="text-right py-2">Actions</th>
                                 </tr>
@@ -127,12 +127,12 @@ function IRFContent() {
                             <tbody className="divide-y divide-gray-50">
                                 {history.map((d) => (
                                     <tr key={d.id} className="hover:bg-gray-50">
-                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? '—'}</td>
+                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? 'ï¿½'}</td>
                                         <td className="py-2 text-right">{fmt(d.loyer_brut)}</td>
                                         <td className="py-2 text-right font-semibold text-red-700">{fmt(d.irf_total)}</td>
                                         <td className="py-2 text-center">
                                             <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${d.statut === 'declare' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                                {d.statut === 'declare' ? 'Déclaré' : 'Brouillon'}
+                                                {d.statut === 'declare' ? 'Dï¿½clarï¿½' : 'Brouillon'}
                                             </span>
                                         </td>
                                         <td className="py-2 text-right">
@@ -161,12 +161,12 @@ function IRFContent() {
                 )}
             </Card>
 
-            <Card title="Base légale">
+            <Card title="Base lï¿½gale">
                 <ul className="text-xs text-gray-500 space-y-1">
-                    <li>• Art. 121 CGI 2025 : revenus provenant de la location d'immeubles</li>
-                    <li>• Art. 122 : Abattement forfaitaire de 50 % sur le loyer brut</li>
-                    <li>• Art. 124 : Taux progressif 18 % jusqu'à 100 000 FCFA base nette, 25 % au-delà</li>
-                    <li>• Déclaration annuelle avant le 30 avril</li>
+                    <li>ï¿½ Art. 121 CGI 2025 : revenus provenant de la location d'immeubles</li>
+                    <li>ï¿½ Art. 122 : Abattement forfaitaire de 50 % sur le loyer brut</li>
+                    <li>ï¿½ Art. 124 : Taux progressif 18 % jusqu'ï¿½ 100 000 FCFA base nette, 25 % au-delï¿½</li>
+                    <li>ï¿½ Dï¿½claration annuelle avant le 30 avril</li>
                 </ul>
             </Card>
         </div>
@@ -178,8 +178,8 @@ function Locked() {
         <div className="flex items-center justify-center min-h-[50vh]">
             <div className="text-center max-w-xs">
                 <Lock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Fonctionnalité <span className="text-green-600">Pro</span></h2>
-                <p className="text-gray-500 text-sm">Passez au plan Pro pour accéder au module IRF.</p>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Fonctionnalitï¿½ <span className="text-green-600">Pro</span></h2>
+                <p className="text-gray-500 text-sm">Passez au plan Pro pour accï¿½der au module IRF.</p>
             </div>
         </div>
     );
