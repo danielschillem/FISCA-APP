@@ -88,8 +88,7 @@ function BulletinsContent() {
                                     'Brut (FCFA)': b.brut_total,
                                     'IUTS net (FCFA)': b.iuts_net,
                                     'Cotisation sociale (FCFA)': b.cotisation_sociale,
-                                    'TPA (FCFA)': b.tpa,
-                                    'Net à payer (FCFA)': b.salaire_net,
+                                    'TPA (FCFA)': b.tpa, 'FSP 1 % (FCFA)': b.fsp ?? 0, 'Net à payer (FCFA)': b.salaire_net,
                                 }));
                                 const ws = XLSX.utils.json_to_sheet(rows);
                                 const wb = XLSX.utils.book_new();
@@ -140,8 +139,7 @@ function PreviewBulletin({ employee: e, index }: { employee: Employee; index: nu
             <div className="space-y-1.5 text-sm">
                 <Row label="Brut total" value={fmt(r.remBrute)} />
                 <Row label="IUTS net" value={`- ${fmt(r.iutsNet)}`} />
-                <Row label={`${e.cotisation}`} value={`- ${fmt(r.cotSoc)}`} />
-                <Row label="Net à payer" value={fmt(r.netAPayer)} bold />
+                <Row label={`${e.cotisation}`} value={`- ${fmt(r.cotSoc)}`} />                <Row label="FSP (1 %)" value={`- ${fmt(r.fsp)}`} />                <Row label="Net à payer" value={fmt(r.netAPayer)} bold />
             </div>
         </Card>
     );
@@ -170,7 +168,8 @@ function BulletinCard({ bulletin: b }: { bulletin: Bulletin }) {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <Metric label="Brut" value={fmt(b.brut_total)} />
                 <Metric label="IUTS net" value={fmt(b.iuts_net)} color="text-green-700" />
-                <Metric label={b.cotisation} value={fmt(b.cotisation_sociale)} color="text-blue-700" />
+                <Metric label={b.cotisation} value={fmt(b.cotisation_sociale ?? 0)} color="text-blue-700" />
+                <Metric label="FSP (1 %)" value={fmt(b.fsp ?? 0)} color="text-orange-700" />
                 <Metric label="Net à payer" value={fmt(b.salaire_net)} color="text-gray-900" />
             </div>
         </Card>

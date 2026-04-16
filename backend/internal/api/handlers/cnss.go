@@ -16,10 +16,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Taux CNSS Burkina Faso (LF 2020)
+// Taux CNSS Burkina Faso — CGI 2025 / Code du Travail
 const (
-	TauxPatronalCNSS  = 16.0 // % de la base cotisable (employeur)
-	TauxSalarialCNSS  = 5.5  // % de la base cotisable (salarié)
+	// Patronal : Famille 7,2 % + Accident 3,4 % + Retraite 5,5 % = 16,1 %
+	TauxPatronalCNSS  = 16.1 // % de la base cotisable (employeur)
+	TauxSalarialCNSS  = 5.5  // % de la base cotisable (salarié, retraite)
 	TauxPatronalCARFO = 7.0  // % de la base cotisable (employeur)
 	TauxSalarialCARFO = 6.0  // % de la base cotisable (salarié)
 )
@@ -173,8 +174,8 @@ func (h *CNSSHandler) Generer(w http.ResponseWriter, r *http.Request) {
 			`SELECT COALESCE(css_total,0) FROM declarations
 			 WHERE company_id=$1 AND mois=$2 AND annee=$3 LIMIT 1`,
 			companyID, req.Mois, req.Annee).Scan(&cssTotal)
-		// estimer base via taux salarial CNSS (5.5%)
-		baseCNSS = round2(cssTotal / (TauxSalarialCNSS / 100))
+		// estimer base via taux salarial CNSS (5.5%) — arrondi au FCFA entier
+		baseCNSS = math.Round(cssTotal / (TauxSalarialCNSS / 100))
 		res := calc.CalcCNSSPatronal(baseCNSS, "CNSS")
 		patCNSS = res.TotalPatronal
 		salCNSS = res.CotSalariale

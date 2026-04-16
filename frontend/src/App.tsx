@@ -10,28 +10,28 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 
 // App pages — lazy loaded (un chunk par page)
-const DashboardPage    = lazy(() => import('./pages/DashboardPage'));
-const SaisiePage       = lazy(() => import('./pages/SaisiePage'));
-const CalculPage       = lazy(() => import('./pages/CalculPage'));
-const RapportPage      = lazy(() => import('./pages/RapportPage'));
-const BulletinsPage    = lazy(() => import('./pages/BulletinsPage'));
-const SimulateurPage   = lazy(() => import('./pages/SimulateurPage'));
-const TVAPage          = lazy(() => import('./pages/TVAPage'));
-const AssistantPage    = lazy(() => import('./pages/AssistantPage'));
-const BilanPage        = lazy(() => import('./pages/BilanPage'));
-const SocietesPage     = lazy(() => import('./pages/SocietesPage'));
-const WorkflowPage     = lazy(() => import('./pages/WorkflowPage'));
-const RetenuesPage     = lazy(() => import('./pages/RetenuesPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const SaisiePage = lazy(() => import('./pages/SaisiePage'));
+const CalculPage = lazy(() => import('./pages/CalculPage'));
+const RapportPage = lazy(() => import('./pages/RapportPage'));
+const BulletinsPage = lazy(() => import('./pages/BulletinsPage'));
+const SimulateurPage = lazy(() => import('./pages/SimulateurPage'));
+const TVAPage = lazy(() => import('./pages/TVAPage'));
+const AssistantPage = lazy(() => import('./pages/AssistantPage'));
+const BilanPage = lazy(() => import('./pages/BilanPage'));
+const SocietesPage = lazy(() => import('./pages/SocietesPage'));
+const WorkflowPage = lazy(() => import('./pages/WorkflowPage'));
+const RetenuesPage = lazy(() => import('./pages/RetenuesPage'));
 const CNSSPatronalPage = lazy(() => import('./pages/CNSSPatronalPage'));
-const HistoriquePage   = lazy(() => import('./pages/HistoriquePage'));
-const ParametresPage   = lazy(() => import('./pages/ParametresPage'));
-const AbonnementPage   = lazy(() => import('./pages/AbonnementPage'));
-const ExercicePage     = lazy(() => import('./pages/ExercicePage'));
-const IRFPage          = lazy(() => import('./pages/IRFPage'));
-const IRCMPage         = lazy(() => import('./pages/IRCMPage'));
-const CMEPage          = lazy(() => import('./pages/CMEPage'));
-const ISPage           = lazy(() => import('./pages/ISPage'));
-const PatentePage      = lazy(() => import('./pages/PatentePage'));
+const HistoriquePage = lazy(() => import('./pages/HistoriquePage'));
+const ParametresPage = lazy(() => import('./pages/ParametresPage'));
+const AbonnementPage = lazy(() => import('./pages/AbonnementPage'));
+const ExercicePage = lazy(() => import('./pages/ExercicePage'));
+const IRFPage = lazy(() => import('./pages/IRFPage'));
+const IRCMPage = lazy(() => import('./pages/IRCMPage'));
+const CMEPage = lazy(() => import('./pages/CMEPage'));
+const ISPage = lazy(() => import('./pages/ISPage'));
+const PatentePage = lazy(() => import('./pages/PatentePage'));
 
 const qc = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },

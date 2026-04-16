@@ -38,7 +38,7 @@ func (h *BulletinHandler) companyID(r *http.Request) (string, error) {
 const bulletinCols = `id, company_id, employee_id, mois, annee, periode,
 	nom_employe, categorie, salaire_base, anciennete, heures_sup,
 	logement, transport, fonction, charges, cotisation,
-	brut_total, base_imp, iuts_brut, iuts_net, cot_soc, tpa, salaire_net, created_at`
+	brut_total, base_imp, iuts_brut, iuts_net, cot_soc, tpa, fsp, salaire_net, created_at`
 
 func scanBulletin(row interface {
 	Scan(...any) error
@@ -47,7 +47,7 @@ func scanBulletin(row interface {
 		&b.ID, &b.CompanyID, &b.EmployeeID, &b.Mois, &b.Annee, &b.Periode,
 		&b.NomEmploye, &b.Categorie, &b.SalaireBase, &b.Anciennete, &b.HeuresSup,
 		&b.Logement, &b.Transport, &b.Fonction, &b.Charges, &b.Cotisation,
-		&b.BrutTotal, &b.BaseImp, &b.IUTSBrut, &b.IUTSNet, &b.CotSoc, &b.TPA, &b.SalaireNet, &b.CreatedAt,
+		&b.BrutTotal, &b.BaseImp, &b.IUTSBrut, &b.IUTSNet, &b.CotSoc, &b.TPA, &b.FSP, &b.SalaireNet, &b.CreatedAt,
 	)
 }
 
@@ -165,17 +165,17 @@ func (h *BulletinHandler) Generate(w http.ResponseWriter, r *http.Request) {
 			`INSERT INTO bulletins
 			 (company_id, employee_id, mois, annee, periode, nom_employe, categorie,
 			  salaire_base, anciennete, heures_sup, logement, transport, fonction, charges, cotisation,
-			  brut_total, base_imp, iuts_brut, iuts_net, cot_soc, tpa, salaire_net)
-			 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+			  brut_total, base_imp, iuts_brut, iuts_net, cot_soc, tpa, fsp, salaire_net)
+			 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
 			 RETURNING `+bulletinCols,
 			companyID, empID, req.Mois, req.Annee, periode, nom, categorie,
 			salBase, anc, hSup, log, trans, fonc, charges, empCotisation,
-			res.BrutTotal, res.BaseImp, res.IUTSBrut, res.IUTSNet, res.CotSoc, res.TPA, res.SalaireNet,
+			res.BrutTotal, res.BaseImp, res.IUTSBrut, res.IUTSNet, res.CotSoc, res.TPA, res.FSP, res.SalaireNet,
 		).Scan(
 			&b.ID, &b.CompanyID, &b.EmployeeID, &b.Mois, &b.Annee, &b.Periode,
 			&b.NomEmploye, &b.Categorie, &b.SalaireBase, &b.Anciennete, &b.HeuresSup,
 			&b.Logement, &b.Transport, &b.Fonction, &b.Charges, &b.Cotisation,
-			&b.BrutTotal, &b.BaseImp, &b.IUTSBrut, &b.IUTSNet, &b.CotSoc, &b.TPA, &b.SalaireNet, &b.CreatedAt,
+			&b.BrutTotal, &b.BaseImp, &b.IUTSBrut, &b.IUTSNet, &b.CotSoc, &b.TPA, &b.FSP, &b.SalaireNet, &b.CreatedAt,
 		)
 		if err == nil {
 			bulletins = append(bulletins, b)

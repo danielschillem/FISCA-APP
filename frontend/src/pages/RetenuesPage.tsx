@@ -7,13 +7,13 @@ import { Card, Btn, Spinner, Table } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { X, Lock } from 'lucide-react';
 
-// Types retenue alignés sur le backend (CGI 2025 Art. 137)
+// Types retenue — CGI 2025 Art. 206-207 (RAS) et Art. 121-126/140 (IRF/IRCM)
 const RETENUE_TYPES: Record<string, { label: string; taux: number }> = {
-    services: { label: 'Prestations de services (20 %)', taux: 20 },
-    loyer: { label: 'Revenus locatifs (15 %)', taux: 15 },
-    dividendes: { label: 'Dividendes (12,5 %)', taux: 12.5 },
-    interets: { label: 'Intérêts (10 %)', taux: 10 },
-    autre: { label: 'Autre / non-résident (25 %)', taux: 25 },
+    services: { label: 'Prestations de services — Résident IFU (5 %)', taux: 5 },
+    loyer: { label: 'Loyers — IRF min. 9 % (utiliser calculateur IRF pour montants importants)', taux: 9 },
+    dividendes: { label: 'Dividendes — IRCM (12,5 %)', taux: 12.5 },
+    interets: { label: 'Intérêts/Créances — IRCM (25 %)', taux: 25 },
+    autre: { label: 'Autre / Résident sans IFU / Non-résident (25 %)', taux: 25 },
 };
 
 export default function RetenuesPage() {

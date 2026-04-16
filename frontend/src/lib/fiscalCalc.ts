@@ -66,7 +66,9 @@ export interface EmployeeCalcResult {
     tauxForf: number; abattForf: number;
     sni: number; baseImp: number;
     iutsBrut: number; abattFam: number; iutsNet: number;
-    retPersonnel: number; netAPayer: number;
+    fsp: number;        // Fonds de Soutien Patriotique 1 %
+    retPersonnel: number; // alias fsp — rétro-compat
+    netAPayer: number;
     tauxEffectif: number;
 }
 
@@ -93,9 +95,12 @@ export function calcEmploye(e: EmployeeInput): EmployeeCalcResult {
     const abattFam = calcAbattFamilial(iutsBrut, e.charges);
     const iutsNet = Math.max(0, iutsBrut - abattFam);
 
-    const netAvant = remBrute - iutsNet - cotSoc;
-    const retPersonnel = Math.round(netAvant * 0.01);
-    const netAPayer = netAvant - retPersonnel;
+    // FSP — Fonds de Soutien Patriotique (décret présidentiel BF 2023)
+    // 1 % prélevé sur le salaire net (brute − IUTS − CNSS) de tout salarié BF
+    const netAvantFSP = remBrute - iutsNet - cotSoc;
+    const fsp = Math.round(netAvantFSP * 0.01);
+    const retPersonnel = fsp; // alias rétro-compat
+    const netAPayer = netAvantFSP - fsp;
 
     const tauxEffectif = remBrute > 0 ? (iutsNet / remBrute) * 100 : 0;
 
@@ -105,7 +110,7 @@ export function calcEmploye(e: EmployeeInput): EmployeeCalcResult {
         tauxForf, abattForf,
         sni, baseImp,
         iutsBrut, abattFam, iutsNet,
-        retPersonnel, netAPayer,
+        fsp, retPersonnel, netAPayer,
         tauxEffectif,
     };
 }
@@ -229,8 +234,19 @@ export function calcPatente(ca: number, valeurLocative: number) {
 }
 
 // Pénalités de retard CGI 2025 Art. 607
+// Retourne le total des pénalités = majoration + intérêts moratoires,
+// plafonné à 100 % du montant dû, avec un plancher minimum de 5 000 FCFA.
 export function calcPenalite(montant: number, moisRetard: number): number {
     if (moisRetard <= 0 || montant <= 0) return 0;
-    const taux = 0.10 + (moisRetard - 1) * 0.03;
-    return Math.round(montant * taux);
+    // Majoration : 10 % 1er mois + 3 % par mois supplémentaire, plafond 100 %
+    const tauxMaj = Math.min(0.10 + (moisRetard - 1) * 0.03, 1.00);
+    const majoration = Math.round(montant * tauxMaj);
+    // Intérêts moratoires : 1 % par mois × nombre de mois
+    const interets = Math.round(montant * 0.01 * moisRetard);
+    let total = majoration + interets;
+    // Plafond : ne peut pas dépasser 100 % du montant dû
+    if (total > montant) total = Math.round(montant);
+    // Plancher : minimum 5 000 FCFA
+    if (total < 5_000) total = 5_000;
+    return total;
 }

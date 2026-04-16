@@ -15,13 +15,22 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Taux de retenue à la source BF (LF 2020)
+// Taux de retenue à la source BF — CGI 2025
+// Clés conservées pour compatibilité base de données.
 var TauxRetenue = map[string]float64{
-	"services":   20.0, // Honoraires/services résidents BF
-	"loyer":      15.0, // Revenus locatifs
-	"dividendes": 12.5, // Dividendes
-	"interets":   10.0, // Intérêts
-	"autre":      25.0, // Autre (non-résidents / inconnu)
+	// Art. 206 CGI 2025 : résident avec IFU → 5 %
+	// (résident sans IFU → utiliser type "autre" à 25 %)
+	"services": 5.0,
+	// IRF CGI 2025 Art. 121-126 : abatt. 50 % + 18 %/25 % progressif.
+	// Taux effectif minimum = 9 % (loyer ≤ 200 000 FCFA/mois).
+	// Pour loyers importants, utiliser le calculateur IRF intégré.
+	"loyer": 9.0,
+	// IRCM CGI 2025 Art. 140 — dividendes : 12,5 %
+	"dividendes": 12.5,
+	// IRCM CGI 2025 Art. 140 — intérêts/créances : 25 %
+	"interets": 25.0,
+	// Art. 206 CGI 2025 : résident sans IFU / non-résident
+	"autre": 25.0,
 }
 
 type RetenueHandler struct {
@@ -162,8 +171,9 @@ func (h *RetenueHandler) Create(w http.ResponseWriter, r *http.Request) {
 		taux = *req.TauxCustom
 	}
 
-	montantRetenue := math.Round(req.MontantBrut*taux/100*100) / 100
-	montantNet := math.Round((req.MontantBrut-montantRetenue)*100) / 100
+	// Arrondi au FCFA entier (FCFA est indivisible — pas de centimes)
+	montantRetenue := math.Round(req.MontantBrut * taux / 100)
+	montantNet := req.MontantBrut - montantRetenue
 	periode := fmt.Sprintf("%s %d", moisLabel(req.Mois), req.Annee)
 
 	var ref *string

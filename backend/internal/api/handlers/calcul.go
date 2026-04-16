@@ -34,8 +34,8 @@ func (h *CalculHandler) Calcul(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "Les montants ne peuvent pas être négatifs ou invalides", http.StatusBadRequest)
 		return
 	}
-	if req.Charges < 0 || req.Charges > 6 {
-		jsonError(w, "Charges familiales : valeur entre 0 et 6", http.StatusBadRequest)
+	if req.Charges < 0 || req.Charges > 4 {
+		jsonError(w, "Charges familiales : valeur entre 0 et 4 (CGI 2025 Art. 113)", http.StatusBadRequest)
 		return
 	}
 	if req.Categorie != "Cadre" && req.Categorie != "Non-cadre" {
@@ -64,10 +64,11 @@ func (h *CalculHandler) Calcul(w http.ResponseWriter, r *http.Request) {
 		IUTSNet:      res.IUTSNet,
 		CotSoc:       res.CotSoc,
 		TPA:          res.TPA,
+		FSP:          res.FSP,
 		SalaireNet:   res.NetAPayer,
 		AbattForf:    res.AbattForf,
 		AbattFam:     res.AbattFam,
-		RetPersonnel: res.RetPersonnel,
+		RetPersonnel: res.FSP, // alias FSP — rétro-compat
 	})
 }
 

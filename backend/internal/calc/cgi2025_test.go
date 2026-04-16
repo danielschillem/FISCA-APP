@@ -479,6 +479,42 @@ func TestCalcPenaliteRetard_Plafond(t *testing.T) {
 	}
 }
 
+// TestCalcPenaliteRetard_MajorationPlusInterets vérifie que les intérêts
+// moratoires sont bien ajoutés à la majoration dans le total.
+func TestCalcPenaliteRetard_MajorationPlusInterets(t *testing.T) {
+	// 2 mois : majoration = 13 %, intérêts = 2 % → total = 15 %
+	res := calc.CalcPenaliteRetard(100_000, 2)
+	wantMaj := 13_000.0   // 100k × (10%+3%)
+	wantInt := 2_000.0    // 100k × 1% × 2 mois
+	wantTotal := 15_000.0 // majoration + intérêts
+	if res.Majoration != wantMaj {
+		t.Errorf("Majoration 2 mois = %v, want %v", res.Majoration, wantMaj)
+	}
+	if res.Interets != wantInt {
+		t.Errorf("Interets 2 mois = %v, want %v", res.Interets, wantInt)
+	}
+	if res.TotalPenalite != wantTotal {
+		t.Errorf("TotalPenalite 2 mois = %v, want %v", res.TotalPenalite, wantTotal)
+	}
+}
+
+// TestCalcPenaliteRetard_EntierFCFA vérifie que le résultat est toujours entier.
+func TestCalcPenaliteRetard_EntierFCFA(t *testing.T) {
+	cases := []struct {
+		montant float64
+		mois    int
+	}{
+		{123_456, 2}, {77_777, 5}, {999_999, 1}, {500_001, 3},
+	}
+	for _, c := range cases {
+		res := calc.CalcPenaliteRetard(c.montant, c.mois)
+		if res.TotalPenalite != math.Round(res.TotalPenalite) {
+			t.Errorf("TotalPenalite(%.0f, %d) = %v — pas entier (FCFA indivisible)",
+				c.montant, c.mois, res.TotalPenalite)
+		}
+	}
+}
+
 // ─── SMIG ──────────────────────────────────────────────────────
 
 func TestSMIG_Positif(t *testing.T) {

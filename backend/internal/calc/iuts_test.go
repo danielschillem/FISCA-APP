@@ -3,6 +3,7 @@
 package calc_test
 
 import (
+	"math"
 	"testing"
 
 	"github.com/fisca-app/backend/internal/calc"
@@ -183,6 +184,45 @@ func TestCalcSalarie_TableDrivenIUTS(t *testing.T) {
 		got := calc.CalcIUTS(tc.baseImp)
 		if got != tc.wantIUTS {
 			t.Errorf("CalcIUTS(%.0f) = %.0f, want %.0f", tc.baseImp, got, tc.wantIUTS)
+		}
+	}
+}
+
+// TestCalcSalarie_NetAPayer_FSP vérifie que le FSP = 1 % du net avant FSP
+// et que NetAPayer = Brute − IUTS − CNSS − FSP (décret présidentiel BF 2023).
+func TestCalcSalarie_NetAPayer_FSP(t *testing.T) {
+	cases := []calc.SalarieInput{
+		{SalaireBase: 150000, Anciennete: 7500, Logement: 30000, Transport: 15000, Charges: 1, Cotisation: "CNSS"},
+		{SalaireBase: 400000, Logement: 75000, Transport: 30000, Fonction: 50000, Charges: 3, Categorie: "Cadre", Cotisation: "CARFO"},
+		{SalaireBase: 95000, Anciennete: 4750, Logement: 20000, Transport: 15000, Cotisation: "CNSS"},
+	}
+	for _, e := range cases {
+		res := calc.CalcSalarie(e)
+		// FSP = 1 % du net avant FSP
+		netAvantFSP := res.RemBrute - res.IUTSNet - res.CotSoc
+		fspExpected := math.Round(netAvantFSP * 0.01)
+		if res.FSP != fspExpected {
+			t.Errorf("FSP = %.0f, want %.0f (= 1 %% × %.0f)", res.FSP, fspExpected, netAvantFSP)
+		}
+		// NetAPayer = netAvantFSP − FSP
+		expectedNet := math.Round(netAvantFSP - res.FSP)
+		if res.NetAPayer != expectedNet {
+			t.Errorf("NetAPayer = %.0f, want %.0f", res.NetAPayer, expectedNet)
+		}
+	}
+}
+
+// TestCalcSalarie_FSP_EntierFCFA vérifie que le FSP est toujours un entier (FCFA indivisible).
+func TestCalcSalarie_FSP_EntierFCFA(t *testing.T) {
+	cases := []calc.SalarieInput{
+		{SalaireBase: 123456, Cotisation: "CNSS"},
+		{SalaireBase: 77777, Charges: 2, Cotisation: "CARFO"},
+		{SalaireBase: 300000, Anciennete: 15000, Logement: 50000, Transport: 25000, Cotisation: "CNSS"},
+	}
+	for _, e := range cases {
+		res := calc.CalcSalarie(e)
+		if res.FSP != math.Round(res.FSP) {
+			t.Errorf("FSP = %v — pas entier (FCFA indivisible)", res.FSP)
 		}
 	}
 }

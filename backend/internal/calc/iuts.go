@@ -50,9 +50,11 @@ const (
 	exoLogement  = 75000
 	exoTransport = 30000
 	exoFonction  = 50000
-	// Retenue personnel 1 %
-	personnelTaux = 0.01
-	maxCharges    = 4
+	// FSP — Fonds de Soutien Patriotique (décret présidentiel BF 2023)
+	// 1 % prélevé sur le salaire net (brute − IUTS − CNSS) de tout salarié BF.
+	// Non codifié dans le CGI mais obligatoire et à faire figurer sur le bulletin.
+	fspTaux    = 0.01
+	maxCharges = 4
 )
 
 // CalcIUTS calcule l'IUTS brut progressif sur la base imposable (CGI 2025 Art. 112).
@@ -112,24 +114,26 @@ type SalarieInput struct {
 
 // SalarieResult contient le détail complet du calcul.
 type SalarieResult struct {
-	RemBrute     float64
-	CotSoc       float64
-	TPA          float64
-	ExoLog       float64
-	ExoTrans     float64
-	ExoFonct     float64
-	TauxForf     float64
-	AbattForf    float64
-	SNI          float64
-	BaseImp      float64
-	IUTSBrut     float64
-	AbattFam     float64
-	IUTSNet      float64
-	RetPersonnel float64
-	NetAPayer    float64
+	RemBrute  float64
+	CotSoc    float64
+	TPA       float64
+	ExoLog    float64
+	ExoTrans  float64
+	ExoFonct  float64
+	TauxForf  float64
+	AbattForf float64
+	SNI       float64
+	BaseImp   float64
+	IUTSBrut  float64
+	AbattFam  float64
+	IUTSNet   float64
+	// FSP — Fonds de Soutien Patriotique (1 % du salaire net avant FSP)
+	FSP       float64
+	NetAPayer float64
 	// Compat anciens champs
-	BrutTotal  float64
-	SalaireNet float64
+	BrutTotal    float64
+	SalaireNet   float64
+	RetPersonnel float64 // alias FSP pour rétro-compatibilité
 }
 
 // CalcSalarie effectue le calcul fiscal complet (CGI 2025).
@@ -173,29 +177,31 @@ func CalcSalarie(e SalarieInput) SalarieResult {
 	abattFam := calcAbattFamilial(iutsBrut, e.Charges)
 	iutsNet := math.Max(0, iutsBrut-abattFam)
 
-	// 10. Retenue 1 % personnel
-	netAvantPersonnel := remBrute - iutsNet - cotSoc
-	retPersonnel := math.Round(netAvantPersonnel * personnelTaux)
-	netAPayer := netAvantPersonnel - retPersonnel
+	// 10. FSP — Fonds de Soutien Patriotique : 1 % du salaire net avant FSP
+	// (décret présidentiel BF 2023 — obligatoire, figurant sur le bulletin de paie)
+	netAvantFSP := remBrute - iutsNet - cotSoc
+	fsp := math.Round(netAvantFSP * fspTaux)
+	netAPayer := netAvantFSP - fsp
 
 	return SalarieResult{
-		RemBrute:     math.Round(remBrute),
-		CotSoc:       cotSoc,
-		TPA:          tpa,
-		ExoLog:       exoLog,
-		ExoTrans:     exoTrans,
-		ExoFonct:     exoFonct,
-		TauxForf:     tauxForf,
-		AbattForf:    abattForf,
-		SNI:          math.Round(sni),
-		BaseImp:      math.Round(baseImp),
-		IUTSBrut:     iutsBrut,
-		AbattFam:     abattFam,
-		IUTSNet:      iutsNet,
-		RetPersonnel: retPersonnel,
-		NetAPayer:    math.Round(netAPayer),
+		RemBrute:  math.Round(remBrute),
+		CotSoc:    cotSoc,
+		TPA:       tpa,
+		ExoLog:    exoLog,
+		ExoTrans:  exoTrans,
+		ExoFonct:  exoFonct,
+		TauxForf:  tauxForf,
+		AbattForf: abattForf,
+		SNI:       math.Round(sni),
+		BaseImp:   math.Round(baseImp),
+		IUTSBrut:  iutsBrut,
+		AbattFam:  abattFam,
+		IUTSNet:   iutsNet,
+		FSP:       fsp,
+		NetAPayer: math.Round(netAPayer),
 		// Compat
-		BrutTotal:  math.Round(remBrute),
-		SalaireNet: math.Round(netAPayer),
+		BrutTotal:    math.Round(remBrute),
+		SalaireNet:   math.Round(netAPayer),
+		RetPersonnel: fsp, // alias pour rétro-compat
 	}
 }
