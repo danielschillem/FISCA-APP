@@ -15,15 +15,16 @@ const ZONES: { value: Zone; label: string; desc: string }[] = [
     { value: 'D', label: 'Zone D', desc: 'Zones rurales et périurbaines' },
 ];
 
+// Correspond aux tranches CME CGI 2025 Art. 533-542 (CA ≤ 15 M FCFA)
 const CLASSES = [
-    { max: 15_000_000, label: 'Classe 1 (< 15 M)' },
-    { max: 25_000_000, label: 'Classe 2 (15–25 M)' },
-    { max: 40_000_000, label: 'Classe 3 (25–40 M)' },
-    { max: 60_000_000, label: 'Classe 4 (40–60 M)' },
-    { max: 80_000_000, label: 'Classe 5 (60–80 M)' },
-    { max: 100_000_000, label: 'Classe 6 (80–100 M)' },
-    { max: 150_000_000, label: 'Classe 7 (100–150 M)' },
-    { max: Infinity, label: 'Classe 8 (> 150 M)' },
+    { label: 'Classe 1 — CA 13–15 M FCFA' },
+    { label: 'Classe 2 — CA 11–13 M FCFA' },
+    { label: 'Classe 3 — CA 9–11 M FCFA' },
+    { label: 'Classe 4 — CA 7–9 M FCFA' },
+    { label: 'Classe 5 — CA 5–7 M FCFA' },
+    { label: 'Classe 6 — CA 3–5 M FCFA' },
+    { label: 'Classe 7 — CA 1,5–3 M FCFA' },
+    { label: 'Classe 8 — CA ≤ 1,5 M FCFA' },
 ];
 
 export default function CMEPage() {
