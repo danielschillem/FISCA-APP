@@ -18,63 +18,158 @@ function statutBadge(statut: string) {
 
 function generatePDF(d: Declaration, companyName?: string) {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const W = 210;
+    const MARGIN = 16;
+    const DARK = [20, 20, 20] as [number, number, number];
+    const GRAY = [110, 110, 110] as [number, number, number];
+    const LIGHT = [220, 220, 220] as [number, number, number];
+    const ACCENT = [22, 101, 52] as [number, number, number]; // vert sombre discret
 
-    // ── En-tête ──
-    doc.setFillColor(22, 163, 74);
-    doc.rect(0, 0, 210, 28, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
+    // ── Bande latérale gauche (fine ligne) ──
+    doc.setFillColor(...ACCENT);
+    doc.rect(0, 0, 4, 297, 'F');
+
+    // ── Logo / Titre haut ──
+    doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('FISCA', 14, 12);
+    doc.setTextColor(...ACCENT);
+    doc.text('FISCA', MARGIN + 2, 18);
+
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...GRAY);
+    doc.text('Plateforme Fiscale Numérique · Burkina Faso', MARGIN + 2, 24);
+
+    // ── Titre document (droite) ──
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...DARK);
+    doc.text('DÉCLARATION MENSUELLE', W - MARGIN, 15, { align: 'right' });
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text('Plateforme Fiscale · Burkina Faso · CGI 2025', 14, 19);
+    doc.setTextColor(...GRAY);
+    doc.text('IUTS · TPA · CSS', W - MARGIN, 21, { align: 'right' });
 
-    doc.setFontSize(11);
+    // ── Ligne de séparation ──
+    doc.setDrawColor(...LIGHT);
+    doc.setLineWidth(0.4);
+    doc.line(MARGIN + 2, 28, W - MARGIN, 28);
+
+    // ── Bloc informations (deux colonnes) ──
+    const infoY = 35;
+    // Colonne gauche : entreprise
+    doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
-    doc.text('DECLARATION IUTS / TPA / CSS', 210 - 14, 12, { align: 'right' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.text(`Période : ${MOIS_FR[d.mois - 1]} ${d.annee}`, 210 - 14, 19, { align: 'right' });
-
-    // ── Infos entreprise ──
-    doc.setTextColor(0, 0, 0);
+    doc.setTextColor(...GRAY);
+    doc.text('ENTREPRISE / EMPLOYEUR', MARGIN + 2, infoY);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('Entreprise :', 14, 38);
+    doc.setTextColor(...DARK);
+    doc.text(companyName ?? '—', MARGIN + 2, infoY + 6);
+
+    // Colonne droite : période & référence
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...GRAY);
+    doc.text('PÉRIODE', W - MARGIN, infoY, { align: 'right' });
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...DARK);
+    doc.text(`${MOIS_FR[d.mois - 1].toUpperCase()} ${d.annee}`, W - MARGIN, infoY + 6, { align: 'right' });
+
+    // Sous-infos
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text(companyName ?? '—', 50, 38);
-    if (d.ref) {
-        doc.text(`Référence : ${d.ref}`, 14, 45);
-    }
-    doc.text(`Nombre de salariés : ${d.nb_salaries}`, 14, 52);
-    doc.text(`Date de génération : ${new Date(d.created_at).toLocaleDateString('fr-FR')}`, 14, 59);
+    doc.setTextColor(...GRAY);
+    const dateGen = new Date(d.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    doc.text(`Générée le : ${dateGen}`, MARGIN + 2, infoY + 13);
+    if (d.ref) doc.text(`Référence : ${d.ref}`, MARGIN + 2, infoY + 19);
+    doc.text(`${d.nb_salaries} salarié(s) déclaré(s)`, W - MARGIN, infoY + 13, { align: 'right' });
+
+    // ── Ligne de séparation ──
+    doc.setDrawColor(...LIGHT);
+    doc.line(MARGIN + 2, infoY + 24, W - MARGIN, infoY + 24);
 
     // ── Tableau récapitulatif ──
+    const tableY = infoY + 30;
     autoTable(doc, {
-        startY: 68,
-        head: [['Rubrique', 'Montant (FCFA)']],
+        startY: tableY,
+        head: [['Rubrique', 'Base de calcul', 'Montant (FCFA)']],
         body: [
-            ['Masse salariale brute', fmtN(d.brut_total) + ' F'],
-            ['IUTS net (retenu)', fmtN(d.iuts_total) + ' F'],
-            ['TPA (3 %)', fmtN(d.tpa_total) + ' F'],
-            ['CSS / CNSS (5,5 %)', fmtN(d.css_total) + ' F'],
-            ['TOTAL à déclarer', fmtN(d.total) + ' F'],
+            ['Masse salariale brute', 'Ensemble des rémunérations', fmtN(d.brut_total) + ' F'],
+            ['IUTS net retenu', 'Barème progressif CGI Art. 107', fmtN(d.iuts_total) + ' F'],
+            ['TPA patronale', '3 % de la masse brute', fmtN(d.tpa_total) + ' F'],
+            ['CSS / CNSS salarial', '5,5 % (CNSS) ou 6 % (CARFO)', fmtN(d.css_total) + ' F'],
         ],
-        styles: { fontSize: 10, cellPadding: 4 },
-        headStyles: { fillColor: [22, 163, 74], textColor: 255, fontStyle: 'bold' },
-        columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
-        alternateRowStyles: { fillColor: [240, 253, 244] },
-        foot: [['', '']],
+        styles: {
+            fontSize: 9,
+            cellPadding: { top: 4, bottom: 4, left: 5, right: 5 },
+            textColor: DARK,
+            lineColor: LIGHT,
+            lineWidth: 0.3,
+        },
+        headStyles: {
+            fillColor: [245, 245, 245],
+            textColor: GRAY,
+            fontStyle: 'bold',
+            fontSize: 7.5,
+            lineColor: LIGHT,
+            lineWidth: 0.3,
+        },
+        alternateRowStyles: { fillColor: [250, 250, 250] },
+        columnStyles: {
+            0: { cellWidth: 72, fontStyle: 'bold' },
+            1: { cellWidth: 78, textColor: GRAY, fontSize: 8 },
+            2: { halign: 'right', fontStyle: 'bold', cellWidth: 36 },
+        },
+        tableLineColor: LIGHT,
+        tableLineWidth: 0.3,
     });
+
+    const finalY: number = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
+
+    // ── Total net à déclarer ──
+    const totalY = finalY + 6;
+    doc.setDrawColor(...ACCENT);
+    doc.setLineWidth(0.6);
+    doc.line(MARGIN + 2, totalY, W - MARGIN, totalY);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...DARK);
+    doc.text('TOTAL NET À DÉCLARER', MARGIN + 2, totalY + 8);
+    doc.setFontSize(13);
+    doc.setTextColor(...ACCENT);
+    doc.text(fmtN(d.total) + ' FCFA', W - MARGIN, totalY + 8, { align: 'right' });
+    doc.setDrawColor(...LIGHT);
+    doc.setLineWidth(0.3);
+    doc.line(MARGIN + 2, totalY + 12, W - MARGIN, totalY + 12);
+
+    // ── Zone signature ──
+    const sigY = totalY + 22;
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...GRAY);
+    doc.text("Cachet et signature de l'employeur", MARGIN + 2, sigY);
+    doc.setDrawColor(...LIGHT);
+    doc.rect(MARGIN + 2, sigY + 3, 70, 22);
+
+    doc.text('Visa DGI / DGTCP', W - MARGIN - 70, sigY);
+    doc.rect(W - MARGIN - 70, sigY + 3, 70, 22);
 
     // ── Pied de page ──
     const pageH = doc.internal.pageSize.height;
-    doc.setFontSize(8);
-    doc.setTextColor(150);
-    doc.text('Document généré par FISCA · Non opposable sans signature DGI', 105, pageH - 10, { align: 'center' });
+    doc.setFillColor(245, 245, 245);
+    doc.rect(0, pageH - 14, W, 14, 'F');
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(...GRAY);
+    doc.text(
+        'Document généré automatiquement par FISCA · Non opposable sans signature et cachet · CGI 2025 Burkina Faso',
+        W / 2, pageH - 7,
+        { align: 'center' }
+    );
 
-    doc.save(`declaration-IUTS-${d.annee}-${String(d.mois).padStart(2, '0')}.pdf`);
+    doc.save(`Decl-IUTS-${d.annee}-${String(d.mois).padStart(2, '0')}-${companyName ?? 'entreprise'}.pdf`);
 }
 
 export default function DeclarationsPage() {
