@@ -6,7 +6,7 @@ import {
     LayoutDashboard, PenLine, Calculator, FileText, FileCheck,
     Sliders, Receipt, Home, TrendingUp, Bot, Building2, GitBranch,
     BarChart2, Users, Store, BookOpen, Scroll, History, BarChart,
-    Star, Settings, Lock, LogOut, type LucideIcon,
+    Star, Settings, Lock, LogOut, CalendarDays, type LucideIcon,
 } from 'lucide-react';
 
 const PLAN_COLORS: Record<Plan, string> = {
@@ -28,6 +28,7 @@ const navSections: { label: string; items: NavItem[] }[] = [
         label: 'Principal',
         items: [
             { to: '/dashboard', label: 'Tableau de bord', Icon: LayoutDashboard, feat: null },
+            { to: '/calendrier', label: 'Calendrier fiscal', Icon: CalendarDays, feat: null },
             { to: '/saisie', label: 'Saisie mensuelle', Icon: PenLine, feat: 'saisie' },
             { to: '/calcul', label: 'Calculateur Fiscal', Icon: Calculator, feat: 'calcul' },
             { to: '/rapport', label: 'Rapport du mois', Icon: FileText, feat: 'rapport' },

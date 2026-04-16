@@ -33,6 +33,7 @@ const IRCMPage = lazy(() => import('./pages/IRCMPage'));
 const CMEPage = lazy(() => import('./pages/CMEPage'));
 const ISPage = lazy(() => import('./pages/ISPage'));
 const PatentePage = lazy(() => import('./pages/PatentePage'));
+const CalendrierFiscalPage = lazy(() => import('./pages/CalendrierFiscalPage'));
 
 // Admin pages — lazy loaded
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
@@ -78,6 +79,7 @@ function App() {
               <Route path="/retenues" element={<RetenuesPage />} />
               <Route path="/cnss-patronal" element={<CNSSPatronalPage />} />
               <Route path="/cme" element={<CMEPage />} />
+              <Route path="/calendrier" element={<CalendrierFiscalPage />} />
               <Route path="/is" element={<ISPage />} />
               <Route path="/patente" element={<PatentePage />} />
               <Route path="/historique" element={<HistoriquePage />} />

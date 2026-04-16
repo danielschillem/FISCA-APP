@@ -1,10 +1,12 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { dashboardApi, declarationApi } from '../lib/api';
 import { StatCard, Card, Badge, Spinner } from '../components/ui';
 import { fmt, calcPenalite } from '../lib/fiscalCalc';
 import { MOIS_FR } from '../types';
-import { BarChart2, TrendingUp, Users, User, AlertTriangle, CheckCircle2, Clock, Minus } from 'lucide-react';
+import { BarChart2, TrendingUp, Users, User, AlertTriangle, CheckCircle2, Clock, Minus, CalendarDays, ArrowRight } from 'lucide-react';
+import { getProchaines, TYPE_COLORS, type Echeance } from '../lib/fiscalCalendar';
 
 const MOIS_COURT = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 
@@ -21,6 +23,9 @@ export default function DashboardPage() {
 
     const now = new Date();
     const moisActuel = now.getMonth(); // 0-based
+    const anneeActuelle = now.getFullYear();
+    const prochaines = getProchaines(anneeActuelle, 5, now);
+    const navigate = useNavigate();
 
     const retards = declarations.filter((d: { statut: string }) => d.statut === 'retard');
     const totalPenalites = retards.reduce((sum: number, d: { iuts_total: number; mois: number }) => {
@@ -152,28 +157,52 @@ export default function DashboardPage() {
                 </Card>
             </div>
 
-            {/* Obligations fiscales du mois */}
-            <Card title="Obligations fiscales — Échéances">
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                    {[
-                        { label: 'IUTS / TPA', echeance: '15 du mois', desc: 'Déclaration et paiement CGI Art. 122' },
-                        { label: 'CNSS Part patronale', echeance: '15 du mois', desc: 'Allocations + accidents + retraite' },
-                        { label: 'TVA', echeance: '15 du mois', desc: 'Déclaration mensuelle si CA ≥ 50 M/an' },
-                        { label: 'Retenue à la source', echeance: '15 du mois', desc: 'CGI Art. 206–226' },
-                        { label: 'IRF', echeance: '15 du mois', desc: 'Loyers versés — CGI Art. 121–126' },
-                        { label: 'Acompte IS/MFP', echeance: '31 mars', desc: '1/4 IS théorique — CGI Art. 95' },
-                    ].map((o) => (
-                        <div key={o.label} className="border border-gray-100 rounded-lg p-3">
-                            <div className="flex items-center justify-between mb-1">
-                                <p className="text-xs font-semibold text-gray-800">{o.label}</p>
-                                <span className="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded font-medium">
-                                    {o.echeance}
-                                </span>
-                            </div>
-                            <p className="text-[11px] text-gray-500">{o.desc}</p>
-                        </div>
-                    ))}
+            {/* Prochaines échéances fiscales */}
+            <Card title="Prochaines échéances fiscales">
+                <div className="space-y-2">
+                    {prochaines.length === 0 ? (
+                        <p className="text-sm text-gray-400 text-center py-6">Aucune échéance à venir</p>
+                    ) : (
+                        prochaines.map((e: Echeance) => {
+                            const urgBg =
+                                e.urgence === 'critique' ? 'bg-red-50 border-red-200' :
+                                    e.urgence === 'proche' ? 'bg-amber-50 border-amber-200' :
+                                        'bg-gray-50 border-gray-100';
+                            const urgText =
+                                e.urgence === 'critique' ? 'text-red-600' :
+                                    e.urgence === 'proche' ? 'text-amber-600' :
+                                        'text-gray-500';
+                            const dot = TYPE_COLORS[e.type] ?? '#94a3b8';
+                            return (
+                                <div key={e.id} className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${urgBg}`}>
+                                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: dot }} />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-semibold text-gray-800">{e.label}</p>
+                                        <p className="text-xs text-gray-500 truncate">{e.description}</p>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <p className="text-xs font-bold text-gray-700">
+                                            {e.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                                        </p>
+                                        <p className={`text-[11px] font-semibold ${urgText}`}>
+                                            {e.joursRestants === 0 ? "Aujourd'hui !" :
+                                                e.joursRestants === 1 ? 'Demain' :
+                                                    `J-${e.joursRestants}`}
+                                        </p>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
                 </div>
+                <button
+                    onClick={() => navigate('/calendrier')}
+                    className="mt-4 w-full flex items-center justify-center gap-2 text-xs text-green-600 font-semibold hover:text-green-700 py-2 rounded-lg hover:bg-green-50 transition-colors"
+                >
+                    <CalendarDays className="w-3.5 h-3.5" />
+                    Voir le calendrier fiscal complet
+                    <ArrowRight className="w-3.5 h-3.5" />
+                </button>
             </Card>
         </div>
     );
