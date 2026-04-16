@@ -41,12 +41,13 @@ export default function LoginPage() {
         <div className="min-h-screen flex">
             {/* Left panel - brand / features (desktop only) */}
             <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 flex-col justify-between p-10 relative overflow-hidden"
-                style={{ background: 'linear-gradient(145deg, #0f172a 0%, #0d2818 60%, #14532d 100%)' }}>
-                {/* Background pattern */}
-                <div className="absolute inset-0 opacity-5" style={{
-                    backgroundImage: 'radial-gradient(circle at 25px 25px, white 2px, transparent 0)',
-                    backgroundSize: '50px 50px',
-                }} />
+                style={{
+                    backgroundImage: 'url(/login_bg.jpg)',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                }}>
+                {/* Dark overlay for readability */}
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(145deg, rgba(15,23,42,0.82) 0%, rgba(13,40,24,0.78) 60%, rgba(20,83,45,0.72) 100%)' }} />
 
                 {/* Logo */}
                 <div className="relative flex items-center gap-3">
