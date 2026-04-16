@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { bulletinApi, employeeApi } from '../lib/api';
+import { bulletinApi, employeeApi, companyApi } from '../lib/api';
 import { Card, Btn, Spinner, Badge } from '../components/ui';
 import { fmt, calcEmploye } from '../lib/fiscalCalc';
-import type { Bulletin, Employee } from '../types';
+import type { Bulletin, Employee, Company } from '../types';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { MOIS_FR } from '../types';
 import { Zap, Download, Lock, FileSpreadsheet, FileText } from 'lucide-react';
@@ -24,6 +24,12 @@ function BulletinsContent() {
     const [mois, setMois] = useState(now.getMonth() + 1);
     const [annee, setAnnee] = useState(now.getFullYear());
     const [cotisation, setCotisation] = useState<'CNSS' | 'CARFO'>('CNSS');
+
+    const { data: company } = useQuery<Company>({
+        queryKey: ['company'],
+        queryFn: () => companyApi.get().then((r) => r.data),
+        staleTime: Infinity,
+    });
 
     const { data: employees = [] } = useQuery<Employee[]>({
         queryKey: ['employees'],
@@ -81,7 +87,7 @@ function BulletinsContent() {
                         <>
                             <Btn
                                 variant="outline"
-                                onClick={() => exportAllBulletinsPDF(bulletins)}
+                                onClick={() => exportAllBulletinsPDF(bulletins, company)}
                                 title="Exporter tous les bulletins en PDF"
                             >
                                 <FileText className="w-4 h-4" /> PDF
@@ -125,7 +131,7 @@ function BulletinsContent() {
             )}
 
             {bulletins.map((b) => (
-                <BulletinCard key={b.id} bulletin={b} />
+                <BulletinCard key={b.id} bulletin={b} company={company} />
             ))}
         </div>
     );
@@ -155,7 +161,7 @@ function PreviewBulletin({ employee: e, index }: { employee: Employee; index: nu
     );
 }
 
-function BulletinCard({ bulletin: b }: { bulletin: Bulletin }) {
+function BulletinCard({ bulletin: b, company }: { bulletin: Bulletin; company?: Company }) {
     return (
         <Card>
             <div className="flex items-center justify-between mb-4">
@@ -164,7 +170,7 @@ function BulletinCard({ bulletin: b }: { bulletin: Bulletin }) {
                     <p className="text-xs text-gray-500">{b.periode} · {b.categorie}</p>
                 </div>
                 <div className="flex gap-2">
-                    <Btn size="sm" variant="outline" onClick={() => exportBulletinPDF(b)}>
+                    <Btn size="sm" variant="outline" onClick={() => exportBulletinPDF(b, company)}>
                         <FileText className="w-3.5 h-3.5" /> PDF
                     </Btn>
                 </div>
