@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+﻿import { useState, useMemo } from 'react';
 import { CheckCircle2, Circle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getEcheancesAnnee, nomMois, TYPE_COLORS, type Echeance } from '../lib/fiscalCalendar';
 
@@ -51,7 +51,7 @@ export default function ChecklistPage() {
     const circleClass = pct === 100
         ? 'bg-green-100 text-green-700'
         : pct >= 50 ? 'bg-amber-100 text-amber-700'
-        : 'bg-red-100 text-red-700';
+            : 'bg-red-100 text-red-700';
 
     return (
         <div className="space-y-6">
@@ -111,13 +111,13 @@ export default function ChecklistPage() {
                         const itemBg = done
                             ? 'border-green-200 bg-green-50/60'
                             : e.urgence === 'critique' ? 'border-red-200 bg-red-50'
-                            : e.urgence === 'proche' ? 'border-amber-200 bg-amber-50'
-                            : 'border-gray-100 bg-white';
+                                : e.urgence === 'proche' ? 'border-amber-200 bg-amber-50'
+                                    : 'border-gray-100 bg-white';
                         const urgLabel = !done && e.urgence === 'critique'
                             ? <span className="text-[10px] font-bold text-red-600 animate-pulse">URGENT</span>
                             : !done && e.urgence === 'proche'
-                            ? <span className="text-[10px] font-semibold text-amber-600">Bientôt</span>
-                            : null;
+                                ? <span className="text-[10px] font-semibold text-amber-600">Bientôt</span>
+                                : null;
                         return (
                             <button
                                 key={e.id}
@@ -151,7 +151,7 @@ export default function ChecklistPage() {
             {/* Légende */}
             {echeances.length > 0 && (
                 <p className="text-xs text-gray-400 text-center">
-                    Cliquez sur une obligation pour la cocher — état sauvegardé localement
+                    Cliquez sur une obligation pour la cocher : état sauvegardé localement
                 </p>
             )}
         </div>

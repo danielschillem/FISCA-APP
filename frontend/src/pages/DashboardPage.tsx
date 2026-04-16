@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { dashboardApi, declarationApi } from '../lib/api';
@@ -209,7 +209,7 @@ export default function DashboardPage() {
             {declarations.length > 0 && (() => {
                 const maxVal = Math.max(...declarations.map((d: { iuts_total: number }) => d.iuts_total ?? 0), 1);
                 return (
-                    <Card title={`Synthèse annuelle ${anneeActuelle} — IUTS mensuel`}>
+                    <Card title={`Synthèse annuelle ${anneeActuelle} : IUTS mensuel`}>
                         <div className="space-y-2">
                             {MOIS_COURT.map((m, idx) => {
                                 const decl = declarations.find((d: { mois: number }) => d.mois === idx + 1);
@@ -218,8 +218,8 @@ export default function DashboardPage() {
                                 const barBg = !decl
                                     ? 'bg-gray-200'
                                     : (decl as { statut: string }).statut === 'ok' ? 'bg-green-400'
-                                    : (decl as { statut: string }).statut === 'retard' ? 'bg-red-400'
-                                    : 'bg-amber-400';
+                                        : (decl as { statut: string }).statut === 'retard' ? 'bg-red-400'
+                                            : 'bg-amber-400';
                                 const isCurrentMonth = idx === moisActuel;
                                 return (
                                     <div key={m} className={`flex items-center gap-3 rounded-lg px-2 py-1 ${isCurrentMonth ? 'bg-blue-50' : ''}`}>
@@ -231,7 +231,7 @@ export default function DashboardPage() {
                                             />
                                         </div>
                                         <span className="text-[11px] font-mono text-gray-600 w-24 text-right shrink-0">
-                                            {val > 0 ? fmtN(val) : '—'}
+                                            {val > 0 ? fmtN(val) : ':'}
                                         </span>
                                     </div>
                                 );

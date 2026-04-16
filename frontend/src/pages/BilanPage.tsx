@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { bilanApi } from '../lib/api';
 import { fmt } from '../lib/fiscalCalc';
@@ -20,10 +20,10 @@ const LIGNES: { label: string; key: keyof Omit<BilanData, 'annee' | 'total'>; co
     { label: 'CNSS Patronal', key: 'cnss_patronal', color: 'purple' },
     { label: 'TVA nette collectée', key: 'tva', color: 'orange' },
     { label: 'Retenues à la source (RAS)', key: 'ras', color: 'yellow' },
-    { label: 'IRF — Revenus Fonciers', key: 'irf', color: 'pink' },
-    { label: 'IRCM — Capitaux Mobiliers', key: 'ircm', color: 'red' },
-    { label: 'IS — Impôt sur les Sociétés', key: 'is', color: 'emerald' },
-    { label: 'CME — Contribution Micro-Entreprises', key: 'cme', color: 'teal' },
+    { label: 'IRF : Revenus Fonciers', key: 'irf', color: 'pink' },
+    { label: 'IRCM : Capitaux Mobiliers', key: 'ircm', color: 'red' },
+    { label: 'IS : Impôt sur les Sociétés', key: 'is', color: 'emerald' },
+    { label: 'CME : Contribution Micro-Entreprises', key: 'cme', color: 'teal' },
     { label: 'Patente Professionnelle', key: 'patente', color: 'cyan' },
 ];
 
@@ -82,7 +82,7 @@ function BilanContent() {
             </div>
 
             {/* Module breakdown */}
-            <Card title={`Récapitulatif fiscal — exercice ${annee}`}>
+            <Card title={`Récapitulatif fiscal : exercice ${annee}`}>
                 {nonZero.length === 0 ? (
                     <p className="text-sm text-gray-400 py-8 text-center">
                         Aucune déclaration enregistrée pour l'exercice {annee}
@@ -100,7 +100,7 @@ function BilanContent() {
                             <tbody className="divide-y divide-gray-50">
                                 {LIGNES.map(({ label, key }) => {
                                     const v = b[key];
-                                    const pct = b.total > 0 ? ((v / b.total) * 100).toFixed(1) : '—';
+                                    const pct = b.total > 0 ? ((v / b.total) * 100).toFixed(1) : ':';
                                     return (
                                         <tr key={key} className={`hover:bg-gray-50 ${v === 0 ? 'opacity-40' : ''}`}>
                                             <td className="py-2.5 px-3 text-gray-800">{label}</td>
@@ -108,7 +108,7 @@ function BilanContent() {
                                                 {fmt(v)}
                                             </td>
                                             <td className="py-2.5 px-3 text-right text-gray-500 text-xs">
-                                                {v > 0 ? `${pct} %` : '—'}
+                                                {v > 0 ? `${pct} %` : ':'}
                                             </td>
                                         </tr>
                                     );

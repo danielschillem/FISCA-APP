@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tvaApi } from '../lib/api';
 import { calcTVA, fmt, fmtN } from '../lib/fiscalCalc';
@@ -174,7 +174,7 @@ function TVAContent() {
             )}
 
             <Card>
-                <p className="text-xs text-gray-500 mb-3">Référence légale : CGI 2025 — Art. 317 · Taux standard 18 % · Hôtellerie/restauration 10 %</p>
+                <p className="text-xs text-gray-500 mb-3">Référence légale : CGI 2025 : Art. 317 · Taux standard 18 % · Hôtellerie/restauration 10 %</p>
                 <div className="text-xs text-gray-400 space-y-1">
                     <p>• Seuil d'assujettissement : CA ≥ 50 000 000 FCFA/an</p>
                     <p>• Déclaration mensuelle, paiement avant le 15 du mois suivant</p>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+﻿import { useState, useMemo } from 'react';
 import { calcEmploye, calcIRF, calcIRCM, calcCME, calcPatente, calcMFP, calcIS, fmt, fmtN } from '../lib/fiscalCalc';
 import { Card, Input, Select, Btn } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
@@ -148,7 +148,7 @@ function SimContent() {
                         ))}
                     </div>
 
-                    <Card title="Projection mensuelle — 12 mois">
+                    <Card title="Projection mensuelle : 12 mois">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>

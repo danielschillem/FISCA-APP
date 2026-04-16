@@ -1,5 +1,5 @@
-/**
- * Génération PDF bulletin de paie — CGI 2025 Burkina Faso
+﻿/**
+ * Génération PDF bulletin de paie : CGI 2025 Burkina Faso
  * Utilise jspdf + jspdf-autotable
  */
 import jsPDF from 'jspdf';
@@ -42,7 +42,7 @@ export function exportBulletinPDF(b: Bulletin, companyName = 'FISCA-APP') {
         ['IUTS net retenu', `−`, fmt(b.iuts_net)],
         [`Cotisation ${b.cotisation} (${b.cotisation === 'CARFO' ? '6' : '5,5'} %)`, `−`, fmt(b.cotisation_sociale ?? 0)],
         ['TPA patronale (3 %)', '', fmt(b.tpa ?? 0)],
-        ['FSP — Fonds de Soutien Patriotique (1 %)', `−`, fmt(b.fsp ?? 0)],
+        ['FSP : Fonds de Soutien Patriotique (1 %)', `−`, fmt(b.fsp ?? 0)],
     ];
 
     autoTable(doc, {

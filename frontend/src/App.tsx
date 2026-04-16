@@ -1,16 +1,16 @@
-import { lazy, Suspense } from 'react';
+﻿import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppLayout from './layouts/AppLayout';
 import AdminLayout from './layouts/AdminLayout';
 
-// Auth pages — chargées immédiatement (point d'entrée)
+// Auth pages : chargées immédiatement (point d'entrée)
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 
-// App pages — lazy loaded (un chunk par page)
+// App pages : lazy loaded (un chunk par page)
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const SaisiePage = lazy(() => import('./pages/SaisiePage'));
 const CalculPage = lazy(() => import('./pages/CalculPage'));
@@ -36,13 +36,13 @@ const PatentePage = lazy(() => import('./pages/PatentePage'));
 const CalendrierFiscalPage = lazy(() => import('./pages/CalendrierFiscalPage'));
 const ChecklistPage = lazy(() => import('./pages/ChecklistPage'));
 
-// Admin pages — lazy loaded
+// Admin pages : lazy loaded
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
 const AdminCompaniesPage = lazy(() => import('./pages/admin/AdminCompaniesPage'));
 const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage'));
 
-// Org Admin pages — lazy loaded
+// Org Admin pages : lazy loaded
 const OrgMembersPage = lazy(() => import('./pages/org/OrgMembersPage'));
 const OrgCompaniesPage = lazy(() => import('./pages/org/OrgCompaniesPage'));
 
@@ -98,7 +98,7 @@ function App() {
               <Route path="/org/societes" element={<OrgCompaniesPage />} />
             </Route>
 
-            {/* Super Admin — accès restreint role=super_admin */}
+            {/* Super Admin : accès restreint role=super_admin */}
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<AdminDashboardPage />} />
               <Route path="/admin/users" element={<AdminUsersPage />} />

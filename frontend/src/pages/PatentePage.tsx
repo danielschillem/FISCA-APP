@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { patenteApi } from '../lib/api';
 import { calcPatente, fmt, fmtN } from '../lib/fiscalCalc';
@@ -64,7 +64,7 @@ function PatenteContent() {
     return (
         <div className="max-w-3xl space-y-6">
             <Card title="Patente Professionnelle">
-                <p className="text-xs text-gray-500 mb-4">CGI 2025 — Art. 237-240 · Droit fixe + 1 % valeur locative professionnelle</p>
+                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 237-240 · Droit fixe + 1 % valeur locative professionnelle</p>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -167,7 +167,7 @@ function PatenteContent() {
                             <tbody className="divide-y divide-gray-50">
                                 {history.map((d) => (
                                     <tr key={d.id} className="hover:bg-gray-50">
-                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? '—'}</td>
+                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? ':'}</td>
                                         <td className="py-2 text-right">{fmt(d.ca)}</td>
                                         <td className="py-2 text-right">{fmt(d.droit_fixe)}</td>
                                         <td className="py-2 text-right font-semibold text-red-700">{fmt(d.total_patente)}</td>

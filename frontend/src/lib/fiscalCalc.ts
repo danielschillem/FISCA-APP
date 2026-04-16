@@ -1,4 +1,4 @@
-// ─── Fiscal calculation utilities (mirroring CGI 2025 engine) ─
+﻿// ─── Fiscal calculation utilities (mirroring CGI 2025 engine) ─
 
 export const fmt = (n: number): string =>
     `${Math.round(n).toLocaleString('fr-BF')} FCFA`;
@@ -9,7 +9,7 @@ export const fmtN = (n: number): string =>
 export const pct = (n: number): string =>
     (n * 100).toFixed(1) + ' %';
 
-// IUTS tranches CGI 2025 — 9 tranches barème marginal (Art. 107-112)
+// IUTS tranches CGI 2025 : 9 tranches barème marginal (Art. 107-112)
 const IUTS_TRANCHES = [
     { plafond: 30_000, taux: 0.00 },   // 0 – 30 000 : exonéré
     { plafond: 50_000, taux: 0.12 },   // 30 001 – 50 000
@@ -67,7 +67,7 @@ export interface EmployeeCalcResult {
     sni: number; baseImp: number;
     iutsBrut: number; abattFam: number; iutsNet: number;
     fsp: number;        // Fonds de Soutien Patriotique 1 %
-    retPersonnel: number; // alias fsp — rétro-compat
+    retPersonnel: number; // alias fsp : rétro-compat
     netAPayer: number;
     tauxEffectif: number;
 }
@@ -95,7 +95,7 @@ export function calcEmploye(e: EmployeeInput): EmployeeCalcResult {
     const abattFam = calcAbattFamilial(iutsBrut, e.charges);
     const iutsNet = Math.max(0, iutsBrut - abattFam);
 
-    // FSP — Fonds de Soutien Patriotique (décret présidentiel BF 2023)
+    // FSP : Fonds de Soutien Patriotique (décret présidentiel BF 2023)
     // 1 % prélevé sur le salaire net (brute − IUTS − CNSS) de tout salarié BF
     const netAvantFSP = remBrute - iutsNet - cotSoc;
     const fsp = Math.round(netAvantFSP * 0.01);
@@ -170,16 +170,16 @@ export function calcRAS(ht: number, typeKey: string) {
 
 export const RAS_LABELS: Record<string, string> = {
     RESIDENT_IFU: 'Résident avec IFU (5 %)',
-    RESIDENT_IFU_IMMO: 'Résident IFU — Immo/TP (1 %)',
+    RESIDENT_IFU_IMMO: 'Résident IFU : Immo/TP (1 %)',
     RESIDENT_SANS_IFU: 'Résident sans IFU (25 %)',
     TRAVAIL_TEMPORAIRE: 'Travail temporaire (2 %)',
     NON_RESIDENT: 'Non-résident (20 %)',
     NON_RESIDENT_CEDEAO: 'Non-résident CEDEAO Transport (10 %)',
-    NONDETER_VACATION: 'Non-déterminé — vacation/manuel (2 %)',
-    NONDETER_PUBLIC: 'Non-déterminé — entité publique (5 %)',
-    NONDETER_SALARIE: 'Non-déterminé — salarié/intellectuel (10 %)',
+    NONDETER_VACATION: 'Non-déterminé : vacation/manuel (2 %)',
+    NONDETER_PUBLIC: 'Non-déterminé : entité publique (5 %)',
+    NONDETER_SALARIE: 'Non-déterminé : salarié/intellectuel (10 %)',
     COMMANDE_PUBLIQUE: 'Commande publique (5 %)',
-    COMMANDE_PUB_BIENS: 'Commande pub. — biens/TP (1 %)',
+    COMMANDE_PUB_BIENS: 'Commande pub. : biens/TP (1 %)',
 };
 
 // CME CGI 2025

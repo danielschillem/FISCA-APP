@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { historiqueApi } from '../lib/api';
 import { fmt, fmtN } from '../lib/fiscalCalc';
@@ -111,7 +111,7 @@ export default function HistoriquePage() {
 
                     {/* Vue TABLEAU */}
                     {vue === 'tableau' && (
-                        <Card title={`Détail mensuel — ${annee}`}>
+                        <Card title={`Détail mensuel : ${annee}`}>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
@@ -150,7 +150,7 @@ export default function HistoriquePage() {
                         const maxTotal = Math.max(...rows.map(m => m.total_obligations ?? 0), 1);
                         const maxIuts = Math.max(...rows.map(m => m.iuts_total ?? 0), 1);
                         return (
-                            <Card title={`Évolution mensuelle — ${annee}`}>
+                            <Card title={`Évolution mensuelle : ${annee}`}>
                                 <div className="space-y-3">
                                     {Array.from({ length: 12 }, (_, i) => i + 1).map(moisNum => {
                                         const m = rows.find(r => r.mois === moisNum);
@@ -167,13 +167,13 @@ export default function HistoriquePage() {
                                                             <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
                                                                 <div className="h-3 rounded-full bg-gray-400 transition-all" style={{ width: `${pctTotal}%` }} />
                                                             </div>
-                                                            <span className="text-[10px] font-mono text-gray-500 w-20 text-right shrink-0">{total > 0 ? fmtN(total) : '—'}</span>
+                                                            <span className="text-[10px] font-mono text-gray-500 w-20 text-right shrink-0">{total > 0 ? fmtN(total) : ':'}</span>
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
                                                                 <div className="h-2 rounded-full bg-green-400 transition-all" style={{ width: `${pctIuts}%` }} />
                                                             </div>
-                                                            <span className="text-[10px] font-mono text-green-600 w-20 text-right shrink-0">{iuts > 0 ? fmtN(iuts) : '—'}</span>
+                                                            <span className="text-[10px] font-mono text-green-600 w-20 text-right shrink-0">{iuts > 0 ? fmtN(iuts) : ':'}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -216,13 +216,13 @@ export default function HistoriquePage() {
                                                 return (
                                                     <tr key={moisNum} className="hover:bg-gray-50">
                                                         <td className="py-2.5 px-3 font-medium text-gray-800">{MOIS_FR[moisNum - 1]}</td>
-                                                        <td className="py-2.5 px-3 text-right font-mono text-xs text-gray-500">{v1 > 0 ? fmtN(v1) : '—'}</td>
-                                                        <td className="py-2.5 px-3 text-right font-mono text-xs font-semibold">{v2 > 0 ? fmtN(v2) : '—'}</td>
+                                                        <td className="py-2.5 px-3 text-right font-mono text-xs text-gray-500">{v1 > 0 ? fmtN(v1) : ':'}</td>
+                                                        <td className="py-2.5 px-3 text-right font-mono text-xs font-semibold">{v2 > 0 ? fmtN(v2) : ':'}</td>
                                                         <td className={`py-2.5 px-3 text-right font-mono text-xs font-bold ${delta > 0 ? 'text-red-600' : delta < 0 ? 'text-green-600' : 'text-gray-400'}`}>
-                                                            {delta !== 0 ? `${delta > 0 ? '+' : ''}${fmtN(delta)}` : '—'}
+                                                            {delta !== 0 ? `${delta > 0 ? '+' : ''}${fmtN(delta)}` : ':'}
                                                         </td>
                                                         <td className={`py-2.5 px-3 text-right text-xs font-bold ${pct !== null && pct > 0 ? 'text-red-600' : pct !== null && pct < 0 ? 'text-green-600' : 'text-gray-400'}`}>
-                                                            {pct !== null ? `${pct > 0 ? '+' : ''}${pct} %` : '—'}
+                                                            {pct !== null ? `${pct > 0 ? '+' : ''}${pct} %` : ':'}
                                                         </td>
                                                     </tr>
                                                 );
@@ -239,7 +239,7 @@ export default function HistoriquePage() {
                                                 <td className="py-2.5 px-3 text-right text-xs">
                                                     {dataN1?.total_obligations > 0
                                                         ? `${Math.round(((data.total_obligations - dataN1.total_obligations) / dataN1.total_obligations) * 100)} %`
-                                                        : '—'}
+                                                        : ':'}
                                                 </td>
                                             </tr>
                                         </tfoot>

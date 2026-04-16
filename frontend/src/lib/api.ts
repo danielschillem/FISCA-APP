@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 const BASE = import.meta.env.VITE_API_URL || '/api';
 
@@ -164,7 +164,7 @@ export const exerciceApi = {
     cloturer: (id: string) => api.put(`/exercice/${id}/cloturer`),
 };
 
-// ── IRF — Revenus Fonciers ────────────────────────────────────
+// ── IRF : Revenus Fonciers ────────────────────────────────────
 export const irfApi = {
     list: (annee?: number) => api.get('/irf', { params: { annee } }),
     create: (data: { annee: number; loyer_brut: number }) => api.post('/irf', data),
@@ -174,7 +174,7 @@ export const irfApi = {
     export: (id: string) => api.get(`/irf/${id}/export`, { responseType: 'blob' }),
 };
 
-// ── IRCM — Capitaux Mobiliers ─────────────────────────────────
+// ── IRCM : Capitaux Mobiliers ─────────────────────────────────
 export const ircmApi = {
     list: (annee?: number) => api.get('/ircm', { params: { annee } }),
     create: (data: { annee: number; montant_brut: number; type_revenu: string }) => api.post('/ircm', data),
@@ -184,7 +184,7 @@ export const ircmApi = {
     export: (id: string) => api.get(`/ircm/${id}/export`, { responseType: 'blob' }),
 };
 
-// ── IS / MFP — Impôt sur les Sociétés ────────────────────────
+// ── IS / MFP : Impôt sur les Sociétés ────────────────────────
 export const isApi = {
     list: (annee?: number) => api.get('/is', { params: { annee } }),
     create: (data: { annee: number; ca: number; benefice: number; regime: string; adhesion_cga: boolean }) =>
@@ -195,7 +195,7 @@ export const isApi = {
     export: (id: string) => api.get(`/is/${id}/export`, { responseType: 'blob' }),
 };
 
-// ── CME — Micro-Entreprises ───────────────────────────────────
+// ── CME : Micro-Entreprises ───────────────────────────────────
 export const cmeApi = {
     list: (annee?: number) => api.get('/cme', { params: { annee } }),
     create: (data: { annee: number; ca: number; zone: string; adhesion_cga: boolean }) => api.post('/cme', data),

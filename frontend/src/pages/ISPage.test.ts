@@ -1,4 +1,4 @@
-// Tests logique pure — ISPage (sans rendu React)
+﻿// Tests logique pure : ISPage (sans rendu React)
 // CGI 2025 Art. 42 · IS 27.5 % · MFP 0.5 % · CGA réductions
 import { describe, it, expect } from 'vitest'
 import { calcIS, calcMFP } from '../lib/fiscalCalc'
@@ -22,7 +22,7 @@ function calcISPageResult(
     }
 }
 
-describe('ISPage — logique calcIS + calcMFP', () => {
+describe('ISPage : logique calcIS + calcMFP', () => {
     // IS théorique
     it('IS théorique = bénéfice × 27.5 %', () => {
         const r = calcISPageResult(500_000_000, 100_000_000, 'reel', false)

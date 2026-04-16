@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+﻿import { useState, useMemo } from 'react';
 import {
     getEcheancesAnnee, grouperParMois, TYPE_COLORS, nomMois,
     type Echeance, type EcheanceType,
@@ -165,7 +165,7 @@ export default function CalendrierFiscalPage() {
                 <div>
                     <h2 className="text-xl font-bold text-gray-900">Calendrier fiscal</h2>
                     <p className="text-sm text-gray-500 mt-0.5">
-                        Toutes vos obligations fiscales — CGI 2025, Burkina Faso
+                        Toutes vos obligations fiscales : CGI 2025, Burkina Faso
                     </p>
                 </div>
                 {/* Year selector */}

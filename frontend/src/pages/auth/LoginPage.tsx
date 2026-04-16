@@ -44,7 +44,7 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen flex">
 
-            {/* ── Panneau gauche — image + branding ──────────────────────── */}
+            {/* ── Panneau gauche : image + branding ──────────────────────── */}
             <div
                 className="hidden lg:flex lg:w-1/2 xl:w-[55%] flex-col justify-between p-12 relative overflow-hidden"
                 style={{ backgroundImage: 'url(/login_bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
@@ -99,7 +99,7 @@ export default function LoginPage() {
                 <p className="relative z-10 text-slate-600 text-xs">© {new Date().getFullYear()} FISCA · Tous droits réservés</p>
             </div>
 
-            {/* ── Panneau droit — formulaire ──────────────────────────────── */}
+            {/* ── Panneau droit : formulaire ──────────────────────────────── */}
             <div className="flex-1 flex items-center justify-center p-6 bg-[#f8fafc]">
                 <div className="w-full max-w-[400px]">
 

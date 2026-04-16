@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+﻿import { useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { declarationApi, dashboardApi } from '../lib/api';
 import { fmt, fmtN } from '../lib/fiscalCalc';
@@ -47,7 +47,7 @@ export default function RapportPage() {
 
             <div ref={printRef}>
                 <h1 className="text-xl font-bold text-gray-900 mb-6">
-                    Rapport fiscal — {MOIS_FR[mois - 1]} {annee}
+                    Rapport fiscal : {MOIS_FR[mois - 1]} {annee}
                 </h1>
 
                 {/* KPIs */}

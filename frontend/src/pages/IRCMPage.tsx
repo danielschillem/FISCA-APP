@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ircmApi } from '../lib/api';
 import { calcIRCM, fmt } from '../lib/fiscalCalc';
@@ -60,8 +60,8 @@ function IRCMContent() {
 
     return (
         <div className="max-w-3xl space-y-6">
-            <Card title="IRCM — Impôt sur les Revenus des Capitaux Mobiliers">
-                <p className="text-xs text-gray-500 mb-4">CGI 2025 — Art. 140-156 · Retenue libératoire à la source</p>
+            <Card title="IRCM : Impôt sur les Revenus des Capitaux Mobiliers">
+                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 140-156 · Retenue libératoire à la source</p>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Année fiscale</label>
@@ -82,7 +82,7 @@ function IRCMContent() {
                                 checked={type === t.value} onChange={() => setType(t.value)}
                                 className="mt-0.5 accent-green-600" />
                             <div>
-                                <p className="text-sm font-semibold text-gray-900">{t.label} — <span className="text-green-700">{t.taux} %</span></p>
+                                <p className="text-sm font-semibold text-gray-900">{t.label} : <span className="text-green-700">{t.taux} %</span></p>
                                 <p className="text-xs text-gray-500">{t.desc}</p>
                             </div>
                         </label>
@@ -151,7 +151,7 @@ function IRCMContent() {
                             <tbody className="divide-y divide-gray-50">
                                 {history.map((d) => (
                                     <tr key={d.id} className="hover:bg-gray-50">
-                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? '—'}</td>
+                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? ':'}</td>
                                         <td className="py-2">{d.type_revenu}</td>
                                         <td className="py-2 text-right">{fmt(d.montant_brut)}</td>
                                         <td className="py-2 text-right font-semibold text-red-700">{fmt(d.ircm_total)}</td>
@@ -188,7 +188,7 @@ function IRCMContent() {
 
             <Card title="Base légale">
                 <ul className="text-xs text-gray-500 space-y-1">
-                    <li>• Art. 140 CGI 2025 : IRCM — retenue libératoire à la source</li>
+                    <li>• Art. 140 CGI 2025 : IRCM : retenue libératoire à la source</li>
                     <li>• Créances & dépôts : 25 % · Obligations & bons : 6 % · Dividendes : 12,5 %</li>
                     <li>• Art. 150 : Déclaration et versement mensuel (avant le 15 du mois suivant)</li>
                 </ul>

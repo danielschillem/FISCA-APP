@@ -123,10 +123,10 @@ export default function AdminCompaniesPage() {
                                     </td>
                                     <td className="px-4 py-3">
                                         <span className="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                                            {c.ifu || '—'}
+                                            {c.ifu || ':'}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-xs text-gray-500">{c.secteur || '—'}</td>
+                                    <td className="px-4 py-3 text-xs text-gray-500">{c.secteur || ':'}</td>
                                     <td className="px-4 py-3">
                                         <span className="text-xs text-gray-600 truncate max-w-40 block">{c.user_email}</span>
                                     </td>

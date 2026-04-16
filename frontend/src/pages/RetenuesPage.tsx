@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { retenueApi } from '../lib/api';
 import { fmt, fmtN } from '../lib/fiscalCalc';
@@ -7,12 +7,12 @@ import { Card, Btn, Spinner, Table } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { X, Lock } from 'lucide-react';
 
-// Types retenue — CGI 2025 Art. 206-207 (RAS) et Art. 121-126/140 (IRF/IRCM)
+// Types retenue : CGI 2025 Art. 206-207 (RAS) et Art. 121-126/140 (IRF/IRCM)
 const RETENUE_TYPES: Record<string, { label: string; taux: number }> = {
-    services: { label: 'Prestations de services — Résident IFU (5 %)', taux: 5 },
-    loyer: { label: 'Loyers — IRF min. 9 % (utiliser calculateur IRF pour montants importants)', taux: 9 },
-    dividendes: { label: 'Dividendes — IRCM (12,5 %)', taux: 12.5 },
-    interets: { label: 'Intérêts/Créances — IRCM (25 %)', taux: 25 },
+    services: { label: 'Prestations de services : Résident IFU (5 %)', taux: 5 },
+    loyer: { label: 'Loyers : IRF min. 9 % (utiliser calculateur IRF pour montants importants)', taux: 9 },
+    dividendes: { label: 'Dividendes : IRCM (12,5 %)', taux: 12.5 },
+    interets: { label: 'Intérêts/Créances : IRCM (25 %)', taux: 25 },
     autre: { label: 'Autre / Résident sans IFU / Non-résident (25 %)', taux: 25 },
 };
 
@@ -153,7 +153,7 @@ function RetenuesContent() {
             )}
 
             {/* Table */}
-            <Card title={`Prestations — ${retenues.length} ligne(s)`}>
+            <Card title={`Prestations : ${retenues.length} ligne(s)`}>
                 <Table columns={['Bénéficiaire', 'Type', 'Taux', 'Brut HT', 'RAS', 'Net', '']}>
                     {retenues.map((r) => (
                         <tr key={r.id} className="hover:bg-gray-50">

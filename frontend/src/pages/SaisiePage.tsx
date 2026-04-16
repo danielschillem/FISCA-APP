@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+﻿import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { employeeApi, declarationApi, bulletinApi } from '../lib/api';
 import { calcEmploye, fmt, fmtN } from '../lib/fiscalCalc';
@@ -73,7 +73,7 @@ export default function SaisiePage() {
         setSaving(true);
         setSuccess('');
         try {
-            // Le backend recalcule depuis les employés — on n'envoie que la période
+            // Le backend recalcule depuis les employés : on n'envoie que la période
             await declarationApi.create({ mois, annee });
             qc.invalidateQueries({ queryKey: ['declarations'] });
             setSuccess(`Déclaration ${MOIS_FR[mois - 1]} ${annee} générée.`);

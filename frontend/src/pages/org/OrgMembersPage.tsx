@@ -1,20 +1,20 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { orgApi } from '../../lib/api';
 import type { OrgMember } from '../../types';
 import { UserPlus, Trash2, Shield, AlertCircle, X, CheckCircle2, Users } from 'lucide-react';
 
 const ROLE_LABELS: Record<string, string> = {
-    org_admin:       'Admin structure',
-    comptable:       'Comptable',
+    org_admin: 'Admin structure',
+    comptable: 'Comptable',
     gestionnaire_rh: 'Gestionnaire RH',
-    auditeur:        'Auditeur',
+    auditeur: 'Auditeur',
 };
 const ROLE_COLORS: Record<string, string> = {
-    org_admin:       'bg-purple-100 text-purple-700',
-    comptable:       'bg-blue-100 text-blue-700',
+    org_admin: 'bg-purple-100 text-purple-700',
+    comptable: 'bg-blue-100 text-blue-700',
     gestionnaire_rh: 'bg-green-100 text-green-700',
-    auditeur:        'bg-amber-100 text-amber-700',
+    auditeur: 'bg-amber-100 text-amber-700',
 };
 
 export default function OrgMembersPage() {
@@ -214,8 +214,8 @@ export default function OrgMembersPage() {
                                 <p className="text-xs text-gray-400 mt-1">
                                     {invite.org_role === 'org_admin' && 'Accès complet : gestion des users et de toutes les fonctions'}
                                     {invite.org_role === 'comptable' && 'Saisie, bulletins, déclarations, TVA, RAS, IS, CME, Patente'}
-                                    {invite.org_role === 'gestionnaire_rh' && 'Employés, bulletins, CNSS, IUTS — rapports RH'}
-                                    {invite.org_role === 'auditeur' && 'Lecture seule sur tout — aucune modification possible'}
+                                    {invite.org_role === 'gestionnaire_rh' && 'Employés, bulletins, CNSS, IUTS : rapports RH'}
+                                    {invite.org_role === 'auditeur' && 'Lecture seule sur tout : aucune modification possible'}
                                 </p>
                             </div>
                             <div className="flex gap-3 pt-2">

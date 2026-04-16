@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { calcEmploye, calcIRF, calcIRCM, calcCME, calcPatente, calcMFP, calcIS, fmt, fmtN, pct } from '../lib/fiscalCalc';
 import { Card, Input, Select, Btn } from '../components/ui';
 import { Briefcase, Home, TrendingUp, Store, Scroll, BookOpen, type LucideIcon } from 'lucide-react';
@@ -7,9 +7,9 @@ type Module = 'iuts' | 'irf' | 'ircm' | 'cme' | 'patente' | 'is';
 
 const MODULES: { id: Module; label: string; Icon: LucideIcon }[] = [
     { id: 'iuts', label: 'IUTS / TPA / CNSS', Icon: Briefcase },
-    { id: 'irf', label: 'IRF — Revenus Fonciers', Icon: Home },
-    { id: 'ircm', label: 'IRCM — Capitaux Mob.', Icon: TrendingUp },
-    { id: 'cme', label: 'CME — Micro-Entreprises', Icon: Store },
+    { id: 'irf', label: 'IRF : Revenus Fonciers', Icon: Home },
+    { id: 'ircm', label: 'IRCM : Capitaux Mob.', Icon: TrendingUp },
+    { id: 'cme', label: 'CME : Micro-Entreprises', Icon: Store },
     { id: 'patente', label: 'Patentes', Icon: Scroll },
     { id: 'is', label: 'IS / MFP', Icon: BookOpen },
 ];
@@ -91,7 +91,7 @@ function IUTSCalc() {
 
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <Card title="Paramètres salarié — CGI 2025">
+            <Card title="Paramètres salarié : CGI 2025">
                 <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2">
                         <label className="block text-xs font-medium text-gray-700 mb-1">Catégorie</label>
@@ -105,7 +105,7 @@ function IUTSCalc() {
                                         : 'bg-white text-gray-700 border-gray-300'
                                         }`}
                                 >
-                                    {c} — abatt. {c === 'Cadre' ? '20' : '25'} %
+                                    {c} : abatt. {c === 'Cadre' ? '20' : '25'} %
                                 </button>
                             ))}
                         </div>
@@ -122,7 +122,7 @@ function IUTSCalc() {
                                         : 'bg-white text-gray-700 border-gray-300'
                                         }`}
                                 >
-                                    {v} — {l}
+                                    {v} : {l}
                                 </button>
                             ))}
                         </div>
@@ -145,7 +145,7 @@ function IUTSCalc() {
                 </div>
             </Card>
 
-            <Card title="Résultat — Détail fiscal CGI 2025">
+            <Card title="Résultat : Détail fiscal CGI 2025">
                 <ResultRow label="Rémunération brute totale" value={fmt(r.remBrute)} />
                 <ResultRow label={`Cotisation ${numForm.cotisation}`} value={`- ${fmt(r.cotSoc)}`} sub={`${(r.cotSoc / r.remBrute * 100).toFixed(1)} %`} />
                 <ResultRow label="Exo. logement" value={`- ${fmt(r.exoLog)}`} sub="Plaf. 75 000" />
@@ -154,8 +154,8 @@ function IUTSCalc() {
                 <ResultRow label={`Abatt. forfait. ${(r.tauxForf * 100).toFixed(0)} % (Art.111)`} value={`- ${fmt(r.abattForf)}`} />
                 <ResultRow label="Base imposable (Art.112)" value={fmt(r.baseImp)} />
                 <ResultRow label="IUTS brut (barème progressif)" value={`- ${fmt(r.iutsBrut)}`} />
-                <ResultRow label="Abatt. familial (Art.113)" value={`+ ${fmt(r.abattFam)}`} sub={`${numForm.charges} charge(s) — ${(r.abattFam / (r.iutsBrut || 1) * 100).toFixed(0)} %`} />
-                <ResultRow label="FSP — Fonds de Soutien Patriotique (1 %)" value={`- ${fmt(r.fsp)}`} sub="Décret présidentiel BF 2023" />
+                <ResultRow label="Abatt. familial (Art.113)" value={`+ ${fmt(r.abattFam)}`} sub={`${numForm.charges} charge(s) : ${(r.abattFam / (r.iutsBrut || 1) * 100).toFixed(0)} %`} />
+                <ResultRow label="FSP : Fonds de Soutien Patriotique (1 %)" value={`- ${fmt(r.fsp)}`} sub="Décret présidentiel BF 2023" />
 
                 <div className="mt-3 grid grid-cols-2 gap-3">
                     <div className="bg-green-50 rounded-xl p-4">
@@ -193,7 +193,7 @@ function IRFCalc() {
 
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <Card title="IRF — Revenus Fonciers (CGI 2025 Art. 121–126)">
+            <Card title="IRF : Revenus Fonciers (CGI 2025 Art. 121–126)">
                 <Input
                     label="Loyer brut mensuel (FCFA)"
                     type="text"
@@ -252,7 +252,7 @@ function IRCMCalc() {
 
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <Card title="IRCM — Impôt sur Revenus Capitaux Mob. (CGI 2025 Art. 140)">
+            <Card title="IRCM : Impôt sur Revenus Capitaux Mob. (CGI 2025 Art. 140)">
                 <Select
                     label="Type de revenu"
                     options={TYPES}
@@ -298,16 +298,16 @@ function CMECalc() {
 
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <Card title="CME — Micro-Entreprises (CGI 2025 Art. 533)">
+            <Card title="CME : Micro-Entreprises (CGI 2025 Art. 533)">
                 <div className="space-y-3">
                     <Input label="Chiffre d'affaires annuel (FCFA)" type="text" inputMode="numeric" value={caStr} onChange={(e) => setCAStr(e.target.value)} suffix="FCFA" />
                     <Select label="Zone géographique" options={[
-                        { value: 'A', label: 'Zone A — Ouagadougou / Bobo' }, { value: 'B', label: 'Zone B — Chef-lieu région' },
-                        { value: 'C', label: 'Zone C — Chef-lieu province' }, { value: 'D', label: 'Zone D — Reste territoire' },
+                        { value: 'A', label: 'Zone A : Ouagadougou / Bobo' }, { value: 'B', label: 'Zone B : Chef-lieu région' },
+                        { value: 'C', label: 'Zone C : Chef-lieu province' }, { value: 'D', label: 'Zone D : Reste territoire' },
                     ]} value={zone} onChange={(e) => setZone(e.target.value)} />
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
                         <input type="checkbox" checked={cga} onChange={(e) => setCGA(e.target.checked)} className="rounded" />
-                        Adhérent CGA (réduction 25 % — Art. 197)
+                        Adhérent CGA (réduction 25 % : Art. 197)
                     </label>
                 </div>
             </Card>
@@ -365,14 +365,14 @@ function ISCalc() {
 
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <Card title="IS / MFP — Impôt sur les Sociétés (CGI 2025 Art. 42 — 27,5 %)">
+            <Card title="IS / MFP : Impôt sur les Sociétés (CGI 2025 Art. 42 : 27,5 %)">
                 <div className="space-y-3">
                     <Input label="CA HT (FCFA)" type="text" inputMode="numeric" value={caStr} onChange={(e) => setCAStr(e.target.value)} suffix="FCFA" />
                     <Input label="Bénéfice imposable (FCFA)" type="text" inputMode="numeric" value={beneficeStr} onChange={(e) => setBeneficeStr(e.target.value)} suffix="FCFA" />
-                    <Select label="Régime" options={[{ value: 'RNI', label: 'RNI — Régime Normal' }, { value: 'RSI', label: 'RSI — Régime Simplifié' }]} value={regime} onChange={(e) => setRegime(e.target.value)} />
+                    <Select label="Régime" options={[{ value: 'RNI', label: 'RNI : Régime Normal' }, { value: 'RSI', label: 'RSI : Régime Simplifié' }]} value={regime} onChange={(e) => setRegime(e.target.value)} />
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
                         <input type="checkbox" checked={cga} onChange={(e) => setCGA(e.target.checked)} className="rounded" />
-                        Adhérent CGA (IS -30 %, MFP -50 % — Art. 196)
+                        Adhérent CGA (IS -30 %, MFP -50 % : Art. 196)
                     </label>
                 </div>
             </Card>

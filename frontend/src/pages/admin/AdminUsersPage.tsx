@@ -300,7 +300,7 @@ function UserRow({ user, onSelect }: { user: AdminUser; onSelect: () => void }) 
                         {STATUS_LABELS[licStatus] ?? licStatus}
                     </span>
                 ) : (
-                    <span className="text-xs text-gray-300">—</span>
+                    <span className="text-xs text-gray-300">:</span>
                 )}
             </td>
             <td className="px-4 py-3">

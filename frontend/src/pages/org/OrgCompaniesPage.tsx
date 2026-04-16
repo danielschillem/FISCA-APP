@@ -5,10 +5,10 @@ import type { OrgMember, OrgCompany } from '../../types';
 import { Building2, Shield, ShieldOff, ChevronDown, ChevronRight } from 'lucide-react';
 
 const ROLE_LABELS: Record<string, string> = {
-    org_admin:       'Admin',
-    comptable:       'Comptable',
+    org_admin: 'Admin',
+    comptable: 'Comptable',
     gestionnaire_rh: 'Gestionnaire RH',
-    auditeur:        'Auditeur',
+    auditeur: 'Auditeur',
 };
 
 export default function OrgCompaniesPage() {

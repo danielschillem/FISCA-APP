@@ -1,4 +1,4 @@
-import { Outlet, Navigate } from 'react-router-dom';
+﻿import { Outlet, Navigate } from 'react-router-dom';
 import { useAuthStore, useAppStore } from '../lib/store';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
@@ -8,21 +8,21 @@ import { useLocation } from 'react-router-dom';
 const PAGE_META: Record<string, { title: string; subtitle?: string }> = {
     '/dashboard': { title: 'Tableau de bord', subtitle: 'Exercice fiscal en cours' },
     '/saisie': { title: 'Saisie mensuelle', subtitle: 'Rémunérations et cotisations' },
-    '/calcul': { title: 'Calculateur Fiscal', subtitle: 'CGI 2025 — Burkina Faso' },
+    '/calcul': { title: 'Calculateur Fiscal', subtitle: 'CGI 2025 : Burkina Faso' },
     '/rapport': { title: 'Rapport du mois', subtitle: 'Aperçu et génération du document' },
     '/bulletins': { title: 'Bulletins de paie', subtitle: 'Export PDF individuel' },
     '/simulateur': { title: 'Simulateur fiscal', subtitle: 'Scénarios et comparaison A/B' },
-    '/tva': { title: 'Module TVA', subtitle: 'CGI 2025 — Art. 317 — 18 %' },
-    '/irf': { title: 'IRF — Revenus Fonciers', subtitle: 'CGI 2025 — Art. 121–126' },
-    '/ircm': { title: 'IRCM — Capitaux Mob.', subtitle: 'CGI 2025 — Art. 140' },
+    '/tva': { title: 'Module TVA', subtitle: 'CGI 2025 : Art. 317 : 18 %' },
+    '/irf': { title: 'IRF : Revenus Fonciers', subtitle: 'CGI 2025 : Art. 121–126' },
+    '/ircm': { title: 'IRCM : Capitaux Mob.', subtitle: 'CGI 2025 : Art. 140' },
     '/assistant': { title: 'Assistant IA Fiscal', subtitle: 'Conseils fiscaux intelligents' },
     '/societes': { title: 'Multi-Sociétés', subtitle: 'Gestion multi-entités' },
     '/workflow': { title: 'Workflow Approbation', subtitle: 'Validation des déclarations' },
-    '/retenues': { title: 'Retenue à la source', subtitle: 'CGI 2025 — Art. 206–226' },
+    '/retenues': { title: 'Retenue à la source', subtitle: 'CGI 2025 : Art. 206–226' },
     '/cnss-patronal': { title: 'CNSS Patronal', subtitle: 'Cotisations patronales complètes' },
-    '/cme': { title: 'CME — Micro-Entreprises', subtitle: 'CGI 2025 — Art. 533' },
-    '/is': { title: 'IS / MFP', subtitle: 'CGI 2025 — Art. 42 — 27,5 %' },
-    '/patente': { title: 'Patentes', subtitle: 'CGI 2025 — Art. 237–240' },
+    '/cme': { title: 'CME : Micro-Entreprises', subtitle: 'CGI 2025 : Art. 533' },
+    '/is': { title: 'IS / MFP', subtitle: 'CGI 2025 : Art. 42 : 27,5 %' },
+    '/patente': { title: 'Patentes', subtitle: 'CGI 2025 : Art. 237–240' },
     '/historique': { title: 'Historique Fiscal', subtitle: 'Toutes les déclarations' },
     '/bilan': { title: 'Bilan Annuel', subtitle: 'Synthèse de l\'exercice' },
     '/abonnement': { title: 'Mon Abonnement', subtitle: 'Plans & fonctionnalités' },

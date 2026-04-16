@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useAuthStore, useAppStore } from '../lib/store';
 import { authApi } from '../lib/api';
 import { PLAN_FEATURES, PLAN_LIMITS, type Plan } from '../types';
@@ -39,8 +39,8 @@ const FEAT_MATRIX: { label: string; starter: string | boolean; pro: string | boo
     { label: 'Bulletins de paie PDF', starter: false, pro: true, ent: true },
     { label: 'Simulateur fiscal A/B', starter: false, pro: true, ent: true },
     { label: 'Module TVA complet', starter: false, pro: true, ent: true },
-    { label: 'IRF — Revenus fonciers', starter: false, pro: true, ent: true },
-    { label: 'IRCM — Capitaux mob.', starter: false, pro: true, ent: true },
+    { label: 'IRF : Revenus fonciers', starter: false, pro: true, ent: true },
+    { label: 'IRCM : Capitaux mob.', starter: false, pro: true, ent: true },
     { label: 'Assistant IA fiscal', starter: false, pro: true, ent: true },
     { label: 'Export CSV / XLSX', starter: true, pro: true, ent: true },
     { label: 'Multi-sociétés', starter: false, pro: false, ent: true },
@@ -76,7 +76,7 @@ export default function AbonnementPage() {
 
     const cell = (val: string | boolean, highlight: boolean) => {
         if (val === true) return <td key="c" className="py-2.5 px-4 text-center text-green-600 font-bold"><Check className="w-4 h-4 mx-auto" /></td>;
-        if (val === false) return <td key="c" className="py-2.5 px-4 text-center text-gray-300">—</td>;
+        if (val === false) return <td key="c" className="py-2.5 px-4 text-center text-gray-300">:</td>;
         return <td key="c" className={`py-2.5 px-4 text-center text-xs ${highlight ? 'font-semibold' : ''}`}>{val}</td>;
     };
 

@@ -13,22 +13,22 @@ import {
 
 const PLAN_COLORS: Record<Plan, string> = {
     physique_starter: '#94a3b8',
-    physique_pro:     '#34d399',
-    moral_team:       '#60a5fa',
+    physique_pro: '#34d399',
+    moral_team: '#60a5fa',
     moral_enterprise: '#fb923c',
-    starter:          '#94a3b8',
-    pro:              '#34d399',
-    enterprise:       '#fb923c',
+    starter: '#94a3b8',
+    pro: '#34d399',
+    enterprise: '#fb923c',
 };
 
 const PLAN_LABELS: Record<Plan, string> = {
     physique_starter: 'Solo Starter',
-    physique_pro:     'Solo Pro',
-    moral_team:       'Équipe',
+    physique_pro: 'Solo Pro',
+    moral_team: 'Équipe',
     moral_enterprise: 'Entreprise',
-    starter:          'Starter',
-    pro:              'Pro',
-    enterprise:       'Entreprise',
+    starter: 'Starter',
+    pro: 'Pro',
+    enterprise: 'Entreprise',
 };
 
 type NavItem = { to: string; label: string; Icon: LucideIcon; feat: string | null };
@@ -178,7 +178,7 @@ export default function Sidebar() {
                         </div>
                     ))}
 
-                    {/* Section Organisation — visible uniquement pour org_admin */}
+                    {/* Section Organisation : visible uniquement pour org_admin */}
                     {user?.org_role === 'org_admin' && (
                         <div className="mb-3">
                             <p className="text-[10px] font-semibold text-blue-500 uppercase tracking-widest px-2 mb-1.5">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cmeApi } from '../lib/api';
 import { calcCME, fmt, fmtN } from '../lib/fiscalCalc';
@@ -17,14 +17,14 @@ const ZONES: { value: Zone; label: string; desc: string }[] = [
 
 // Correspond aux tranches CME CGI 2025 Art. 533-542 (CA ≤ 15 M FCFA)
 const CLASSES = [
-    { label: 'Classe 1 — CA 13–15 M FCFA' },
-    { label: 'Classe 2 — CA 11–13 M FCFA' },
-    { label: 'Classe 3 — CA 9–11 M FCFA' },
-    { label: 'Classe 4 — CA 7–9 M FCFA' },
-    { label: 'Classe 5 — CA 5–7 M FCFA' },
-    { label: 'Classe 6 — CA 3–5 M FCFA' },
-    { label: 'Classe 7 — CA 1,5–3 M FCFA' },
-    { label: 'Classe 8 — CA ≤ 1,5 M FCFA' },
+    { label: 'Classe 1 : CA 13–15 M FCFA' },
+    { label: 'Classe 2 : CA 11–13 M FCFA' },
+    { label: 'Classe 3 : CA 9–11 M FCFA' },
+    { label: 'Classe 4 : CA 7–9 M FCFA' },
+    { label: 'Classe 5 : CA 5–7 M FCFA' },
+    { label: 'Classe 6 : CA 3–5 M FCFA' },
+    { label: 'Classe 7 : CA 1,5–3 M FCFA' },
+    { label: 'Classe 8 : CA ≤ 1,5 M FCFA' },
 ];
 
 export default function CMEPage() {
@@ -73,8 +73,8 @@ function CMEContent() {
 
     return (
         <div className="max-w-3xl space-y-6">
-            <Card title="CME — Contribution des Micro-Entreprises">
-                <p className="text-xs text-gray-500 mb-4">CGI 2025 — Art. 533-542 · Régime simplifié pour CA ≤ 150 M FCFA</p>
+            <Card title="CME : Contribution des Micro-Entreprises">
+                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 533-542 · Régime simplifié pour CA ≤ 150 M FCFA</p>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -176,7 +176,7 @@ function CMEContent() {
                             <tbody className="divide-y divide-gray-50">
                                 {history.map((d) => (
                                     <tr key={d.id} className="hover:bg-gray-50">
-                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? '—'}</td>
+                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? ':'}</td>
                                         <td className="py-2">Zone {d.zone}</td>
                                         <td className="py-2 text-right">{fmt(d.ca)}</td>
                                         <td className="py-2 text-right font-semibold text-red-700">{fmt(d.cme_net)}</td>

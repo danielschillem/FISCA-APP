@@ -1,9 +1,9 @@
-// Tests logique pure — IRFPage (sans rendu React)
+﻿// Tests logique pure : IRFPage (sans rendu React)
 // CGI 2025 Art. 121-126 · Abattement 50 % · Tranches 18 % / 25 %
 import { describe, it, expect } from 'vitest'
 import { calcIRF } from '../lib/fiscalCalc'
 
-describe('IRFPage — logique calcIRF', () => {
+describe('IRFPage : logique calcIRF', () => {
     // Abattement 50 %
     it('loyer 1 200 000 → abattement 600 000', () => {
         const r = calcIRF(1_200_000)
@@ -46,7 +46,7 @@ describe('IRFPage — logique calcIRF', () => {
         expect(calcIRF(0).irfTotal).toBe(0)
     })
 
-    // Données API — structure de la requête de création
+    // Données API : structure de la requête de création
     it('payload de création contient annee et loyer_brut', () => {
         const payload = { annee: 2025, loyer_brut: 6_000_000 }
         expect(payload.annee).toBe(2025)

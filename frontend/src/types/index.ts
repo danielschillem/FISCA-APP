@@ -1,4 +1,4 @@
-// ─── Fiscal types — CGI 2025 Burkina Faso ───────────────────
+﻿// ─── Fiscal types : CGI 2025 Burkina Faso ───────────────────
 
 export interface Company {
     id: string;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { companyApi, authApi } from '../lib/api';
 import { Card, Btn, Input, Spinner } from '../components/ui';
@@ -61,7 +61,7 @@ export default function ParametresPage() {
             setTimeout(() => setPwdSuccess(''), 4000);
         },
         onError: (err: { response?: { data?: { error?: string } } }) => {
-            setPwdError(err?.response?.data?.error ?? 'Erreur — vérifiez votre mot de passe actuel.');
+            setPwdError(err?.response?.data?.error ?? 'Erreur : vérifiez votre mot de passe actuel.');
         },
     });
 

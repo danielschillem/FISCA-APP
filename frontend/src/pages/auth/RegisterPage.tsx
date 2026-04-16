@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '../../lib/api';
 import { useAuthStore } from '../../lib/store';
@@ -107,8 +107,8 @@ export default function RegisterPage() {
             {[1, 2, 3].map((s) => (
                 <div key={s} className="flex items-center gap-2">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${s < step ? 'bg-green-600 text-white' :
-                            s === step ? 'bg-green-600 text-white ring-4 ring-green-100' :
-                                'bg-gray-200 text-gray-400'
+                        s === step ? 'bg-green-600 text-white ring-4 ring-green-100' :
+                            'bg-gray-200 text-gray-400'
                         }`}>
                         {s < step ? <CheckCircle2 className="w-4 h-4" /> : s}
                     </div>
@@ -145,7 +145,7 @@ export default function RegisterPage() {
                                 <h3 className="font-bold text-gray-900 mb-1">Personne Physique</h3>
                                 <p className="text-sm text-gray-500 mb-3">Auto-entrepreneur, profession libérale, gérant unique</p>
                                 <ul className="text-xs text-gray-400 space-y-1">
-                                    <li>✓ Compte solo — vous seul</li>
+                                    <li>✓ Compte solo : vous seul</li>
                                     <li>✓ Toutes les déclarations fiscales</li>
                                     <li>✓ Calculateur CGI 2025</li>
                                 </ul>

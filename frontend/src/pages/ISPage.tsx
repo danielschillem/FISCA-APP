@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { isApi } from '../lib/api';
 import { calcIS, calcMFP, fmt, fmtN } from '../lib/fiscalCalc';
@@ -69,8 +69,8 @@ function ISContent() {
 
     return (
         <div className="max-w-3xl space-y-6">
-            <Card title="IS / MFP — Impôt sur les Sociétés / Minimum Forfaitaire Patronal">
-                <p className="text-xs text-gray-500 mb-4">CGI 2025 — Art. 42 (IS 27,5 %) · Art. 40 (MFP 0,5 % du CA)</p>
+            <Card title="IS / MFP : Impôt sur les Sociétés / Minimum Forfaitaire Patronal">
+                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 42 (IS 27,5 %) · Art. 40 (MFP 0,5 % du CA)</p>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -171,7 +171,7 @@ function ISContent() {
                             <tbody className="divide-y divide-gray-50">
                                 {history.map((d) => (
                                     <tr key={d.id} className="hover:bg-gray-50">
-                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? '—'}</td>
+                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? ':'}</td>
                                         <td className="py-2 text-right">{fmt(d.ca)}</td>
                                         <td className="py-2 text-right">{fmt(d.is_theorique)}</td>
                                         <td className="py-2 text-right font-semibold text-red-700">{fmt(d.is_du)}</td>

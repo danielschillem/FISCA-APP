@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { irfApi } from '../lib/api';
 import { calcIRF, fmt } from '../lib/fiscalCalc';
@@ -51,8 +51,8 @@ function IRFContent() {
 
     return (
         <div className="max-w-3xl space-y-6">
-            <Card title="IRF — Impôt sur les Revenus Fonciers">
-                <p className="text-xs text-gray-500 mb-4">CGI 2025 — Art. 121-126 · Abattement 50 % · Taux progressif 18 % / 25 %</p>
+            <Card title="IRF : Impôt sur les Revenus Fonciers">
+                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 121-126 · Abattement 50 % · Taux progressif 18 % / 25 %</p>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Année fiscale</label>
@@ -127,7 +127,7 @@ function IRFContent() {
                             <tbody className="divide-y divide-gray-50">
                                 {history.map((d) => (
                                     <tr key={d.id} className="hover:bg-gray-50">
-                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? '—'}</td>
+                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? ':'}</td>
                                         <td className="py-2 text-right">{fmt(d.loyer_brut)}</td>
                                         <td className="py-2 text-right font-semibold text-red-700">{fmt(d.irf_total)}</td>
                                         <td className="py-2 text-center">
