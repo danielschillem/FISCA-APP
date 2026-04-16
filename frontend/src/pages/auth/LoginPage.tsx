@@ -118,7 +118,7 @@ export default function LoginPage() {
 
                         {/* En-tête */}
                         <div className="mb-8">
-                            <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Bon retour 👋</h2>
+                            <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Bon retour</h2>
                             <p className="text-sm text-gray-400 mt-1.5">Connectez-vous à votre espace fiscal</p>
                         </div>
 

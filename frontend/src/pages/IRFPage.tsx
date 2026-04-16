@@ -74,7 +74,7 @@ function IRFContent() {
                     )}
                 </div>
                 {createMut.isError && <p className="text-xs text-red-600 mt-2">Erreur lors de l'enregistrement</p>}
-                {createMut.isSuccess && <p className="text-xs text-green-600 mt-2">Déclaration enregistrée ✓</p>}
+                {createMut.isSuccess && <p className="text-xs text-green-600 mt-2 flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Déclaration enregistrée</p>}
             </Card>
 
             {result && (
