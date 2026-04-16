@@ -21,8 +21,15 @@ export default function LoginPage() {
             const data = res.data as AuthResponse
             setAuth(data.token, data.user, data.refresh_token)
             router.push('/dashboard')
-        } catch {
-            toast.error('Identifiants invalides')
+        } catch (err: unknown) {
+            const axiosErr = err as { response?: { status: number; data?: { error?: string } }; message?: string }
+            if (axiosErr?.response?.status === 401 || axiosErr?.response?.status === 400) {
+                toast.error('Email ou mot de passe incorrect')
+            } else if (axiosErr?.message?.includes('Network Error') || axiosErr?.message?.includes('ERR_CONNECTION_REFUSED')) {
+                toast.error('Impossible de joindre le serveur — vérifiez que le backend est démarré')
+            } else {
+                toast.error(`Erreur : ${axiosErr?.response?.data?.error || axiosErr?.message || 'Erreur inconnue'}`)
+            }
         } finally {
             setLoading(false)
         }

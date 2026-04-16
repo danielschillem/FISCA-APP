@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,11 +33,11 @@ func NewRetenueHandler(db *pgxpool.Pool) *RetenueHandler {
 }
 
 func (h *RetenueHandler) companyID(r *http.Request) (string, error) {
-	userID := middleware.GetUserID(r)
-	var id string
-	err := h.DB.QueryRow(r.Context(),
-		`SELECT id FROM companies WHERE user_id=$1 LIMIT 1`, userID).Scan(&id)
-	return id, err
+	id := middleware.GetCompanyID(r)
+	if id == "" {
+		return "", fmt.Errorf("company not found")
+	}
+	return id, nil
 }
 
 const retenueCols = `id, company_id, periode, mois, annee,
@@ -69,9 +70,34 @@ func (h *RetenueHandler) List(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "Entreprise introuvable", http.StatusNotFound)
 		return
 	}
-	rows, err := h.DB.Query(r.Context(),
-		`SELECT `+retenueCols+` FROM retenues_source WHERE company_id=$1
-		 ORDER BY annee DESC, mois DESC, created_at DESC`, companyID)
+
+	q := r.URL.Query()
+	mois := q.Get("mois")
+	annee := q.Get("annee")
+
+	countQuery := `SELECT COUNT(*) FROM retenues_source WHERE company_id=$1`
+	query := `SELECT ` + retenueCols + ` FROM retenues_source WHERE company_id=$1`
+	args := []any{companyID}
+	idx := 2
+	if mois != "" {
+		clause := fmt.Sprintf(" AND mois=$%d", idx)
+		query += clause
+		countQuery += clause
+		args = append(args, mois)
+		idx++
+	}
+	if annee != "" {
+		clause := fmt.Sprintf(" AND annee=$%d", idx)
+		query += clause
+		countQuery += clause
+		args = append(args, annee)
+	}
+	query += " ORDER BY annee DESC, mois DESC, created_at DESC"
+
+	var total int
+	h.DB.QueryRow(r.Context(), countQuery, args...).Scan(&total)
+
+	rows, err := h.DB.Query(r.Context(), query, args...)
 	if err != nil {
 		jsonError(w, "Erreur DB", http.StatusInternalServerError)
 		return
@@ -84,6 +110,7 @@ func (h *RetenueHandler) List(w http.ResponseWriter, r *http.Request) {
 			items = append(items, d)
 		}
 	}
+	w.Header().Set("X-Total-Count", strconv.Itoa(total))
 	jsonOK(w, items)
 }
 

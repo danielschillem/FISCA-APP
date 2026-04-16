@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/fisca-app/backend/internal/api/middleware"
+	"github.com/fisca-app/backend/internal/calc"
 	"github.com/fisca-app/backend/internal/models"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -31,11 +33,11 @@ func NewCNSSHandler(db *pgxpool.Pool) *CNSSHandler {
 }
 
 func (h *CNSSHandler) companyID(r *http.Request) (string, error) {
-	userID := middleware.GetUserID(r)
-	var id string
-	err := h.DB.QueryRow(r.Context(),
-		`SELECT id FROM companies WHERE user_id=$1 LIMIT 1`, userID).Scan(&id)
-	return id, err
+	id := middleware.GetCompanyID(r)
+	if id == "" {
+		return "", fmt.Errorf("company not found")
+	}
+	return id, nil
 }
 
 const cnssCols = `id, company_id, periode, mois, annee,
@@ -64,9 +66,34 @@ func (h *CNSSHandler) List(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "Entreprise introuvable", http.StatusNotFound)
 		return
 	}
-	rows, err := h.DB.Query(r.Context(),
-		`SELECT `+cnssCols+` FROM cnss_patronal WHERE company_id=$1
-		 ORDER BY annee DESC, mois DESC`, companyID)
+
+	q := r.URL.Query()
+	mois := q.Get("mois")
+	annee := q.Get("annee")
+
+	countQuery := `SELECT COUNT(*) FROM cnss_patronal WHERE company_id=$1`
+	query := `SELECT ` + cnssCols + ` FROM cnss_patronal WHERE company_id=$1`
+	args := []any{companyID}
+	idx := 2
+	if mois != "" {
+		clause := fmt.Sprintf(" AND mois=$%d", idx)
+		query += clause
+		countQuery += clause
+		args = append(args, mois)
+		idx++
+	}
+	if annee != "" {
+		clause := fmt.Sprintf(" AND annee=$%d", idx)
+		query += clause
+		countQuery += clause
+		args = append(args, annee)
+	}
+	query += " ORDER BY annee DESC, mois DESC"
+
+	var total int
+	h.DB.QueryRow(r.Context(), countQuery, args...).Scan(&total)
+
+	rows, err := h.DB.Query(r.Context(), query, args...)
 	if err != nil {
 		jsonError(w, "Erreur DB", http.StatusInternalServerError)
 		return
@@ -79,6 +106,7 @@ func (h *CNSSHandler) List(w http.ResponseWriter, r *http.Request) {
 			items = append(items, d)
 		}
 	}
+	w.Header().Set("X-Total-Count", strconv.Itoa(total))
 	jsonOK(w, items)
 }
 
@@ -103,11 +131,7 @@ func (h *CNSSHandler) Generer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Récupérer les employés et leurs bases cotisables depuis les bulletins de la période
-	type cotRow struct {
-		cotisation string
-		brutTotal  float64
-	}
+	// Récupérer les bulletins de la période pour calcul CNSS par employé
 	rows, err := h.DB.Query(r.Context(),
 		`SELECT cotisation, brut_total FROM bulletins
 		 WHERE company_id=$1 AND mois=$2 AND annee=$3`,
@@ -118,7 +142,9 @@ func (h *CNSSHandler) Generer(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
+	// Agréger via CalcCNSSPatronal (applique le plafond 600k par employé)
 	var baseCNSS, baseCARFO float64
+	var patCNSS, salCNSS, patCARFO, salCARFO float64
 	var nbCNSS, nbCARFO int
 	for rows.Next() {
 		var cot string
@@ -126,30 +152,38 @@ func (h *CNSSHandler) Generer(w http.ResponseWriter, r *http.Request) {
 		if err := rows.Scan(&cot, &brut); err != nil {
 			continue
 		}
+		res := calc.CalcCNSSPatronal(brut, cot)
 		if strings.EqualFold(cot, "CARFO") {
-			baseCARFO += brut
+			baseCARFO += res.BasePlafond
+			patCARFO += res.TotalPatronal
+			salCARFO += res.CotSalariale
 			nbCARFO++
 		} else {
-			baseCNSS += brut
+			baseCNSS += res.BasePlafond
+			patCNSS += res.TotalPatronal
+			salCNSS += res.CotSalariale
 			nbCNSS++
 		}
 	}
 
-	// Si aucun bulletin, essayer depuis la déclaration
+	// Si aucun bulletin, estimer depuis la déclaration
 	if nbCNSS+nbCARFO == 0 {
 		var cssTotal float64
 		h.DB.QueryRow(r.Context(),
 			`SELECT COALESCE(css_total,0) FROM declarations
 			 WHERE company_id=$1 AND mois=$2 AND annee=$3 LIMIT 1`,
 			companyID, req.Mois, req.Annee).Scan(&cssTotal)
-		// estimer base = css / taux salarial moyen (5.5%)
+		// estimer base via taux salarial CNSS (5.5%)
 		baseCNSS = round2(cssTotal / (TauxSalarialCNSS / 100))
+		res := calc.CalcCNSSPatronal(baseCNSS, "CNSS")
+		patCNSS = res.TotalPatronal
+		salCNSS = res.CotSalariale
 	}
 
-	patCNSS := round2(baseCNSS * TauxPatronalCNSS / 100)
-	salCNSS := round2(baseCNSS * TauxSalarialCNSS / 100)
-	patCARFO := round2(baseCARFO * TauxPatronalCARFO / 100)
-	salCARFO := round2(baseCARFO * TauxSalarialCARFO / 100)
+	patCNSS = round2(patCNSS)
+	salCNSS = round2(salCNSS)
+	patCARFO = round2(patCARFO)
+	salCARFO = round2(salCARFO)
 	totalCNSS := round2(patCNSS + salCNSS)
 	totalCARFO := round2(patCARFO + salCARFO)
 	totalGeneral := round2(totalCNSS + totalCARFO)

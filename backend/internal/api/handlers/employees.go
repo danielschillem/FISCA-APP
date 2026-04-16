@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -52,6 +54,11 @@ func (h *EmployeeHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 	offset := (page - 1) * limit
 
+	// Total pour pagination coté client
+	var total int
+	h.DB.QueryRow(r.Context(),
+		`SELECT COUNT(*) FROM employees WHERE company_id=$1`, companyID).Scan(&total)
+
 	rows, err := h.DB.Query(r.Context(),
 		`SELECT id, company_id, nom, categorie, cotisation, charges,
 		        salaire_base, anciennete, heures_sup, logement, transport, fonction
@@ -74,6 +81,9 @@ func (h *EmployeeHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 		employees = append(employees, e)
 	}
+	w.Header().Set("X-Total-Count", strconv.Itoa(total))
+	w.Header().Set("X-Page", strconv.Itoa(page))
+	w.Header().Set("X-Limit", strconv.Itoa(limit))
 	jsonOK(w, employees)
 }
 
@@ -209,4 +219,195 @@ func (h *EmployeeHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// GET /api/employees/export — Export CSV de tous les employés
+func (h *EmployeeHandler) Export(w http.ResponseWriter, r *http.Request) {
+	companyID, err := h.getCompanyID(r)
+	if err != nil {
+		jsonError(w, "Entreprise introuvable", http.StatusNotFound)
+		return
+	}
+
+	rows, err := h.DB.Query(r.Context(),
+		`SELECT nom, categorie, cotisation, charges,
+		        salaire_base, anciennete, heures_sup, logement, transport, fonction
+		 FROM employees WHERE company_id=$1 ORDER BY nom`,
+		companyID,
+	)
+	if err != nil {
+		jsonError(w, "Erreur DB", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="employes-fisca.csv"`)
+	w.Write([]byte("\xEF\xBB\xBF")) // BOM UTF-8
+
+	cw := csv.NewWriter(w)
+	cw.Comma = ';'
+	_ = cw.Write([]string{
+		"NOM", "CATEGORIE", "COTISATION", "CHARGES_FAMILIALES",
+		"SALAIRE_BASE", "ANCIENNETE", "HEURES_SUP", "LOGEMENT", "TRANSPORT", "FONCTION",
+	})
+
+	for rows.Next() {
+		var e models.Employee
+		if err := rows.Scan(&e.Nom, &e.Categorie, &e.Cotisation, &e.Charges,
+			&e.SalaireBase, &e.Anciennete, &e.HeuresSup, &e.Logement, &e.Transport, &e.Fonction,
+		); err != nil {
+			continue
+		}
+		_ = cw.Write([]string{
+			e.Nom, e.Categorie, e.Cotisation, strconv.Itoa(e.Charges),
+			fmt.Sprintf("%.0f", e.SalaireBase), fmt.Sprintf("%.0f", e.Anciennete),
+			fmt.Sprintf("%.0f", e.HeuresSup), fmt.Sprintf("%.0f", e.Logement),
+			fmt.Sprintf("%.0f", e.Transport), fmt.Sprintf("%.0f", e.Fonction),
+		})
+	}
+	cw.Flush()
+}
+
+// POST /api/employees/import — Import CSV d'employés (remplace ou complète)
+// Format attendu (séparateur ; ou ,) :
+// NOM;CATEGORIE;COTISATION;CHARGES_FAMILIALES;SALAIRE_BASE;ANCIENNETE;HEURES_SUP;LOGEMENT;TRANSPORT;FONCTION
+func (h *EmployeeHandler) Import(w http.ResponseWriter, r *http.Request) {
+	companyID, err := h.getCompanyID(r)
+	if err != nil {
+		jsonError(w, "Entreprise introuvable", http.StatusNotFound)
+		return
+	}
+
+	// Limit body to 2 MB
+	r.Body = http.MaxBytesReader(w, r.Body, 2<<20)
+
+	// Vérifier le plan
+	userID := middleware.GetUserID(r)
+	var plan string
+	h.DB.QueryRow(r.Context(), `SELECT plan FROM users WHERE id=$1`, userID).Scan(&plan)
+
+	cr := csv.NewReader(r.Body)
+	cr.Comma = ';'
+	cr.LazyQuotes = true
+	cr.TrimLeadingSpace = true
+
+	records, err := cr.ReadAll()
+	if err != nil {
+		// Retry with comma separator
+		return
+	}
+	if len(records) < 2 {
+		jsonError(w, "Fichier CSV vide ou sans données (entête + au moins 1 ligne requises)", http.StatusBadRequest)
+		return
+	}
+
+	// Normalise column headers (lowercase, trim)
+	headers := make([]string, len(records[0]))
+	for i, h := range records[0] {
+		headers[i] = strings.ToLower(strings.TrimSpace(h))
+	}
+	colIdx := func(names ...string) int {
+		for _, name := range names {
+			for i, h := range headers {
+				if h == name {
+					return i
+				}
+			}
+		}
+		return -1
+	}
+
+	idxNom := colIdx("nom", "name", "prenom_nom")
+	idxCat := colIdx("categorie", "category")
+	idxCot := colIdx("cotisation")
+	idxChg := colIdx("charges_familiales", "charges")
+	idxSal := colIdx("salaire_base", "salaire")
+	idxAnc := colIdx("anciennete")
+	idxHSup := colIdx("heures_sup", "heures_supplementaires")
+	idxLog := colIdx("logement")
+	idxTrans := colIdx("transport")
+	idxFonct := colIdx("fonction")
+
+	if idxNom < 0 || idxSal < 0 {
+		jsonError(w, "Colonnes obligatoires manquantes : NOM et SALAIRE_BASE sont requis", http.StatusBadRequest)
+		return
+	}
+
+	parse := func(row []string, idx int) float64 {
+		if idx < 0 || idx >= len(row) {
+			return 0
+		}
+		v := strings.ReplaceAll(strings.TrimSpace(row[idx]), " ", "")
+		f, _ := strconv.ParseFloat(v, 64)
+		return f
+	}
+	parseInt := func(row []string, idx int) int {
+		v := parse(row, idx)
+		return int(v)
+	}
+	strVal := func(row []string, idx int) string {
+		if idx < 0 || idx >= len(row) {
+			return ""
+		}
+		return strings.TrimSpace(row[idx])
+	}
+
+	// Limite plan starter
+	if plan == "starter" {
+		var current int
+		h.DB.QueryRow(r.Context(), `SELECT COUNT(*) FROM employees WHERE company_id=$1`, companyID).Scan(&current)
+		remaining := 10 - current
+		if remaining <= 0 {
+			jsonError(w, "Limite atteinte : plan Starter limité à 10 employés", http.StatusPaymentRequired)
+			return
+		}
+		if len(records)-1 > remaining {
+			jsonError(w, fmt.Sprintf("Import limité à %d employés pour le plan Starter (vous en avez déjà %d)", 10, current), http.StatusPaymentRequired)
+			return
+		}
+	}
+
+	imported, errors := 0, []string{}
+	for i, row := range records[1:] {
+		if len(row) == 0 || strings.TrimSpace(strings.Join(row, "")) == "" {
+			continue
+		}
+		e := models.Employee{
+			CompanyID:   companyID,
+			Nom:         strVal(row, idxNom),
+			Categorie:   strVal(row, idxCat),
+			Cotisation:  strVal(row, idxCot),
+			Charges:     parseInt(row, idxChg),
+			SalaireBase: parse(row, idxSal),
+			Anciennete:  parse(row, idxAnc),
+			HeuresSup:   parse(row, idxHSup),
+			Logement:    parse(row, idxLog),
+			Transport:   parse(row, idxTrans),
+			Fonction:    parse(row, idxFonct),
+		}
+		if msg := validateEmployee(&e); msg != "" {
+			errors = append(errors, fmt.Sprintf("Ligne %d (%s) : %s", i+2, e.Nom, msg))
+			continue
+		}
+		_, err := h.DB.Exec(r.Context(),
+			`INSERT INTO employees (company_id, nom, categorie, cotisation, charges,
+			  salaire_base, anciennete, heures_sup, logement, transport, fonction)
+			 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+			 ON CONFLICT DO NOTHING`,
+			companyID, e.Nom, e.Categorie, e.Cotisation, e.Charges,
+			e.SalaireBase, e.Anciennete, e.HeuresSup, e.Logement, e.Transport, e.Fonction,
+		)
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("Ligne %d (%s) : erreur base de données", i+2, e.Nom))
+		} else {
+			imported++
+		}
+	}
+
+	jsonOK(w, map[string]any{
+		"imported": imported,
+		"errors":   errors,
+		"total":    len(records) - 1,
+	})
 }

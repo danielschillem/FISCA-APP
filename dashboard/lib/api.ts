@@ -50,10 +50,24 @@ export const employeesApi = {
     create: (e: unknown) => api.post('/employees', e),
     update: (id: string, e: unknown) => api.put(`/employees/${id}`, e),
     delete: (id: string) => api.delete(`/employees/${id}`),
+    exportUrl: () => `${API_URL}/api/employees/export`,
+    import: (csvText: string) =>
+        api.post('/employees/import', csvText, {
+            headers: { 'Content-Type': 'text/csv; charset=utf-8' },
+        }),
 }
 
 export const calculApi = {
     calcul: (data: unknown) => api.post('/calcul', data),
+    irf: (data: unknown) => api.post('/calcul/irf', data),
+    ircm: (data: unknown) => api.post('/calcul/ircm', data),
+    is: (data: unknown) => api.post('/calcul/is', data),
+    mfp: (data: unknown) => api.post('/calcul/mfp', data),
+    cme: (data: unknown) => api.post('/calcul/cme', data),
+    patente: (data: unknown) => api.post('/calcul/patente', data),
+    tva: (data: unknown) => api.post('/calcul/tva', data),
+    ras: (data: unknown) => api.post('/calcul/ras', data),
+    penalites: (data: unknown) => api.post('/calcul/penalites', data),
 }
 
 export const declarationsApi = {
@@ -108,7 +122,13 @@ export const simulationsApi = {
 }
 
 export const tvaApi = {
-    list: () => api.get('/tva'),
+    list: (mois?: number, annee?: number) => {
+        const params = new URLSearchParams()
+        if (mois) params.set('mois', String(mois))
+        if (annee) params.set('annee', String(annee))
+        const qs = params.toString()
+        return api.get(qs ? `/tva?${qs}` : '/tva')
+    },
     create: (data: unknown) => api.post('/tva', data),
     get: (id: string) => api.get(`/tva/${id}`),
     update: (id: string, data: unknown) => api.put(`/tva/${id}`, data),
@@ -150,7 +170,13 @@ export function setActiveCompany(companyId: string | null) {
 
 export const retenuesApi = {
     taux: () => api.get('/retenues/taux'),
-    list: () => api.get('/retenues'),
+    list: (mois?: number, annee?: number) => {
+        const params = new URLSearchParams()
+        if (mois) params.set('mois', String(mois))
+        if (annee) params.set('annee', String(annee))
+        const qs = params.toString()
+        return api.get(qs ? `/retenues?${qs}` : '/retenues')
+    },
     create: (data: unknown) => api.post('/retenues', data),
     get: (id: string) => api.get(`/retenues/${id}`),
     update: (id: string, data: unknown) => api.put(`/retenues/${id}`, data),
@@ -159,7 +185,13 @@ export const retenuesApi = {
 }
 
 export const cnssApi = {
-    list: () => api.get('/cnss'),
+    list: (mois?: number, annee?: number) => {
+        const params = new URLSearchParams()
+        if (mois) params.set('mois', String(mois))
+        if (annee) params.set('annee', String(annee))
+        const qs = params.toString()
+        return api.get(qs ? `/cnss?${qs}` : '/cnss')
+    },
     generer: (data: { mois: number; annee: number }) => api.post('/cnss/generer', data),
     get: (id: string) => api.get(`/cnss/${id}`),
     valider: (id: string) => api.put(`/cnss/${id}/valider`, {}),

@@ -1,0 +1,153 @@
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { cnssApi, employeeApi } from '../lib/api';
+import { fmt, fmtN } from '../lib/fiscalCalc';
+import { Card, Btn, Spinner, Table, Badge } from '../components/ui';
+import { useAppStore, PLAN_FEATURES } from '../components/ui';
+import type { Employee, CNSSPatronal } from '../types';
+import { MOIS_FR } from '../types';
+import { Zap, Lock } from 'lucide-react';
+
+export default function CNSSPatronalPage() {
+    const { plan } = useAppStore();
+    if (!PLAN_FEATURES[plan]?.has('cnss-patronal')) return <Locked />;
+    return <CNSSContent />;
+}
+
+const TAUX = { famille: 0.072, accident: 0.034, retraite: 0.055 };
+const PLAFOND = 600000;
+
+function calcCnssEmp(salaire: number) {
+    const base = Math.min(salaire, PLAFOND);
+    return {
+        base,
+        famille: Math.round(base * TAUX.famille),
+        accident: Math.round(base * TAUX.accident),
+        retraite: Math.round(base * TAUX.retraite),
+        total: Math.round(base * (TAUX.famille + TAUX.accident + TAUX.retraite)),
+    };
+}
+
+function CNSSContent() {
+    const qc = useQueryClient();
+    const now = new Date();
+    const [mois, setMois] = useState(now.getMonth() + 1);
+    const [annee, setAnnee] = useState(now.getFullYear());
+
+    const { data: employees = [], isLoading: loadEmp } = useQuery<Employee[]>({
+        queryKey: ['employees'],
+        queryFn: () => employeeApi.list().then((r) => r.data),
+    });
+
+    const { data: declarations = [], isLoading: loadDecl } = useQuery<CNSSPatronal[]>({
+        queryKey: ['cnss-patronal', mois, annee],
+        queryFn: () => cnssApi.list(mois, annee).then((r) => r.data),
+    });
+
+    const generate = useMutation({
+        mutationFn: () => cnssApi.generate({ mois, annee }),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['cnss-patronal', mois, annee] }),
+    });
+
+    if (loadEmp || loadDecl) return <Spinner />;
+
+    const totaux = employees.reduce((acc, e) => {
+        const c = calcCnssEmp(e.salaire_base + e.anciennete);
+        return { base: acc.base + c.base, total: acc.total + c.total };
+    }, { base: 0, total: 0 });
+
+    return (
+        <div className="space-y-6">
+            {/* Period selector */}
+            <div className="flex items-center gap-3">
+                <select
+                    value={mois}
+                    onChange={(e) => setMois(+e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-green-500 focus:outline-none"
+                >
+                    {MOIS_FR.map((m, i) => (
+                        <option key={i} value={i + 1}>{m}</option>
+                    ))}
+                </select>
+                <input
+                    type="number"
+                    min={2020}
+                    max={2030}
+                    value={annee}
+                    onChange={(e) => setAnnee(+e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-24 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                />
+                <Btn onClick={() => generate.mutate()} disabled={generate.isPending}>
+                    {generate.isPending ? 'Génération…' : <><Zap className="w-4 h-4" /> Générer déclaration</>}
+                </Btn>
+            </div>
+
+            {/* Summary */}
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+                <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-xs text-gray-500">Effectif déclaré</p>
+                    <p className="text-2xl font-bold text-gray-900">{employees.length}</p>
+                </div>
+                <div className="bg-blue-50 rounded-xl p-4">
+                    <p className="text-xs text-gray-500">Masse salariale</p>
+                    <p className="text-xl font-bold text-blue-700">{fmt(totaux.base)}</p>
+                </div>
+                <div className="bg-green-50 rounded-xl p-4">
+                    <p className="text-xs text-gray-500">Cotisations patronales</p>
+                    <p className="text-xl font-bold text-green-700">{fmt(totaux.total)}</p>
+                </div>
+                <div className="bg-orange-50 rounded-xl p-4">
+                    <p className="text-xs text-gray-500">Taux global</p>
+                    <p className="text-xl font-bold text-orange-700">16,1 %</p>
+                </div>
+            </div>
+
+            {/* Per-employee table */}
+            <Card title="Détail par employé">
+                <div className="overflow-x-auto">
+                    <Table columns={['Employé', 'Salaire', 'Base CNSS', 'Famille (7,2%)', 'Accident (3,4%)', 'Retraite (5,5%)', 'Total patronal']}>
+                        {employees.map((e) => {
+                            const sal = e.salaire_base + e.anciennete;
+                            const c = calcCnssEmp(sal);
+                            return (
+                                <tr key={e.id} className="hover:bg-gray-50">
+                                    <td className="py-3 px-4 text-sm font-medium text-gray-900">
+                                        {e.nom}
+                                        {e.cotisation === 'CARFO' && <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700">CARFO</span>}
+                                    </td>
+                                    <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(sal)}</td>
+                                    <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(c.base)}</td>
+                                    <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(c.famille)}</td>
+                                    <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(c.accident)}</td>
+                                    <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(c.retraite)}</td>
+                                    <td className="py-3 px-4 text-sm text-right font-bold font-mono text-green-700">{fmtN(c.total)}</td>
+                                </tr>
+                            );
+                        })}
+                        <tr className="bg-gray-50 font-bold border-t-2 border-gray-200">
+                            <td className="py-3 px-4 text-sm">Total</td>
+                            <td colSpan={2} />
+                            <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(Math.round(totaux.base * TAUX.famille))}</td>
+                            <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(Math.round(totaux.base * TAUX.accident))}</td>
+                            <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(Math.round(totaux.base * TAUX.retraite))}</td>
+                            <td className="py-3 px-4 text-sm text-right font-bold text-green-700">{fmtN(totaux.total)}</td>
+                        </tr>
+                    </Table>
+                </div>
+            </Card>
+        </div>
+    );
+}
+
+function Locked() {
+    return (
+        <div className="flex items-center justify-center min-h-[50vh]">
+            <div className="text-center max-w-xs">
+                <div className="flex justify-center mb-4"><Lock className="w-12 h-12 text-gray-300" /></div>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Fonctionnalité <span className="text-orange-600">Entreprise</span></h2>
+                <p className="text-gray-500 text-sm">Passez au plan Entreprise pour la déclaration CNSS patronale complète.</p>
+            </div>
+        </div>
+    );
+}
+

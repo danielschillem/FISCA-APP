@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/fisca-app/backend/internal/api/middleware"
@@ -27,11 +28,79 @@ func NewWorkflowHandler(db *pgxpool.Pool) *WorkflowHandler {
 }
 
 func (h *WorkflowHandler) companyID(r *http.Request) (string, error) {
-	userID := middleware.GetUserID(r)
-	var id string
-	err := h.DB.QueryRow(r.Context(),
-		`SELECT id FROM companies WHERE user_id=$1 LIMIT 1`, userID).Scan(&id)
-	return id, err
+	id := middleware.GetCompanyID(r)
+	if id == "" {
+		return "", fmt.Errorf("company not found")
+	}
+	return id, nil
+}
+
+// GET /api/workflow — liste des déclarations avec leur statut workflow
+func (h *WorkflowHandler) List(w http.ResponseWriter, r *http.Request) {
+	companyID, err := h.companyID(r)
+	if err != nil {
+		jsonError(w, "Entreprise introuvable", http.StatusNotFound)
+		return
+	}
+
+	statut := r.URL.Query().Get("statut")
+
+	query := `
+		SELECT d.id, d.statut, d.mois, d.annee, d.periode,
+		       COALESCE(d.ref, '') AS ref,
+		       COALESCE(u.email, '') AS createur,
+		       COALESCE(we.commentaire, '') AS commentaire
+		FROM declarations d
+		LEFT JOIN companies c ON c.id = d.company_id
+		LEFT JOIN users u ON u.id = c.user_id
+		LEFT JOIN LATERAL (
+		    SELECT COALESCE(commentaire, '') AS commentaire
+		    FROM workflow_etapes
+		    WHERE declaration_id = d.id
+		    ORDER BY created_at DESC
+		    LIMIT 1
+		) we ON true
+		WHERE d.company_id = $1`
+
+	args := []any{companyID}
+	if statut != "" {
+		query += ` AND d.statut = $2`
+		args = append(args, statut)
+	}
+	query += ` ORDER BY d.annee DESC, d.mois DESC`
+
+	rows, err := h.DB.Query(r.Context(), query, args...)
+	if err != nil {
+		jsonError(w, "Erreur DB", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	type WorkflowItem struct {
+		ID              string `json:"id"`
+		Statut          string `json:"statut"`
+		TypeDeclaration string `json:"type_declaration"`
+		Titre           string `json:"titre"`
+		Mois            int    `json:"mois"`
+		Annee           int    `json:"annee"`
+		Createur        string `json:"createur"`
+		Commentaire     string `json:"commentaire"`
+	}
+
+	items := []WorkflowItem{}
+	for rows.Next() {
+		var item WorkflowItem
+		var ref string
+		if err := rows.Scan(
+			&item.ID, &item.Statut, &item.Mois, &item.Annee,
+			&item.Titre, &ref, &item.Createur, &item.Commentaire,
+		); err != nil {
+			continue
+		}
+		item.TypeDeclaration = "declaration"
+		items = append(items, item)
+	}
+	jsonOK(w, items)
 }
 
 // GET /api/declarations/{id}/workflow — historique des étapes

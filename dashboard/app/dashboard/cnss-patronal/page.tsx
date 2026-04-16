@@ -23,15 +23,15 @@ export default function CNSSPatronalPage() {
     const [genAnnee, setGenAnnee] = useState(now.getFullYear())
 
     const { data: fiches = [], isLoading } = useQuery<CNSSPatronal[]>({
-        queryKey: ['cnss'],
-        queryFn: () => cnssApi.list().then(r => r.data?.data ?? r.data ?? []),
+        queryKey: ['cnss', genMois, genAnnee],
+        queryFn: () => cnssApi.list(genMois, genAnnee).then(r => r.data?.data ?? r.data ?? []),
         staleTime: 30_000,
     })
 
     const genMut = useMutation({
         mutationFn: () => cnssApi.generer({ mois: genMois, annee: genAnnee }),
         onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['cnss'] })
+            qc.invalidateQueries({ queryKey: ['cnss', genMois, genAnnee] })
             toast.success('Fiche CNSS générée')
         },
         onError: (e: unknown) => {

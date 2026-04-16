@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/fisca-app/backend/internal/api/middleware"
@@ -22,11 +23,11 @@ func NewTVAHandler(db *pgxpool.Pool) *TVAHandler {
 }
 
 func (h *TVAHandler) companyID(r *http.Request) (string, error) {
-	userID := middleware.GetUserID(r)
-	var id string
-	err := h.DB.QueryRow(r.Context(),
-		`SELECT id FROM companies WHERE user_id=$1 LIMIT 1`, userID).Scan(&id)
-	return id, err
+	id := middleware.GetCompanyID(r)
+	if id == "" {
+		return "", fmt.Errorf("company not found")
+	}
+	return id, nil
 }
 
 func (h *TVAHandler) checkPlan(r *http.Request, allowed ...string) bool {
@@ -60,9 +61,34 @@ func (h *TVAHandler) List(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "Entreprise introuvable", http.StatusNotFound)
 		return
 	}
-	rows, err := h.DB.Query(r.Context(),
-		`SELECT `+tvaCols+` FROM tva_declarations WHERE company_id=$1
-		 ORDER BY annee DESC, mois DESC`, companyID)
+
+	q := r.URL.Query()
+	mois := q.Get("mois")
+	annee := q.Get("annee")
+
+	countQuery := `SELECT COUNT(*) FROM tva_declarations WHERE company_id=$1`
+	query := `SELECT ` + tvaCols + ` FROM tva_declarations WHERE company_id=$1`
+	args := []any{companyID}
+	idx := 2
+	if mois != "" {
+		clause := fmt.Sprintf(" AND mois=$%d", idx)
+		query += clause
+		countQuery += clause
+		args = append(args, mois)
+		idx++
+	}
+	if annee != "" {
+		clause := fmt.Sprintf(" AND annee=$%d", idx)
+		query += clause
+		countQuery += clause
+		args = append(args, annee)
+	}
+	query += " ORDER BY annee DESC, mois DESC"
+
+	var total int
+	h.DB.QueryRow(r.Context(), countQuery, args...).Scan(&total)
+
+	rows, err := h.DB.Query(r.Context(), query, args...)
 	if err != nil {
 		jsonError(w, "Erreur DB", http.StatusInternalServerError)
 		return
@@ -77,6 +103,7 @@ func (h *TVAHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 		items = append(items, d)
 	}
+	w.Header().Set("X-Total-Count", strconv.Itoa(total))
 	jsonOK(w, items)
 }
 

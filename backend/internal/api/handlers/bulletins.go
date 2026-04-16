@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/fisca-app/backend/internal/api/middleware"
 	"github.com/fisca-app/backend/internal/calc"
@@ -27,11 +28,11 @@ func NewBulletinHandler(db *pgxpool.Pool) *BulletinHandler {
 }
 
 func (h *BulletinHandler) companyID(r *http.Request) (string, error) {
-	userID := middleware.GetUserID(r)
-	var id string
-	err := h.DB.QueryRow(r.Context(),
-		`SELECT id FROM companies WHERE user_id=$1 LIMIT 1`, userID).Scan(&id)
-	return id, err
+	id := middleware.GetCompanyID(r)
+	if id == "" {
+		return "", fmt.Errorf("company not found")
+	}
+	return id, nil
 }
 
 const bulletinCols = `id, company_id, employee_id, mois, annee, periode,
@@ -62,19 +63,27 @@ func (h *BulletinHandler) List(w http.ResponseWriter, r *http.Request) {
 	mois := q.Get("mois")
 	annee := q.Get("annee")
 
+	countQuery := `SELECT COUNT(*) FROM bulletins WHERE company_id=$1`
 	query := `SELECT ` + bulletinCols + ` FROM bulletins WHERE company_id=$1`
 	args := []any{companyID}
 	idx := 2
 	if mois != "" {
-		query += fmt.Sprintf(" AND mois=$%d", idx)
+		clause := fmt.Sprintf(" AND mois=$%d", idx)
+		query += clause
+		countQuery += clause
 		args = append(args, mois)
 		idx++
 	}
 	if annee != "" {
-		query += fmt.Sprintf(" AND annee=$%d", idx)
+		clause := fmt.Sprintf(" AND annee=$%d", idx)
+		query += clause
+		countQuery += clause
 		args = append(args, annee)
 	}
 	query += " ORDER BY annee DESC, mois DESC, nom_employe"
+
+	var total int
+	h.DB.QueryRow(r.Context(), countQuery, args...).Scan(&total)
 
 	rows, err := h.DB.Query(r.Context(), query, args...)
 	if err != nil {
@@ -91,6 +100,7 @@ func (h *BulletinHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 		items = append(items, b)
 	}
+	w.Header().Set("X-Total-Count", strconv.Itoa(total))
 	jsonOK(w, items)
 }
 
@@ -122,7 +132,8 @@ func (h *BulletinHandler) Generate(w http.ResponseWriter, r *http.Request) {
 		companyID, req.Mois, req.Annee)
 
 	rows, err := h.DB.Query(r.Context(),
-		`SELECT id, nom, categorie, charges, salaire_base, anciennete, heures_sup, logement, transport, fonction
+		`SELECT id, nom, categorie, charges, salaire_base, anciennete, heures_sup,
+		        logement, transport, fonction, cotisation
 		 FROM employees WHERE company_id=$1 ORDER BY nom`,
 		companyID)
 	if err != nil {
@@ -133,16 +144,21 @@ func (h *BulletinHandler) Generate(w http.ResponseWriter, r *http.Request) {
 
 	var bulletins []models.Bulletin
 	for rows.Next() {
-		var empID, nom, categorie string
+		var empID, nom, categorie, empCotisation string
 		var charges int
 		var salBase, anc, hSup, log, trans, fonc float64
-		if err := rows.Scan(&empID, &nom, &categorie, &charges, &salBase, &anc, &hSup, &log, &trans, &fonc); err != nil {
+		if err := rows.Scan(&empID, &nom, &categorie, &charges,
+			&salBase, &anc, &hSup, &log, &trans, &fonc, &empCotisation); err != nil {
 			continue
+		}
+		// Utiliser la cotisation de l'employé (CNSS ou CARFO) — pas celle du payload
+		if empCotisation != "CARFO" {
+			empCotisation = "CNSS"
 		}
 		res := calc.CalcSalarie(calc.SalarieInput{
 			SalaireBase: salBase, Anciennete: anc, HeuresSup: hSup,
 			Logement: log, Transport: trans, Fonction: fonc,
-			Charges: charges, Cotisation: req.Cotisation,
+			Charges: charges, Categorie: categorie, Cotisation: empCotisation,
 		})
 		var b models.Bulletin
 		err = h.DB.QueryRow(r.Context(),
@@ -153,7 +169,7 @@ func (h *BulletinHandler) Generate(w http.ResponseWriter, r *http.Request) {
 			 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
 			 RETURNING `+bulletinCols,
 			companyID, empID, req.Mois, req.Annee, periode, nom, categorie,
-			salBase, anc, hSup, log, trans, fonc, charges, req.Cotisation,
+			salBase, anc, hSup, log, trans, fonc, charges, empCotisation,
 			res.BrutTotal, res.BaseImp, res.IUTSBrut, res.IUTSNet, res.CotSoc, res.TPA, res.SalaireNet,
 		).Scan(
 			&b.ID, &b.CompanyID, &b.EmployeeID, &b.Mois, &b.Annee, &b.Periode,

@@ -1,9 +1,11 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/fisca-app/backend/internal/api/handlers"
 	mw "github.com/fisca-app/backend/internal/api/middleware"
@@ -24,7 +26,12 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.RequestSize(1 << 20)) // 1 MB max body
 	// CORS — origines autorisées
-	allowedOrigins := []string{"https://*.vercel.app", "http://localhost:3000"}
+	allowedOrigins := []string{
+		"https://*.vercel.app",
+		"http://localhost:3000", // frontend Vite (dev) / frontend Docker
+		"http://localhost:3001", // dashboard Next.js (Docker)
+		"http://localhost:5173", // frontend Vite dev server
+	}
 	if extra := os.Getenv("ALLOWED_ORIGIN"); extra != "" {
 		// Supporte plusieurs origines séparées par des virgules
 		for _, o := range strings.Split(extra, ",") {
@@ -37,6 +44,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Company-ID"},
+		ExposedHeaders:   []string{"X-Total-Count", "X-Page", "X-Limit"},
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
@@ -73,7 +81,17 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 		r.Post("/auth/refresh", authH.Refresh)
 		r.Post("/auth/logout", authH.Logout)
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(`{"status":"ok"}`)) //nolint:errcheck
+			ctx := r.Context()
+			dbStatus := "ok"
+			if err := db.Ping(ctx); err != nil {
+				dbStatus = "error"
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]any{ //nolint:errcheck
+				"status": "ok",
+				"db":     dbStatus,
+				"time":   time.Now().UTC().Format(time.RFC3339),
+			})
 		})
 
 		// Routes protégées
@@ -93,17 +111,29 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			// Notifications
 			r.Get("/notifications", notifH.List)
 
-			// Assistant IA [Plan: Pro+]
-			r.Post("/assistant", assistantH.Chat)
+			// Assistant IA [Plan: Pro+] — rate limit 10 req/min (API OpenAI coûteuse)
+			assistantRateLimit := mw.RateLimit(10, 10.0/60)
+			r.With(assistantRateLimit).Post("/assistant", assistantH.Chat)
 
 			// Employés
 			r.Get("/employees", empH.List)
 			r.Post("/employees", empH.Create)
 			r.Put("/employees/{id}", empH.Update)
 			r.Delete("/employees/{id}", empH.Delete)
+			r.Get("/employees/export", empH.Export)
+			r.Post("/employees/import", empH.Import)
 
-			// Calcul fiscal (stateless)
+			// Calcul fiscal (stateless — CGI 2025)
 			r.Post("/calcul", calcH.Calcul)
+			r.Post("/calcul/tva", calcH.TVA)
+			r.Post("/calcul/ras", calcH.RAS)
+			r.Post("/calcul/irf", calcH.IRF)
+			r.Post("/calcul/ircm", calcH.IRCM)
+			r.Post("/calcul/is", calcH.IS)
+			r.Post("/calcul/mfp", calcH.MFP)
+			r.Post("/calcul/cme", calcH.CME)
+			r.Post("/calcul/patente", calcH.Patente)
+			r.Post("/calcul/penalites", calcH.Penalites)
 
 			// Déclarations + workflow
 			r.Get("/declarations", declH.List)
@@ -115,6 +145,9 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			r.Post("/declarations/{id}/soumettre", wfH.Soumettre)
 			r.Post("/declarations/{id}/approuver", wfH.Approuver)
 			r.Post("/declarations/{id}/rejeter", wfH.Rejeter)
+
+			// Workflow global (liste + transitions)
+			r.Get("/workflow", wfH.List)
 
 			// Entreprise (compat)
 			r.Get("/company", compH.Get)

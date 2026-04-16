@@ -28,10 +28,12 @@ export default function RetenuesPage() {
     const [showForm, setShowForm] = useState(false)
     const [editId, setEditId] = useState<string | null>(null)
     const [form, setForm] = useState<Form>(EMPTY)
+    const [filterMois, setFilterMois] = useState(now.getMonth() + 1)
+    const [filterAnnee, setFilterAnnee] = useState(now.getFullYear())
 
     const { data: retenues = [], isLoading } = useQuery<RetenueSource[]>({
-        queryKey: ['retenues'],
-        queryFn: () => retenuesApi.list().then(r => r.data?.data ?? r.data ?? []),
+        queryKey: ['retenues', filterMois, filterAnnee],
+        queryFn: () => retenuesApi.list(filterMois, filterAnnee).then(r => r.data?.data ?? r.data ?? []),
         staleTime: 30_000,
     })
 
@@ -81,11 +83,21 @@ export default function RetenuesPage() {
 
     return (
         <div>
-            {/* En-tête */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <p style={{ fontSize: 13, color: 'var(--gr5)', margin: 0 }}>
-                    Saisez les paiements soumis à la retenue à la source (art. 139-141 CGI-BF).
-                </p>
+            {/* Filtre période + bouton */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end', marginBottom: 16 }}>
+                <div className="form-group" style={{ margin: 0, flex: '0 0 150px' }}>
+                    <label>Mois</label>
+                    <select value={filterMois} onChange={e => setFilterMois(+e.target.value)}>
+                        {MOIS_LABELS.slice(1).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
+                    </select>
+                </div>
+                <div className="form-group" style={{ margin: 0, flex: '0 0 110px' }}>
+                    <label>Année</label>
+                    <select value={filterAnnee} onChange={e => setFilterAnnee(+e.target.value)}>
+                        {years.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                </div>
+                <div style={{ flex: 1 }} />
                 <button className="btn btn-primary" onClick={() => { setShowForm(v => !v); setForm(EMPTY) }}>
                     <Plus size={14} /> Nouvelle retenue
                 </button>

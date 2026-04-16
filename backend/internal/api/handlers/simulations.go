@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/fisca-app/backend/internal/api/middleware"
@@ -20,11 +21,11 @@ func NewSimulationHandler(db *pgxpool.Pool) *SimulationHandler {
 }
 
 func (h *SimulationHandler) companyID(r *http.Request) (string, error) {
-	userID := middleware.GetUserID(r)
-	var id string
-	err := h.DB.QueryRow(r.Context(),
-		`SELECT id FROM companies WHERE user_id=$1 LIMIT 1`, userID).Scan(&id)
-	return id, err
+	id := middleware.GetCompanyID(r)
+	if id == "" {
+		return "", fmt.Errorf("company not found")
+	}
+	return id, nil
 }
 
 // checkPlan retourne true si le plan de l'utilisateur est l'un des plans autorisés.

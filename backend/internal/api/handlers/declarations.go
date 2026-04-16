@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -23,11 +24,11 @@ func NewDeclarationHandler(db *pgxpool.Pool) *DeclarationHandler {
 }
 
 func (h *DeclarationHandler) companyID(r *http.Request) (string, error) {
-	userID := middleware.GetUserID(r)
-	var id string
-	err := h.DB.QueryRow(r.Context(),
-		`SELECT id FROM companies WHERE user_id=$1 LIMIT 1`, userID).Scan(&id)
-	return id, err
+	id := middleware.GetCompanyID(r)
+	if id == "" {
+		return "", fmt.Errorf("company not found")
+	}
+	return id, nil
 }
 
 // GET /api/declarations?page=1&limit=100
@@ -50,6 +51,11 @@ func (h *DeclarationHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	offset := (page - 1) * limit
+
+	// Total pour pagination
+	var total int
+	h.DB.QueryRow(r.Context(),
+		`SELECT COUNT(*) FROM declarations WHERE company_id=$1`, companyID).Scan(&total)
 
 	rows, err := h.DB.Query(r.Context(),
 		`SELECT id, company_id, periode, mois, annee, nb_salaries,
@@ -76,6 +82,9 @@ func (h *DeclarationHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 		decls = append(decls, d)
 	}
+	w.Header().Set("X-Total-Count", strconv.Itoa(total))
+	w.Header().Set("X-Page", strconv.Itoa(page))
+	w.Header().Set("X-Limit", strconv.Itoa(limit))
 	jsonOK(w, decls)
 }
 
@@ -170,9 +179,9 @@ func (h *DeclarationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	ref := fmt.Sprintf("FISCA-%d%02d-%04d", req.Annee, req.Mois, now.UnixNano()%10000)
 
-	// Délai légal BF : 15 du mois suivant la période
+	// Délai légal BF : 20 du mois suivant la période (IUTS/CSS)
 	// time.Month(mois+1) est normalisé par Go (décembre+1 = janvier N+1)
-	deadline := time.Date(req.Annee, time.Month(req.Mois+1), 15, 23, 59, 59, 0, time.UTC)
+	deadline := time.Date(req.Annee, time.Month(req.Mois+1), 20, 23, 59, 59, 0, time.UTC)
 	statut := "ok"
 	if now.UTC().After(deadline) {
 		statut = "retard"
@@ -218,7 +227,7 @@ func (h *DeclarationHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// GET /api/declarations/{id}/export — Export CSV format DGI Burkina Faso
+// GET /api/declarations/{id}/export — Export DIPE format DGI Burkina Faso
 func (h *DeclarationHandler) Export(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	companyID, err := h.companyID(r)
@@ -242,28 +251,100 @@ func (h *DeclarationHandler) Export(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Récupérer les informations de l'entreprise
-	var nom, ifu string
+	// Informations entreprise
+	var nom, ifu, rc, adresse string
 	h.DB.QueryRow(r.Context(),
-		`SELECT COALESCE(nom,''), COALESCE(ifu,'') FROM companies WHERE id=$1`, companyID,
-	).Scan(&nom, &ifu)
+		`SELECT COALESCE(nom,''), COALESCE(ifu,''), COALESCE(rc,''), COALESCE(adresse,'')
+		 FROM companies WHERE id=$1`, companyID,
+	).Scan(&nom, &ifu, &rc, &adresse)
+
+	// Employés actuels (pour détail DIPE)
+	rows, err := h.DB.Query(r.Context(),
+		`SELECT nom, categorie, cotisation, charges,
+		        salaire_base, anciennete, heures_sup, logement, transport, fonction
+		 FROM employees WHERE company_id=$1 ORDER BY nom`,
+		companyID,
+	)
+	if err != nil {
+		jsonError(w, "Erreur récupération employés", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
 
 	ref := ""
 	if d.Ref != nil {
 		ref = *d.Ref
 	}
 
-	// Format CSV télédéclaration DGI-BF (colonnes standard)
-	filename := fmt.Sprintf("FISCA-IUTS-%d%02d-%s.csv", d.Annee, d.Mois, ref)
+	filename := fmt.Sprintf("DIPE-IUTS-TPA-%d%02d-%s.csv", d.Annee, d.Mois, ref)
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+	w.Write([]byte("\xEF\xBB\xBF")) // BOM UTF-8
 
-	// BOM UTF-8 pour compatibilité Excel/LibreOffice
-	w.Write([]byte("\xEF\xBB\xBF"))
-	fmt.Fprintf(w, "REFERENCE;ENTREPRISE;IFU;PERIODE;MOIS;ANNEE;NB_SALARIES;BRUT_TOTAL;IUTS_TOTAL;TPA_TOTAL;CSS_TOTAL;TOTAL_DGI;STATUT;DATE_DEPOT\n")
-	fmt.Fprintf(w, "%s;%s;%s;%s;%d;%d;%d;%.2f;%.2f;%.2f;%.2f;%.2f;%s;%s\n",
-		ref, nom, ifu, d.Periode, d.Mois, d.Annee, d.NbSalarie,
-		d.BrutTotal, d.IUTSTotal, d.TPATotal, d.CSSTotal, d.Total,
-		d.Statut, d.CreatedAt.Format("02/01/2006"),
-	)
+	cw := csv.NewWriter(w)
+	cw.Comma = ';'
+
+	// ── Entête DIPE ──
+	_ = cw.Write([]string{"FISCA — DIPE IUTS/TPA/CSS", "Burkina Faso", "CGI 2025"})
+	_ = cw.Write([]string{""})
+	_ = cw.Write([]string{"ENTREPRISE", nom})
+	_ = cw.Write([]string{"IFU", ifu})
+	_ = cw.Write([]string{"RC", rc})
+	_ = cw.Write([]string{"ADRESSE", adresse})
+	_ = cw.Write([]string{"PERIODE", d.Periode})
+	_ = cw.Write([]string{"REFERENCE", ref})
+	_ = cw.Write([]string{"DATE GENERATION", time.Now().Format("02/01/2006 15:04")})
+	_ = cw.Write([]string{""})
+
+	// ── Tableau récapitulatif ──
+	_ = cw.Write([]string{"=== RECAPITULATIF ==="})
+	_ = cw.Write([]string{"NB SALARIES", strconv.Itoa(d.NbSalarie)})
+	_ = cw.Write([]string{"MASSE SALARIALE BRUTE", fmt.Sprintf("%.0f", d.BrutTotal)})
+	_ = cw.Write([]string{"IUTS TOTAL", fmt.Sprintf("%.0f", d.IUTSTotal)})
+	_ = cw.Write([]string{"TPA TOTAL (3%)", fmt.Sprintf("%.0f", d.TPATotal)})
+	_ = cw.Write([]string{"CSS SALARIALE", fmt.Sprintf("%.0f", d.CSSTotal)})
+	_ = cw.Write([]string{"TOTAL DGI (IUTS+TPA)", fmt.Sprintf("%.0f", d.Total)})
+	_ = cw.Write([]string{"STATUT", d.Statut})
+	_ = cw.Write([]string{""})
+
+	// ── Détail par employé ──
+	_ = cw.Write([]string{"=== DETAIL PAR EMPLOYE ==="})
+	_ = cw.Write([]string{
+		"NOM", "CATEGORIE", "COTISATION", "CHARGES", "SALAIRE_BASE",
+		"BRUT_TOTAL", "BASE_IMPOSABLE", "IUTS_BRUT", "ABATT_FAMILIAL",
+		"IUTS_NET", "CSS_SALARIE", "TPA_PATRONAL", "NET_A_PAYER",
+	})
+
+	for rows.Next() {
+		var e calc.SalarieInput
+		var empNom string
+		if err := rows.Scan(&empNom, &e.Categorie, &e.Cotisation, &e.Charges,
+			&e.SalaireBase, &e.Anciennete, &e.HeuresSup,
+			&e.Logement, &e.Transport, &e.Fonction,
+		); err != nil {
+			continue
+		}
+		if e.Cotisation != "CARFO" {
+			e.Cotisation = "CNSS"
+		}
+		res := calc.CalcSalarie(e)
+
+		_ = cw.Write([]string{
+			empNom, e.Categorie, e.Cotisation, strconv.Itoa(e.Charges),
+			fmt.Sprintf("%.0f", e.SalaireBase),
+			fmt.Sprintf("%.0f", res.BrutTotal),
+			fmt.Sprintf("%.0f", res.BaseImp),
+			fmt.Sprintf("%.0f", res.IUTSBrut),
+			fmt.Sprintf("%.0f", res.AbattFam),
+			fmt.Sprintf("%.0f", res.IUTSNet),
+			fmt.Sprintf("%.0f", res.CotSoc),
+			fmt.Sprintf("%.0f", res.TPA),
+			fmt.Sprintf("%.0f", res.NetAPayer),
+		})
+	}
+
+	// ── Pied de page ──
+	_ = cw.Write([]string{""})
+	_ = cw.Write([]string{"Généré par FISCA — Plateforme Fiscale BF", "www.fisca.bf"})
+	cw.Flush()
 }

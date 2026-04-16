@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: fisca
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_DB: fisca_dev
     ports:
       - "5432:5432"
@@ -15,6 +15,7 @@ services:
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U fisca" ]
       interval: 5s
+      timeout: 3s
       retries: 5
 
   backend:
@@ -25,24 +26,55 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DATABASE_URL: postgres://fisca:password@db:5432/fisca_dev?sslmode=disable
-      JWT_SECRET: dev_secret_change_in_production
+      DATABASE_URL: postgres://fisca:${POSTGRES_PASSWORD:-password}@db:5432/fisca_dev?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-dev_secret_change_in_production}
       PORT: "8080"
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-http://localhost:3000,http://localhost:3001,http://localhost:5173}
+      ADMIN_SECRET: ${ADMIN_SECRET:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8080/api/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
+  # Vite SPA — served via nginx with /api reverse-proxy to backend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: "" # vide → axios default '/api' → nginx proxie vers backend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # Next.js Dashboard
   dashboard:
     build:
       context: ./dashboard
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8080
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   pg_data:

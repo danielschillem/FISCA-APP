@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -19,7 +20,13 @@ func Connect() (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parsing config DB: %w", err)
 	}
-	config.MaxConns = 10
+
+	// Pool tuning — adapté à un backend web API
+	config.MaxConns = 20
+	config.MinConns = 2
+	config.MaxConnLifetime = 30 * time.Minute
+	config.MaxConnIdleTime = 10 * time.Minute
+	config.HealthCheckPeriod = 1 * time.Minute
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
@@ -246,6 +253,19 @@ func RunMigrations(pool *pgxpool.Pool) error {
 	CREATE INDEX IF NOT EXISTS idx_prt_user_id             ON password_reset_tokens(user_id);
 	CREATE INDEX IF NOT EXISTS idx_rt_token                ON refresh_tokens(token);
 	CREATE INDEX IF NOT EXISTS idx_rt_user_id              ON refresh_tokens(user_id);
+
+	-- Index bulletins et TVA (ajouts idempotents)
+	CREATE INDEX IF NOT EXISTS idx_bulletins_company_id         ON bulletins(company_id);
+	CREATE INDEX IF NOT EXISTS idx_bulletins_company_period     ON bulletins(company_id, annee DESC, mois DESC);
+	CREATE INDEX IF NOT EXISTS idx_tva_declarations_company_id  ON tva_declarations(company_id);
+	CREATE INDEX IF NOT EXISTS idx_tva_declarations_period      ON tva_declarations(company_id, annee DESC, mois DESC);
+	CREATE INDEX IF NOT EXISTS idx_retenues_company_period      ON retenues_source(company_id, annee DESC, mois DESC);
+	CREATE INDEX IF NOT EXISTS idx_simulations_company_id       ON simulations(company_id);
+	CREATE INDEX IF NOT EXISTS idx_wf_etapes_declaration_id     ON workflow_etapes(declaration_id);
+
+	-- Unicité déclaration IUTS par entreprise/période (évite les doublons)
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_declarations_unique_period
+	    ON declarations(company_id, mois, annee);
 	`
 	_, err := pool.Exec(context.Background(), schema)
 	return err

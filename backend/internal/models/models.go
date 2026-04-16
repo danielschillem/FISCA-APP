@@ -106,17 +106,21 @@ type CalculRequest struct {
 	Transport   float64 `json:"transport"`
 	Fonction    float64 `json:"fonction"`
 	Charges     int     `json:"charges"`
+	Categorie   string  `json:"categorie"`  // "Cadre" | "Non-cadre"
 	Cotisation  string  `json:"cotisation"` // "CNSS" | "CARFO"
 }
 
 type CalculResult struct {
-	BrutTotal  float64 `json:"brut_total"`
-	BaseImp    float64 `json:"base_imposable"`
-	IUTSBrut   float64 `json:"iuts_brut"`
-	IUTSNet    float64 `json:"iuts_net"`
-	CotSoc     float64 `json:"cotisation_sociale"`
-	TPA        float64 `json:"tpa"`
-	SalaireNet float64 `json:"salaire_net"`
+	BrutTotal    float64 `json:"brut_total"`
+	BaseImp      float64 `json:"base_imposable"`
+	IUTSBrut     float64 `json:"iuts_brut"`
+	IUTSNet      float64 `json:"iuts_net"`
+	CotSoc       float64 `json:"cotisation_sociale"`
+	TPA          float64 `json:"tpa"`
+	SalaireNet   float64 `json:"salaire_net"`
+	AbattForf    float64 `json:"abattement_forfaitaire"`
+	AbattFam     float64 `json:"abattement_familial"`
+	RetPersonnel float64 `json:"retenue_personnel"`
 }
 
 // ─── BULLETIN DE PAIE ─────────────────────────────────────────
@@ -267,4 +271,122 @@ type HistoriqueFiscalAnnee struct {
 	RetenueTotal float64                `json:"retenue_total"`
 	TotalOblig   float64                `json:"total_obligations"`
 	Mois         []HistoriqueFiscalMois `json:"mois"`
+}
+
+// ─── IRF — Revenus Fonciers (CGI 2025 Art. 121–126) ──────────
+
+type IRFDeclaration struct {
+	ID         string    `json:"id"`
+	CompanyID  string    `json:"company_id"`
+	Periode    string    `json:"periode"`
+	Mois       int       `json:"mois"`
+	Annee      int       `json:"annee"`
+	Bailleur   string    `json:"bailleur"`
+	Adresse    string    `json:"adresse"`
+	LoyerBrut  float64   `json:"loyer_brut"`
+	Abattement float64   `json:"abattement"`
+	BaseNette  float64   `json:"base_nette"`
+	IRFTotal   float64   `json:"irf_total"`
+	LoyerNet   float64   `json:"loyer_net"`
+	Statut     string    `json:"statut"` // "en_cours" | "declare"
+	Ref        *string   `json:"ref"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
+// ─── IRCM — Capitaux Mobiliers (CGI 2025 Art. 140) ───────────
+
+type IRCMDeclaration struct {
+	ID          string    `json:"id"`
+	CompanyID   string    `json:"company_id"`
+	Periode     string    `json:"periode"`
+	Annee       int       `json:"annee"`
+	TypeRevenu  string    `json:"type_revenu"` // "CREANCES"|"OBLIGATIONS"|"DIVIDENDES"
+	Description string    `json:"description"`
+	MontantBrut float64   `json:"montant_brut"`
+	Taux        float64   `json:"taux"`
+	IRCM        float64   `json:"ircm"`
+	MontantNet  float64   `json:"montant_net"`
+	Statut      string    `json:"statut"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+// ─── IS / MFP (CGI 2025 Art. 42) ─────────────────────────────
+
+type ISDeclaration struct {
+	ID          string    `json:"id"`
+	CompanyID   string    `json:"company_id"`
+	Annee       int       `json:"annee"`
+	Regime      string    `json:"regime"` // "RNI" | "RSI"
+	CAHT        float64   `json:"ca_ht"`
+	Benefice    float64   `json:"benefice"`
+	IS          float64   `json:"is"`
+	MFPCalcule  float64   `json:"mfp_calcule"`
+	MFPDu       float64   `json:"mfp_du"`
+	AdhesionCGA bool      `json:"adhesion_cga"`
+	Statut      string    `json:"statut"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+// ─── CME — Micro-Entreprises (CGI 2025 Art. 533) ─────────────
+
+type CMEDeclaration struct {
+	ID          string    `json:"id"`
+	CompanyID   string    `json:"company_id"`
+	Annee       int       `json:"annee"`
+	CA          float64   `json:"ca"`
+	Zone        string    `json:"zone"` // "A"|"B"|"C"|"D"
+	Classe      int       `json:"classe"`
+	CME         float64   `json:"cme"`
+	CMENet      float64   `json:"cme_net"`
+	AdhesionCGA bool      `json:"adhesion_cga"`
+	Statut      string    `json:"statut"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+// ─── PATENTE (CGI 2025 Art. 237–240) ─────────────────────────
+
+type PatenteDeclaration struct {
+	ID             string    `json:"id"`
+	CompanyID      string    `json:"company_id"`
+	Annee          int       `json:"annee"`
+	CA             float64   `json:"ca"`
+	ValeurLocative float64   `json:"valeur_locative"`
+	DroitFixe      float64   `json:"droit_fixe"`
+	DroitProp      float64   `json:"droit_proportionnel"`
+	TotalPatente   float64   `json:"total_patente"`
+	Statut         string    `json:"statut"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
+// ─── BILAN ANNUEL ─────────────────────────────────────────────
+
+type BilanAnnuel struct {
+	Annee          int     `json:"annee"`
+	IUTSTotal      float64 `json:"iuts_total"`
+	TPATotal       float64 `json:"tpa_total"`
+	CSSTotal       float64 `json:"css_total"`
+	CNSSPatTotal   float64 `json:"cnss_patronal_total"`
+	TVANette       float64 `json:"tva_nette_total"`
+	RASTotal       float64 `json:"ras_total"`
+	IRFTotal       float64 `json:"irf_total"`
+	IRCMTotal      float64 `json:"ircm_total"`
+	ISTotal        float64 `json:"is_total"`
+	MFPTotal       float64 `json:"mfp_total"`
+	CMETotal       float64 `json:"cme_total"`
+	PatenteTotal   float64 `json:"patente_total"`
+	GrandTotal     float64 `json:"grand_total"`
+	NbDeclarations int     `json:"nb_declarations"`
+	NbSalaries     int     `json:"nb_salaries"`
+}
+
+// ─── NOTIFICATION ─────────────────────────────────────────────
+
+type Notification struct {
+	ID        string    `json:"id"`
+	CompanyID string    `json:"company_id"`
+	Type      string    `json:"type"` // "alerte"|"info"|"succes"|"retard"
+	Titre     string    `json:"titre"`
+	Message   string    `json:"message"`
+	Lu        bool      `json:"lu"`
+	CreatedAt time.Time `json:"created_at"`
 }

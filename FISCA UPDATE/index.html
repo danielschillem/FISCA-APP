@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISCA — Plateforme Fiscale Intelligente</title>
+<link rel="stylesheet" href="fisca.css">
+<link rel="stylesheet" href="fisca-extras.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.7.1/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<!-- ===== DEMO BAR ===== -->
+<div class="demo-bar no-print">
+  <span class="demo-bar-label">Mode démo — Plan actif :</span>
+  <button class="demo-plan-btn active" data-plan="starter" onclick="switchPlan('starter')">Starter</button>
+  <button class="demo-plan-btn" data-plan="pro"       onclick="switchPlan('pro')">Pro</button>
+  <button class="demo-plan-btn" data-plan="enterprise" onclick="switchPlan('enterprise')">Entreprise</button>
+  <span class="demo-bar-right">Cliquez sur un plan pour voir les fonctionnalités déverrouillées</span>
+</div>
+
+<!-- ===== PANEL NOTIFICATIONS ===== -->
+<div id="notif-panel" class="notif-panel">
+  <div class="notif-panel-header">
+    <h3>Notifications</h3>
+    <div class="ch-right">
+      <span class="notif-unread-count" id="notif-unread-count">0 non lu(s)</span>
+      <button class="btn-sm btn-outline" onclick="markAllRead()">Tout lire</button>
+      <button class="btn-icon" onclick="toggleNotifPanel()"><span id="ic-close-notif"></span></button>
+    </div>
+  </div>
+  <div class="notif-list" id="notif-list"></div>
+</div>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon">F</div>
+      <div class="logo-text">
+        <strong>FISCA <span class="plan-badge" id="plan-badge" style="background:#6b7280">Starter</span></strong>
+        <span>Plateforme Fiscale</span>
+      </div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-label">Principal</div>
+    <div class="nav-item" data-view="dashboard"><span id="ic-n-home"></span> Tableau de bord</div>
+    <div class="nav-item" data-view="saisie" data-feature="saisie">
+      <span id="ic-n-edit"></span> Saisie mensuelle <span class="nav-badge">Avr</span>
+    </div>
+    <div class="nav-item" data-view="calcul" data-feature="calcul"><span id="ic-n-calc"></span> Calcul IUTS / TPA</div>
+    <div class="nav-item" data-view="rapport" data-feature="rapport"><span id="ic-n-doc"></span> Rapport du mois</div>
+
+    <div class="nav-label">Pro</div>
+    <div class="nav-item" data-view="bulletin" data-feature="bulletin"><span id="ic-n-bull"></span> Bulletins de paie</div>
+    <div class="nav-item" data-view="simulateur" data-feature="simulateur"><span id="ic-n-sim"></span> Simulateur fiscal</div>
+    <div class="nav-item" data-view="tva" data-feature="tva"><span id="ic-n-tva"></span> Module TVA</div>
+    <div class="nav-item" data-view="irf" data-feature="irf"><span id="ic-n-irf"></span> IRF — Revenus fonciers</div>
+    <div class="nav-item" data-view="ircm" data-feature="ircm"><span id="ic-n-ircm"></span> IRCM — Capitaux mob.</div>
+    <div class="nav-item" data-view="cme" data-feature="cme"><span id="ic-n-cme"></span> CME — Micro-entreprises</div>
+    <div class="nav-item" data-view="patente" data-feature="patente"><span id="ic-n-pat"></span> Patentes</div>
+    <div class="nav-item" data-view="assistant" data-feature="assistant"><span id="ic-n-ia"></span> Assistant IA</div>
+
+    <div class="nav-label">Entreprise</div>
+    <div class="nav-item" data-view="multi-company" data-feature="multi-company"><span id="ic-n-comp"></span> Multi-sociétés</div>
+    <div class="nav-item" data-view="workflow" data-feature="workflow"><span id="ic-n-wf"></span> Workflow approbation</div>
+    <div class="nav-item" data-view="ras" data-feature="ras"><span id="ic-n-ras"></span> Retenue à la source</div>
+    <div class="nav-item" data-view="cnss-patronal" data-feature="cnss-patronal"><span id="ic-n-cnss"></span> CNSS Patronal</div>
+
+    <div class="nav-label">Compte</div>
+    <div class="nav-item" data-view="historique"><span id="ic-n-hist"></span> Historique fiscal</div>
+    <div class="nav-item" data-view="bilan" data-feature="bilan"><span id="ic-n-bilan"></span> Bilan annuel</div>
+    <div class="nav-item" data-view="abonnement"><span id="ic-n-abo"></span> Mon abonnement</div>
+    <div class="nav-item" data-view="parametres"><span id="ic-n-set"></span> Paramètres</div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar">SK</div>
+      <div class="user-info">
+        <strong>SK SARL</strong>
+        <span>IFU 0012345BF</span>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="btn-hamburger no-print" onclick="toggleSidebar()" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <h2 id="topbar-title">Tableau de bord</h2>
+      <p  id="topbar-sub">Avril 2026 · Exercice fiscal en cours</p>
+    </div>
+    <div class="topbar-right">
+      <div class="notif-btn-wrap no-print">
+        <div class="notif-btn" onclick="toggleNotifPanel()"><span id="ic-bell"></span></div>
+        <span class="notif-count-badge" id="notif-count">2</span>
+      </div>
+      <button class="btn btn-outline no-print" onclick="showView('saisie')"><span id="ic-plus-btn"></span> Saisie</button>
+      <button class="btn btn-outline no-print" onclick="showUpgradeModal()"><span id="ic-upgrade-btn"></span> Voir les plans</button>
+      <button class="btn btn-orange no-print" onclick="openPayModal()"><span id="ic-pay-btn"></span> Générer le mois</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ============= DASHBOARD ============= -->
+    <div id="view-dashboard" class="view">
+      <div class="alert alert-orange no-print" id="dash-alert-wrap">
+        <span id="ic-w1"></span>
+        <span id="dash-alert-text">Déclaration IUTS <strong>Mars 2026</strong> en retard. Date limite dépassée — pénalités applicables.</span>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card s-green"><div class="stat-label">IUTS à reverser</div><div class="stat-value" id="dash-iuts">—</div><div class="stat-sub" id="dash-sub-iuts">FCFA · —</div><div class="stat-icon"><span id="ic-si1"></span></div></div>
+        <div class="stat-card s-orange"><div class="stat-label">TPA (3%)</div><div class="stat-value" id="dash-tpa">—</div><div class="stat-sub" id="dash-sub-tpa">FCFA · Masse salariale</div><div class="stat-icon"><span id="ic-si2"></span></div></div>
+        <div class="stat-card s-blue"><div class="stat-label">Cotisations CNSS</div><div class="stat-value" id="dash-cnss">—</div><div class="stat-sub" id="dash-sub-cnss">FCFA · Part salariale</div><div class="stat-icon"><span id="ic-si3"></span></div></div>
+        <div class="stat-card s-red"><div class="stat-label">Salariés déclarés</div><div class="stat-value" id="dash-nb">—</div><div class="stat-sub" id="dash-sub-nb">Employés · —</div><div class="stat-icon"><span id="ic-si4"></span></div></div>
+      </div>
+      <div class="quick-actions no-print">
+        <div class="qa-btn" onclick="showView('saisie')"><span id="ic-qa1"></span>Saisir</div>
+        <div class="qa-btn" onclick="showView('calcul')"><span id="ic-qa2"></span>Calculs</div>
+        <div class="qa-btn" onclick="showView('simulateur')"><span id="ic-qa3"></span>Simuler</div>
+        <div class="qa-btn" onclick="showView('bulletin')"><span id="ic-qa4"></span>Bulletins</div>
+        <div class="qa-btn" onclick="showView('tva')"><span id="ic-qa5"></span>TVA</div>
+        <div class="qa-btn" onclick="showView('assistant')"><span id="ic-qa6"></span>IA Fiscal</div>
+        <div class="qa-btn" onclick="showView('workflow')"><span id="ic-qa7"></span>Workflow</div>
+        <div class="qa-btn" onclick="openPayModal()"><span id="ic-qa8"></span>Payer</div>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-header"><h3>Calendrier fiscal 2026</h3><div class="ch-right"><span id="ic-cal"></span></div></div>
+          <div class="card-body">
+            <div class="cal-grid" id="cal-grid">
+              <!-- Rendu dynamique par renderCalendrierFiscal() -->
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Activité récente</h3></div>
+          <div class="card-body">
+            <div class="activity-list" id="activity-list">
+              <!-- Rendu dynamique par renderActiviteRecente() -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============= SAISIE ============= -->
+    <div id="view-saisie" class="view">
+      <div class="import-zone-wrap no-print">
+        <h4><span id="ic-imp-h"></span> Import automatique</h4>
+        <p>Importez CSV ou Excel avec les données de vos employés, ou <strong>copiez le mois précédent</strong> en un clic.</p>
+        <div class="import-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+          <span id="ic-drop"></span>
+          <p>Glissez votre fichier ici ou <span class="browse">parcourir</span></p>
+          <p style="font-size:11px;margin-top:3px;">CSV · XLS · XLSX</p>
+          <input type="file" id="file-input" accept=".csv,.xls,.xlsx">
+        </div>
+        <div class="import-actions">
+          <button class="btn btn-outline" onclick="downloadTemplate()"><span id="ic-tpl"></span> Modèle</button>
+          <button class="btn btn-primary" onclick="copyFromN1()"><span id="ic-n1"></span> Copier mois précédent</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3>Rémunérations — Avril 2026</h3>
+          <div class="ch-right">Cotisation : <strong id="cot-label">CNSS (5,5%)</strong></div>
+        </div>
+        <div class="card-body">
+          <div id="saisie-employees"></div>
+          <div class="saisie-footer no-print">
+            <button class="btn btn-outline" onclick="addEmployee()"><span id="ic-add"></span> Ajouter</button>
+            <button class="btn btn-primary" onclick="showView('calcul')">Récapitulatif <span id="ic-nxt"></span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============= CALCUL ============= -->
+    <div id="view-calcul" class="view">
+      <div class="alert alert-green no-print"><span id="ic-calc-ok"></span><span>Calculs IUTS/TPA selon <strong>LF 2020 Burkina Faso</strong>.</span></div>
+      <div class="card">
+        <div class="card-header">
+          <h3>Tableau IUTS — Mars 2026</h3>
+          <div class="ch-right no-print">
+            <button class="btn-sm btn-outline" onclick="printDocument('view-calcul')"><span id="ic-pc"></span> Imprimer</button>
+            <button class="btn-sm btn-primary" onclick="exportPDF('calcul')"><span id="ic-dc"></span> PDF</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>N°</th><th>Nom</th><th>Cat.</th><th>Chg.</th><th>Sal. Brut</th><th>Cotis.</th><th>Exo.Log</th><th>Exo.Trs</th><th>Exo.Fct</th><th>Abatt Forf.</th><th>Base Imp.</th><th>IUTS Brut</th><th>Abatt Fam</th><th>IUTS Net</th><th>Net/Payer</th></tr></thead>
+            <tbody id="calcul-tbody"></tbody>
+            <tfoot><tr><td colspan="4">TOTAUX</td><td class="td-num" id="t-brut">—</td><td class="td-num" id="t-cot">—</td><td colspan="4"></td><td class="td-num" id="t-base">—</td><td class="td-num" id="t-iutsbrut">—</td><td></td><td class="td-num" id="t-iutsnet">—</td><td class="td-num" id="t-net">—</td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="recap-card">
+          <div class="recap-line"><span class="recap-label">Masse salariale brute</span><span class="rv" id="recap-brut">—</span></div>
+          <div class="recap-line"><span class="recap-label">IUTS net (DGI)</span><span class="rv green" id="recap-iuts">—</span></div>
+          <div class="recap-line"><span class="recap-label">TPA 3% (DGI)</span><span class="rv" id="recap-tpa">—</span></div>
+          <div class="recap-line"><span class="recap-label">Cotisations CNSS</span><span class="rv" id="recap-cot">—</span></div>
+          <div class="recap-line recap-total"><span>Total obligations</span><span class="rv" id="recap-total">—</span></div>
+        </div>
+        <div class="card" style="margin-bottom:0"><div class="card-body" style="display:flex;flex-direction:column;gap:8px;">
+          <button class="btn btn-outline" style="justify-content:center;" onclick="showView('rapport')"><span id="ic-vr"></span> Voir rapport</button>
+          <button class="btn btn-orange"  style="justify-content:center;" onclick="openPayModal()"><span id="ic-gr"></span> Générer &amp; Payer</button>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- ============= RAPPORT ============= -->
+    <div id="view-rapport" class="view">
+      <div class="alert alert-orange no-print" id="rapport-alert"><span id="ic-ral"></span><span>Aperçu — payez <strong>2 030 FCFA</strong> pour le document officiel.</span></div>
+      <div class="rapport-action-bar no-print">
+        <button class="btn btn-outline" onclick="printDocument('rapport-doc')"><span id="ic-pr"></span> Imprimer</button>
+        <button class="btn btn-outline" onclick="exportPDF('rapport')"><span id="ic-dr"></span> PDF</button>
+        <button class="btn btn-orange"  onclick="openPayModal()"><span id="ic-par"></span> Payer &amp; Déverrouiller</button>
+      </div>
+      <div class="rapport-preview locked" id="rapport-doc">
+        <div class="rapport-header">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+            <div><div style="font-size:10px;letter-spacing:2px;opacity:.4;text-transform:uppercase;margin-bottom:3px">Burkina Faso — LF 2020</div><h1>RÉCAPITULATIF FISCAL MENSUEL</h1><p class="sub">Déclaration IUTS &amp; TPA — Direction Générale des Impôts</p></div>
+            <div class="rapport-ref-box"><div class="rlabel">Réf. FISCA</div><div class="rval" id="r-ref">— APERÇU —</div></div>
+          </div>
+          <div class="rapport-meta">
+            <div><strong>Période</strong><span id="r-periode">—</span></div>
+            <div><strong>Entreprise</strong><span id="r-nom">—</span></div>
+            <div><strong>IFU</strong><span id="r-ifu">—</span></div>
+            <div><strong>N° RC</strong><span id="r-rc">—</span></div>
+            <div><strong>Généré le</strong><span id="r-date">—</span></div>
+          </div>
+        </div>
+        <div class="rapport-body">
+          <div class="r-section-title">I. IDENTIFICATION</div>
+          <div class="r-line"><span class="lbl">Raison sociale</span><span class="val" id="r-nom2">—</span></div>
+          <div class="r-line"><span class="lbl">Secteur</span><span class="val" id="r-secteur">—</span></div>
+          <div class="r-line"><span class="lbl">Siège social</span><span class="val" id="r-adresse">—</span></div>
+          <div class="r-section-title">II. TPA (3%)</div>
+          <div class="r-line"><span class="lbl">Masse salariale brute</span><span class="val" id="r-brut">—</span></div>
+          <div class="r-line total"><span class="lbl">TPA due</span><span class="val red" id="r-tpa">—</span></div>
+          <div class="r-section-title">III. IUTS</div>
+          <div class="r-line"><span class="lbl">Nombre de salariés</span><span class="val" id="r-nb">—</span></div>
+          <div class="r-line"><span class="lbl">Total salaires bruts</span><span class="val" id="r-brut2">—</span></div>
+          <div class="r-line"><span class="lbl">Cotisations sociales</span><span class="val" id="r-cot">—</span></div>
+          <div class="r-line"><span class="lbl">Total exonérations</span><span class="val" id="r-exo">—</span></div>
+          <div class="r-line"><span class="lbl">Bases imposables</span><span class="val" id="r-base">—</span></div>
+          <div class="r-line"><span class="lbl">IUTS brut</span><span class="val" id="r-iutsb">—</span></div>
+          <div class="r-line"><span class="lbl">Abattements familiaux</span><span class="val" id="r-abatt">—</span></div>
+          <div class="r-line total"><span class="lbl">IUTS net à reverser</span><span class="val red" id="r-iutsn">—</span></div>
+          <div class="r-section-title">IV. RÉCAPITULATIF</div>
+          <div class="r-line"><span class="lbl">IUTS (DGI)</span><span class="val green" id="r-rev1">—</span></div>
+          <div class="r-line"><span class="lbl">TPA (DGI)</span><span class="val green" id="r-rev2">—</span></div>
+          <div class="r-line"><span class="lbl">CNSS</span><span class="val green" id="r-rev3">—</span></div>
+          <div class="r-line total"><span class="lbl">TOTAL GÉNÉRAL</span><span class="val red" id="r-rev-total">—</span></div>
+          <div class="r-section-title">V. ÉTAT ANNEXE</div>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>N°</th><th>Noms et Prénoms</th><th>Sal. brut</th><th>Base imp.</th><th>Charges</th><th>IUTS dû</th><th>Net/payer</th></tr></thead><tbody id="rapport-tbody"></tbody><tfoot><tr><td colspan="2">TOTAUX</td><td class="td-num" id="rt-brut">—</td><td class="td-num" id="rt-base">—</td><td></td><td class="td-num" id="rt-iuts">—</td><td class="td-num" id="rt-net">—</td></tr></tfoot></table></div>
+          <div class="rapport-stamp"><div class="stamp-title">Document officiel — Direction Générale des Impôts · Ouagadougou</div><div class="stamp-id" id="rapport-stamp-id">— PAIEMENT REQUIS —</div><div class="stamp-footer">FISCA © 2026</div></div>
+        </div>
+        <div class="rapport-footer"><span>Art. 59-71 (IUTS) &amp; 127-130 (TPA) — Code des impôts BF · LF 2020</span><span>FISCA © 2026</span></div>
+      </div>
+    </div>
+
+    <!-- ============= BULLETINS ============= -->
+    <div id="view-bulletin" class="view">
+      <div class="alert alert-blue no-print"><span id="ic-bull-alert"></span><span><strong>Bulletins de paie</strong> générés automatiquement depuis les données saisies. Imprimez ou exportez en PDF.</span></div>
+      <div class="flex-end mb-16 no-print">
+        <button class="btn btn-outline" onclick="printDocument('bulletins-list')"><span id="ic-pb"></span> Tout imprimer</button>
+        <button class="btn btn-primary" onclick="STATE.employees.forEach((_,i)=>exportBulletinPDF(i))"><span id="ic-db"></span> Tout exporter PDF</button>
+      </div>
+      <div id="bulletins-list"></div>
+    </div>
+
+    <!-- ============= SIMULATEUR ============= -->
+    <div id="view-simulateur" class="view">
+      <div class="ab-toggle-bar no-print">
+        <button id="btn-ab-toggle" class="btn btn-outline" onclick="toggleABMode()">Comparer A vs B</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Simulateur fiscal — Scénario A</h3></div>
+        <div class="card-body">
+          <div class="sim-layout">
+            <div class="sim-inputs">
+              <div class="form-group"><label>Salaire de base</label><div class="inp-fcfa"><input id="sim-base" type="number" value="250000" oninput="updateSimulateur()"></div></div>
+              <div class="form-group"><label>Prime d'ancienneté</label><div class="inp-fcfa"><input id="sim-anc" type="number" value="12500" oninput="updateSimulateur()"></div></div>
+              <div class="form-group"><label>Ind. logement</label><div class="inp-fcfa"><input id="sim-log" type="number" value="50000" oninput="updateSimulateur()"></div></div>
+              <div class="form-group"><label>Ind. transport</label><div class="inp-fcfa"><input id="sim-trans" type="number" value="20000" oninput="updateSimulateur()"></div></div>
+              <div class="form-group"><label>Ind. de fonction</label><div class="inp-fcfa"><input id="sim-fonct" type="number" value="30000" oninput="updateSimulateur()"></div></div>
+              <div class="form-group"><label>Nombre de charges</label><input id="sim-charges" type="number" min="0" max="6" value="2" oninput="updateSimulateur()"></div>
+              <div class="form-group"><label>Catégorie</label><select id="sim-cat" onchange="updateSimulateur()"><option>Cadre</option><option selected>Non-cadre</option></select></div>
+              <div class="form-group"><label>Cotisation</label><select onchange="STATE.cotisation=this.value;updateSimulateur()"><option value="CNSS" selected>CNSS (5,5%)</option><option value="CARFO">CARFO (6%)</option></select></div>
+            </div>
+            <div class="sim-results">
+              <div class="sim-result-main">
+                <h3>Résultat de la simulation</h3>
+                <div class="sim-big" id="sim-net">—</div>
+                <div class="sim-big-label">Net salarié à payer</div>
+                <div class="sim-grid4">
+                  <div class="sim-kpi"><div class="sim-kpi-label">Brut total</div><div class="sim-kpi-val" id="sim-brut">—</div></div>
+                  <div class="sim-kpi"><div class="sim-kpi-label">IUTS net</div><div class="sim-kpi-val" id="sim-iuts">—</div></div>
+                  <div class="sim-kpi"><div class="sim-kpi-label">Cot. salariale</div><div class="sim-kpi-val" id="sim-cot-sal">—</div></div>
+                  <div class="sim-kpi"><div class="sim-kpi-label">Taux eff. IUTS</div><div class="sim-kpi-val" id="sim-taux-eff">—</div></div>
+                </div>
+              </div>
+              <div class="sim-bars">
+                <h3>Coût total employeur : <strong id="sim-cout-total">—</strong></h3>
+                <div class="sim-bar-item"><div class="sim-bar-row"><span style="color:var(--g600)">Net salarié</span><span id="sim-bar-net">—</span></div><div class="sim-bar-track"><div class="sim-bar-prog" id="sim-prog-net" style="background:var(--g500)"></div></div></div>
+                <div class="sim-bar-item"><div class="sim-bar-row"><span style="color:var(--red)">IUTS</span><span id="sim-bar-iuts">—</span></div><div class="sim-bar-track"><div class="sim-bar-prog" id="sim-prog-iuts" style="background:var(--red)"></div></div></div>
+                <div class="sim-bar-item"><div class="sim-bar-row"><span style="color:var(--blu)">Cotisations (sal. + pat.)</span><span id="sim-bar-cot">—</span></div><div class="sim-bar-track"><div class="sim-bar-prog" id="sim-prog-cot" style="background:var(--blu)"></div></div></div>
+                <div class="sim-bar-item"><div class="sim-bar-row"><span style="color:var(--ora)">TPA</span><span id="sim-bar-tpa">—</span></div><div class="sim-bar-track"><div class="sim-bar-prog" id="sim-prog-tpa" style="background:var(--ora)"></div></div></div>
+                <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                  <div class="sim-kpi" style="background:var(--gr0);border:1px solid var(--gr2);border-radius:8px;padding:10px;"><div class="sim-kpi-label" style="color:var(--gr5)">Cot. patronale</div><div class="sim-kpi-val" style="color:var(--ora)" id="sim-cot-pat">—</div></div>
+                  <div class="sim-kpi" style="background:var(--gr0);border:1px solid var(--gr2);border-radius:8px;padding:10px;"><div class="sim-kpi-label" style="color:var(--gr5)">TPA</div><div class="sim-kpi-val" style="color:var(--ora)" id="sim-tpa">—</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+      <!-- ============= PANNEAU A/B ============= -->
+      <div id="sim-ab-panel" class="card" style="display:none; margin-top:16px;">
+        <div class="card-header"><h3>Comparaison A vs B</h3><div class="ch-right" style="font-size:12px;color:var(--gr5)">Scénario A = formulaire ci-dessus</div></div>
+        <div class="card-body">
+          <div class="ab-layout">
+            <!-- Formulaire Scénario B -->
+            <div class="ab-col">
+              <h4>Paramètres Scénario B</h4>
+              <div class="form-group"><label>Salaire de base</label><div class="inp-fcfa"><input id="simb-base" type="number" value="300000" oninput="updateABComparison()"></div></div>
+              <div class="form-group"><label>Prime d'ancienneté</label><div class="inp-fcfa"><input id="simb-anc" type="number" value="15000" oninput="updateABComparison()"></div></div>
+              <div class="form-group"><label>Ind. logement</label><div class="inp-fcfa"><input id="simb-log" type="number" value="50000" oninput="updateABComparison()"></div></div>
+              <div class="form-group"><label>Ind. transport</label><div class="inp-fcfa"><input id="simb-trans" type="number" value="20000" oninput="updateABComparison()"></div></div>
+              <div class="form-group"><label>Ind. de fonction</label><div class="inp-fcfa"><input id="simb-fonct" type="number" value="30000" oninput="updateABComparison()"></div></div>
+              <div class="form-group"><label>Charges (dépendants)</label><input id="simb-charges" type="number" min="0" max="6" value="2" oninput="updateABComparison()"></div>
+              <div class="form-group"><label>Catégorie</label><select id="simb-cat" onchange="updateABComparison()"><option>Cadre</option><option selected>Non-cadre</option></select></div>
+            </div>
+            <!-- Tableau de comparaison -->
+            <div class="ab-col">
+              <h4>Résultats comparés</h4>
+              <table class="data-table">
+                <thead><tr><th>Indicateur</th><th style="text-align:right">Scénario A</th><th style="text-align:right">Scénario B</th><th style="text-align:right">Différence</th></tr></thead>
+                <tbody id="ab-compare-tbody"></tbody>
+              </table>
+              <div class="ab-taux">
+                <div><span>Net salarié A :</span> <strong id="ab-net-a">—</strong></div>
+                <div><span>Net salarié B :</span> <strong id="ab-net-b">—</strong></div>
+              </div>
+              <div class="ab-taux" style="margin-top:6px">
+                <div><span>Coût employeur A :</span> <strong id="ab-cout-a">—</strong></div>
+                <div><span>Coût employeur B :</span> <strong id="ab-cout-b">—</strong></div>
+              </div>
+              <div class="ab-taux" style="margin-top:6px">
+                <div><span>Taux effectif IUTS A :</span> <strong id="ab-taux-a">—</strong></div>
+                <div><span>Taux effectif IUTS B :</span> <strong id="ab-taux-b">—</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <!-- ============= TVA ============= -->
+    <div id="view-tva" class="view">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><h3>TVA Collectée (18%)</h3><button class="btn-sm btn-primary" onclick="addTVALine('collectee')"><span id="ic-atva1"></span> Ajouter</button></div>
+          <div class="card-body">
+            <div class="tva-header"><span>Libellé</span><span style="text-align:right">HT</span><span style="text-align:right">TVA</span><span style="text-align:right">TTC</span><span></span></div>
+            <div id="tva-collectee-body"></div>
+            <div class="tva-total-row"><span>TOTAL</span><div id="tva-tot-ht-c">—</div><div id="tva-tot-tva-c">—</div><div id="tva-tot-ttc-c">—</div><div></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>TVA Déductible (18%)</h3><button class="btn-sm btn-outline" onclick="addTVALine('deductible')"><span id="ic-atva2"></span> Ajouter</button></div>
+          <div class="card-body">
+            <div class="tva-header"><span>Libellé</span><span style="text-align:right">HT</span><span style="text-align:right">TVA</span><span style="text-align:right">TTC</span><span></span></div>
+            <div id="tva-deductible-body"></div>
+            <div class="tva-total-row"><span>TOTAL</span><div id="tva-tot-ht-d">—</div><div id="tva-tot-tva-d">—</div><div></div><div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="tva-nette-box">
+        <div><div class="tva-nette-label" id="tva-nette-label">TVA nette à reverser</div><p style="font-size:11px;color:rgba(255,255,255,.4);margin-top:3px">TVA collectée − TVA déductible</p></div>
+        <div class="tva-nette-val" id="tva-nette">—</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px;" class="no-print">
+        <button class="btn btn-outline" onclick="printDocument('view-tva')"><span id="ic-ptva"></span> Imprimer</button>
+        <button class="btn btn-primary" onclick="exportPDF('calcul')"><span id="ic-dtva"></span> Export PDF</button>
+      </div>
+    </div>
+
+    <!-- ============= ASSISTANT IA ============= -->
+    <div id="view-assistant" class="view">
+      <div class="card" style="overflow:visible">
+        <div class="card-body" style="padding:0">
+          <div class="ia-layout">
+            <div class="ia-sidebar" style="padding:16px">
+              <h4>Questions fréquentes</h4>
+              <div id="ia-suggestions"></div>
+            </div>
+            <div class="ia-main">
+              <div class="ia-header">
+                <div class="ia-header-icon"><span id="ic-ia-h"></span></div>
+                <div><div class="ia-header-title">FISCA IA — Conseiller fiscal</div><div class="ia-header-sub">Code des impôts Burkina Faso · LF 2020</div></div>
+              </div>
+              <div class="ia-chat" id="ia-chat">
+                <div class="ia-msg ia-msg-ia">
+                  <div class="ia-avatar"><span id="ic-ia-av"></span></div>
+                  <div class="ia-bubble ia-bubble-ia">Bonjour ! Je suis votre assistant fiscal FISCA. Posez-moi vos questions sur l'IUTS, la TPA, la CNSS, la TVA ou tout autre aspect fiscal du Burkina Faso.</div>
+                </div>
+              </div>
+              <div class="ia-input-wrap">
+                <textarea class="ia-input" id="ia-input" rows="1" placeholder="Ex: Quel est le taux d'exonération pour le logement ?" onkeydown="iaKeydown(event)"></textarea>
+                <button class="ia-send-btn" onclick="sendIAMessage()"><span id="ic-ia-send"></span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============= MULTI-SOCIÉTÉS ============= -->
+    <div id="view-multi-company" class="view">
+      <div class="alert alert-blue no-print"><span id="ic-mc-alert"></span><span>Gérez toutes vos entités depuis un seul compte. Cliquez sur une société pour l'activer.</span></div>
+      <div id="company-grid" class="company-grid"></div>
+      <div class="card"><div class="card-header"><h3>Ajouter une société</h3></div><div class="card-body">
+        <div class="form-grid">
+          <div class="form-group"><label>Raison sociale</label><input type="text" placeholder="Nom de la société"></div>
+          <div class="form-group"><label>N° IFU</label><input type="text" placeholder="XXXXXXXXBF"></div>
+          <div class="form-group"><label>Secteur</label><input type="text" placeholder="Commerce, Agriculture..."></div>
+        </div>
+        <div class="flex-end" style="margin-top:12px">
+          <button class="btn btn-primary" onclick="showToast('Société ajoutée.','ok')"><span id="ic-mc-add"></span> Ajouter la société</button>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============= WORKFLOW ============= -->
+    <div id="view-workflow" class="view">
+      <div class="alert alert-blue no-print"><span id="ic-wf-alert"></span><span>Workflow d'approbation pour <strong>Mars 2026</strong>. Chaque étape requiert une validation avant de passer à la suivante.</span></div>
+      <div id="wf-board" class="wf-board"></div>
+    </div>
+
+    <!-- ============= RAS ============= -->
+    <div id="view-ras" class="view">
+      <div class="ras-summary">
+        <div class="ras-kpi"><div class="ras-kpi-label">Total honoraires</div><div class="ras-kpi-val" id="ras-tot-montant">—</div></div>
+        <div class="ras-kpi"><div class="ras-kpi-label">Total RAS à reverser</div><div class="ras-kpi-val" style="color:var(--red)" id="ras-tot-ras">—</div></div>
+        <div class="ras-kpi"><div class="ras-kpi-label">Net versé prestataires</div><div class="ras-kpi-val" style="color:var(--g600)" id="ras-tot-net">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Retenues à la source sur honoraires</h3>
+          <div class="ch-right no-print"><button class="btn-sm btn-primary" onclick="addRASLine()"><span id="ic-ras-add"></span> Ajouter</button></div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Bénéficiaire</th><th>Type</th><th>Taux</th><th>Montant brut</th><th>RAS</th><th>Net versé</th><th></th></tr></thead>
+            <tbody id="ras-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============= IRF — Revenus Fonciers ============= -->
+    <div id="view-irf" class="view">
+      <div class="ras-summary">
+        <div class="ras-kpi"><div class="ras-kpi-label">Loyers bruts</div><div class="ras-kpi-val" id="irf-tot-brut">—</div></div>
+        <div class="ras-kpi"><div class="ras-kpi-label">Abattement 50%</div><div class="ras-kpi-val" style="color:var(--g600)" id="irf-tot-abatt">—</div></div>
+        <div class="ras-kpi"><div class="ras-kpi-label">Base nette imposable</div><div class="ras-kpi-val" style="color:var(--blu)" id="irf-tot-base">—</div></div>
+        <div class="ras-kpi"><div class="ras-kpi-label">IRF total à reverser</div><div class="ras-kpi-val" style="color:var(--red)" id="irf-tot-irf">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3>Impôt sur les Revenus Fonciers <span class="badge badge-ok" style="font-size:10px;">CGI 2025 Art. 121–126</span></h3>
+          <div class="ch-right no-print"><button class="btn-sm btn-primary" onclick="addIRFLine()"><span id="ic-irf-add"></span> Ajouter bail</button></div>
+        </div>
+        <div style="padding:8px 20px;font-size:12px;color:var(--gr5);background:var(--gr1);border-radius:6px;margin:0 20px 12px;">
+          Abattement forfaitaire <strong>50 %</strong> sur loyer brut · Barème : <strong>18 %</strong> (base nette ≤ 100 000 F) + <strong>25 %</strong> (au-delà)
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Bailleur</th><th>Loyer brut mensuel</th><th>Abattement 50%</th><th>Base nette</th><th>IRF</th><th>Taux eff.</th><th></th></tr></thead>
+            <tbody id="irf-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============= IRCM — Capitaux Mobiliers ============= -->
+    <div id="view-ircm" class="view">
+      <div class="ras-summary">
+        <div class="ras-kpi"><div class="ras-kpi-label">Revenus bruts</div><div class="ras-kpi-val" id="ircm-tot-brut">—</div></div>
+        <div class="ras-kpi"><div class="ras-kpi-label">IRCM à reverser</div><div class="ras-kpi-val" style="color:var(--red)" id="ircm-tot-ircm">—</div></div>
+        <div class="ras-kpi"><div class="ras-kpi-label">Net bénéficiaires</div><div class="ras-kpi-val" style="color:var(--g600)" id="ircm-tot-net">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3>Impôt sur Revenus des Capitaux Mobiliers <span class="badge badge-ok" style="font-size:10px;">CGI 2025 Art. 140</span></h3>
+          <div class="ch-right no-print"><button class="btn-sm btn-primary" onclick="addIRCMLine()"><span id="ic-ircm-add"></span> Ajouter</button></div>
+        </div>
+        <div style="padding:8px 20px;font-size:12px;color:var(--gr5);background:var(--gr1);border-radius:6px;margin:0 20px 12px;">
+          Dividendes : <strong>12,5 %</strong> · Intérêts/créances : <strong>25 %</strong> · Obligations émises au BF : <strong>6 %</strong>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Désignation</th><th>Type de revenu</th><th>Taux</th><th>Montant brut</th><th>IRCM</th><th>Net</th><th></th></tr></thead>
+            <tbody id="ircm-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============= CME — Micro-Entreprises ============= -->
+    <div id="view-cme" class="view">
+      <div class="card">
+        <div class="card-header">
+          <h3>Contribution des Micro-Entreprises (CME) <span class="badge badge-ok" style="font-size:10px;">CGI 2025 Art. 533+</span></h3>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:20px;">
+          <div>
+            <div class="form-group">
+              <label>Chiffre d'affaires annuel HT (FCFA)</label>
+              <input type="number" id="cme-ca" placeholder="Ex: 8000000" oninput="refreshCME()" class="form-control"/>
+            </div>
+            <div class="form-group">
+              <label>Zone d'implantation</label>
+              <select id="cme-zone" class="form-control" onchange="refreshCME()">
+                <option value="A">Zone A — Ouagadougou / Bobo-Dioulasso</option>
+                <option value="B">Zone B — Autres chefs-lieux de région</option>
+                <option value="C">Zone C — Chefs-lieux de province</option>
+                <option value="D">Zone D — Reste du territoire</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label><input type="checkbox" id="cme-cga" onchange="refreshCME()"> Adhérent Centre de Gestion Agréé (CGA) — Réduction 25%</label>
+            </div>
+          </div>
+          <div class="bilan-kpi" style="grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="bilan-item bv-green"><div class="b-lbl">Zone</div><div class="b-val" id="cme-zone-aff">—</div></div>
+            <div class="bilan-item bv-blue"><div class="b-lbl">Classe activité</div><div class="b-val" id="cme-classe">—</div></div>
+            <div class="bilan-item bv-orange"><div class="b-lbl">CME barème</div><div class="b-val" id="cme-tarif">—</div></div>
+            <div class="bilan-item bv-red"><div class="b-lbl">CME due <span id="cme-reduc" style="font-size:10px;color:var(--g500)"></span></div><div class="b-val" id="cme-net">—</div></div>
+          </div>
+        </div>
+        <div style="padding:0 20px 20px;font-size:12px;color:var(--gr5);">
+          La CME remplace l'IS pour les micro-entreprises (CA &lt; 15 millions FCFA). Tarif annuel fixe selon zone et classe d'activité.
+        </div>
+      </div>
+    </div>
+
+    <!-- ============= PATENTES ============= -->
+    <div id="view-patente" class="view">
+      <div class="card">
+        <div class="card-header">
+          <h3>Contribution des Patentes <span class="badge badge-ok" style="font-size:10px;">CGI 2025 Art. 237–240</span></h3>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:20px;">
+          <div>
+            <div class="form-group">
+              <label>Chiffre d'affaires HT de l'exercice précédent (FCFA)</label>
+              <input type="number" id="pat-ca" placeholder="Ex: 25000000" oninput="refreshPatente()" class="form-control"/>
+            </div>
+            <div class="form-group">
+              <label>Valeur locative annuelle des locaux (FCFA)</label>
+              <input type="number" id="pat-vl" placeholder="Ex: 1200000" oninput="refreshPatente()" class="form-control"/>
+            </div>
+            <div class="form-group">
+              <label>Tableau applicable</label>
+              <select id="pat-tableau" class="form-control" onchange="refreshPatente()">
+                <option value="A">Tableau A — Cas général (commerce, industrie…)</option>
+                <option value="B">Tableau B — Professions libérales</option>
+              </select>
+            </div>
+          </div>
+          <div class="bilan-kpi" style="grid-template-columns:1fr;gap:16px;">
+            <div class="bilan-item bv-blue"><div class="b-lbl">Droit fixe (selon CA)</div><div class="b-val" id="pat-droit-fixe">—</div></div>
+            <div class="bilan-item bv-orange"><div class="b-lbl">Droit proportionnel (16% valeur locative)</div><div class="b-val" id="pat-droit-prop">—</div></div>
+            <div class="bilan-item bv-red"><div class="b-lbl">Patente totale annuelle</div><div class="b-val" id="pat-total">—</div></div>
+          </div>
+        </div>
+        <div style="padding:0 20px 20px;font-size:12px;color:var(--gr5);">
+          Droit fixe basé sur le CA HT · Droit proportionnel ≈ 16% de la valeur locative des locaux professionnels · Exonération 2 ans pour RSI nouvellement créé (Art. 196).
+        </div>
+      </div>
+    </div>
+
+    <!-- ============= CNSS PATRONAL ============= -->
+    <div id="view-cnss-patronal" class="view">
+      <div class="cnss-kpi-grid">
+        <div class="cnss-kpi"><div class="cnss-kpi-label">Nb salariés</div><div class="cnss-kpi-val" id="cnss-nb">—</div></div>
+        <div class="cnss-kpi"><div class="cnss-kpi-label">Masse salariale</div><div class="cnss-kpi-val" id="cnss-brut">—</div></div>
+        <div class="cnss-kpi"><div class="cnss-kpi-label">Cot. salariale (5,5%)</div><div class="cnss-kpi-val" style="color:var(--blu)" id="cnss-cot-sal">—</div></div>
+        <div class="cnss-kpi"><div class="cnss-kpi-label">Cot. patronale (<span id="cnss-taux-pat">16%</span>)</div><div class="cnss-kpi-val" style="color:var(--ora)" id="cnss-cot-pat">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Détail CNSS par salarié — Mars 2026</h3></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>N°</th><th>Nom</th><th>Rém. brute</th><th>Base CNSS</th><th>Part salariale</th><th>Part patronale</th><th>Total CNSS</th></tr></thead>
+            <tbody id="cnss-detail-tbody"></tbody>
+            <tfoot><tr><td colspan="2">TOTAL</td><td></td><td></td><td></td><td class="td-num" style="color:#f97316" id="cnss-cot-pat2">—</td><td class="td-num" id="cnss-total">—</td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============= HISTORIQUE ============= -->
+    <div id="view-historique" class="view">
+      <div class="card">
+        <div class="card-header"><h3>Historique 2026</h3><div class="ch-right no-print"><button class="btn-sm btn-primary" onclick="exportPDF('bilan')"><span id="ic-dh"></span> PDF</button></div></div>
+        <div class="table-wrap"><table class="data-table"><thead><tr><th>Période</th><th>Nb</th><th>Masse sal.</th><th>IUTS</th><th>TPA</th><th>CNSS</th><th>Total</th><th>Date</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="hist-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ============= BILAN ============= -->
+    <div id="view-bilan" class="view">
+      <div class="bilan-kpi">
+        <div class="bilan-item bv-green"><div class="b-lbl">IUTS <span id="bilan-annee">—</span></div><div class="b-val" id="bilan-iuts">—</div></div>
+        <div class="bilan-item bv-orange"><div class="b-lbl">TPA <span id="bilan-annee2">—</span></div><div class="b-val" id="bilan-tpa">—</div></div>
+        <div class="bilan-item bv-blue"><div class="b-lbl">CNSS</div><div class="b-val" id="bilan-cnss">—</div></div>
+        <div class="bilan-item"><div class="b-lbl">Masse salariale</div><div class="b-val" id="bilan-brut">—</div></div>
+        <div class="bilan-item bv-red"><div class="b-lbl">Total reversé</div><div class="b-val" id="bilan-verse">—</div></div>
+        <div class="bilan-item"><div class="b-lbl">Périodes déclarées</div><div class="b-val" id="bilan-nb-mois">—</div></div>
+      </div>
+      <!-- Bloc pénalités (affiché seulement si retards) -->
+      <div id="bilan-penalites-block" style="display:none">
+        <h4>⚠ Pénalités de retard estimées — <strong id="bilan-penalites">—</strong></h4>
+        <ul id="bilan-penalites-detail"></ul>
+      </div>
+      <div class="flex-end no-print mt-16"><button class="btn btn-primary" onclick="exportPDF('bilan')"><span id="ic-dbilan"></span> Export PDF bilan</button></div>
+    </div>
+
+    <!-- ============= ABONNEMENT ============= -->
+    <div id="view-abonnement" class="view">
+      <div class="abo-plan-hero" id="abo-hero" style="background:var(--g900)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-size:11px;opacity:.4;text-transform:uppercase;letter-spacing:1px">Plan actuel</div>
+            <h2 id="abo-plan-label">—</h2>
+            <p id="abo-plan-desc">—</p>
+            <div class="abo-price" id="abo-plan-price">—</div>
+            <div class="abo-price-detail" id="abo-plan-detail">—</div>
+          </div>
+          <span class="plan-badge" id="abo-plan-badge" style="font-size:13px;padding:5px 14px">—</span>
+        </div>
+        <div class="abo-limits">
+          <div class="abo-limit-item"><div class="abo-limit-label">Employés max</div><div class="abo-limit-val" id="abo-max-emp">—</div></div>
+          <div class="abo-limit-item"><div class="abo-limit-label">Historique</div><div class="abo-limit-val" id="abo-max-hist">—</div></div>
+        </div>
+      </div>
+      <div class="abo-actions">
+        <button class="btn btn-primary" onclick="showUpgradeModal()"><span id="ic-abo-up"></span> Changer de plan</button>
+        <button class="btn btn-outline" onclick="showToast('Factures disponibles dans votre espace.','info')"><span id="ic-abo-fac"></span> Mes factures</button>
+      </div>
+    </div>
+
+    <!-- ============= PARAMÈTRES ============= -->
+    <div id="view-parametres" class="view">
+      <div class="card">
+        <div class="card-header"><h3>Informations de l'entreprise</h3></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Raison sociale <span class="req">*</span></label><input id="param-nom" type="text" placeholder="Ex : SK SARL"></div>
+            <div class="form-group"><label>N° IFU</label><input id="param-ifu" type="text" placeholder="Ex : 0012345BF"></div>
+            <div class="form-group"><label>N° RC</label><input id="param-rc" type="text" placeholder="Ex : BF-OUA-2019-B-0045"></div>
+            <div class="form-group"><label>Secteur d'activité</label><input id="param-secteur" type="text" placeholder="Ex : Commerce général"></div>
+            <div class="form-group"><label>Adresse</label><input id="param-adresse" type="text" placeholder="Ouagadougou, Secteur 15"></div>
+            <div class="form-group"><label>Téléphone</label><input id="param-tel" type="tel" placeholder="+226 70 00 00 00"></div>
+          </div>
+          <div class="form-grid" style="margin-top:16px">
+            <div class="form-group"><label>Régime cotisation sociale</label>
+              <select id="param-cotisation">
+                <option value="CNSS">CNSS — 5,5% salarié / 16% patronal</option>
+                <option value="CARFO">CARFO — 6% salarié / 7,7% patronal</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Mois courant</label>
+              <select id="param-mois">
+                <option>Janvier</option><option>Février</option><option>Mars</option>
+                <option>Avril</option><option>Mai</option><option>Juin</option>
+                <option>Juillet</option><option>Août</option><option>Septembre</option>
+                <option>Octobre</option><option>Novembre</option><option>Décembre</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Exercice fiscal</label>
+              <input id="param-annee" type="number" min="2020" max="2099" placeholder="2026">
+            </div>
+          </div>
+          <div class="flex-end mt-16 no-print" style="gap:10px">
+            <button class="btn btn-outline" onclick="resetState()"><span id="ic-save-reset"></span> Réinitialiser</button>
+            <button class="btn btn-primary" onclick="sauvegarderParametres()"><span id="ic-save"></span> Enregistrer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ===== SIDEBAR OVERLAY MOBILE ===== -->
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<!-- ===== MODAL PAIEMENT ===== -->
+<div class="modal-overlay" id="pay-modal">
+  <div class="modal-box"><div class="pay-head"><div class="pay-head-icon"><span id="ic-pay-h"></span></div><h2>Paiement Orange Money</h2><p>Génération du rapport fiscal officiel</p></div><div class="pay-body" id="pay-body"></div></div>
+</div>
+
+<!-- ===== MODAL UPGRADE ===== -->
+<div class="modal-overlay" id="upgrade-modal">
+  <div class="modal-box upgrade-modal-box">
+    <div class="upgrade-head">
+      <h2><span id="ic-up-h"></span> Choisissez votre plan FISCA</h2>
+      <button class="upgrade-close" onclick="closeUpgradeModal()">×</button>
+    </div>
+    <div class="upgrade-body" id="upgrade-modal-body"></div>
+  </div>
+</div>
+
+<!-- ===== MODAL IMPORT ===== -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal-box import-modal-box">
+    <div class="import-head"><h2><span id="ic-imp-mh"></span> Aperçu de l'import</h2><button class="close-btn" onclick="closeImportModal()"><span id="ic-imp-mc"></span></button></div>
+    <div class="import-body">
+      <div id="import-unknown-cols" class="import-warn"></div>
+      <div id="import-count" class="import-count">0 employé(s)</div>
+      <div class="import-preview-wrap"><table class="data-table"><thead><tr><th>N°</th><th>Nom</th><th>Cat.</th><th>Charges</th><th>Sal. Base</th><th>Logement</th><th>Transport</th><th>Fonction</th></tr></thead><tbody id="import-preview-tbody"></tbody></table></div>
+      <div class="import-footer"><button class="btn btn-outline" onclick="closeImportModal()">Annuler</button><button class="btn btn-primary" onclick="confirmImport()"><span id="ic-imp-ok"></span> Confirmer</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCRIPTS ===== -->
+<script src="icons.js"></script>
+<script src="fisca-calc.js"></script>
+<script src="fisca-app.js"></script>
+<script src="fisca-plan.js"></script>
+<script src="fisca-features.js"></script>
+
+<script>
+/* ---- Injection icônes ---- */
+(function() {
+  const M = {
+    'ic-n-home':icon('home'),'ic-n-edit':icon('edit'),'ic-n-calc':icon('calculator'),
+    'ic-n-doc':icon('fileText'),'ic-n-bull':icon('fileText'),'ic-n-sim':icon('percent'),
+    'ic-n-tva':icon('percent'),'ic-n-ia':icon('shield'),'ic-n-comp':icon('grid'),
+    'ic-n-wf':icon('clipboardList'),'ic-n-ras':icon('creditCard'),'ic-n-cnss':icon('shield'),
+    'ic-n-hist':icon('history'),'ic-n-bilan':icon('barChart'),'ic-n-abo':icon('creditCard'),
+    'ic-n-set':icon('settings'),
+    'ic-bell':icon('bell'),'ic-plus-btn':icon('plus'),'ic-upgrade-btn':icon('trendingUp'),
+    'ic-pay-btn':icon('creditCard'),'ic-close-notif':icon('x'),
+    'ic-w1':icon('alertTriangle'),'ic-si1':icon('bank'),'ic-si2':icon('percent'),
+    'ic-si3':icon('shield'),'ic-si4':icon('users'),
+    'ic-qa1':icon('edit'),'ic-qa2':icon('calculator'),'ic-qa3':icon('percent'),
+    'ic-qa4':icon('fileText'),'ic-qa5':icon('percent'),'ic-qa6':icon('shield'),
+    'ic-qa7':icon('clipboardList'),'ic-qa8':icon('creditCard'),
+    'ic-cal':icon('calendar'),'ic-a1':icon('checkCircle'),'ic-a2':icon('creditCard'),
+    'ic-a3':icon('edit'),'ic-a4':icon('alertTriangle'),
+    'ic-imp-h':icon('fileImport'),'ic-drop':icon('upload'),
+    'ic-tpl':icon('download'),'ic-n1':icon('history'),
+    'ic-add':icon('plus'),'ic-nxt':icon('arrowRight'),
+    'ic-calc-ok':icon('checkCircle'),
+    'ic-pc':icon('printer'),'ic-dc':icon('download'),
+    'ic-vr':icon('eye'),'ic-gr':icon('creditCard'),
+    'ic-ral':icon('lock'),'ic-pr':icon('printer'),
+    'ic-dr':icon('download'),'ic-par':icon('unlock'),
+    'ic-bull-alert':icon('info'),'ic-pb':icon('printer'),'ic-db':icon('download'),
+    'ic-atva1':icon('plus'),'ic-atva2':icon('plus'),
+    'ic-ptva':icon('printer'),'ic-dtva':icon('download'),
+    'ic-ia-h':icon('shield'),'ic-ia-av':icon('shield'),
+    'ic-ia-send':icon('arrowRight'),
+    'ic-mc-alert':icon('info'),'ic-mc-add':icon('plus'),
+    'ic-wf-alert':icon('info'),
+    'ic-ras-add':icon('plus'),'ic-dh':icon('download'),
+    'ic-dbilan':icon('download'),
+    'ic-n-irf':icon('building'),'ic-n-ircm':icon('trendingUp'),
+    'ic-n-cme':icon('briefcase'),'ic-n-pat':icon('tag'),
+    'ic-irf-add':icon('plus'),'ic-ircm-add':icon('plus'),
+    'ic-up-h':icon('trendingUp'),
+    'ic-pay-h':icon('phone'),
+    'ic-imp-mh':icon('fileImport'),'ic-imp-mc':icon('x'),'ic-imp-ok':icon('checkCircle'),
+    'ic-abo-up':icon('trendingUp'),'ic-abo-fac':icon('fileText'),
+    'ic-save':icon('save'),
+    'ic-save-reset':icon('trash'),
+  };
+  Object.entries(M).forEach(([id,svg]) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = svg;
+  });
+
+  /* Suggestions IA */
+  const sugg = document.getElementById('ia-suggestions');
+  if (sugg) {
+    sugg.innerHTML = (typeof IA_SUGGESTIONS !== 'undefined' ? IA_SUGGESTIONS : []).map(s =>
+      `<div class="ia-suggestion" onclick="document.getElementById('ia-input').value='${s}';sendIAMessage()">${s}</div>`
+    ).join('');
+  }
+
+  /* Fermer modals au clic extérieur */
+  ['pay-modal','upgrade-modal','import-modal'].forEach(id => {
+    const m = document.getElementById(id);
+    if (m) m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); });
+  });
+
+  /* Fermer sidebar mobile au clic sur un item de nav */
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const sb = document.querySelector('.sidebar');
+      const ov = document.querySelector('.sidebar-overlay');
+      if (sb && sb.classList.contains('sidebar-open')) {
+        sb.classList.remove('sidebar-open');
+        if (ov) ov.classList.remove('active');
+      }
+    });
+  });
+
+  /* Init (loadState déjà appelé dans DOMContentLoaded de fisca-app.js) */
+  updateNavByPlan();
+  showView('dashboard');
+  renderNotifications();
+})();
+</script>
+</body>
+</html>

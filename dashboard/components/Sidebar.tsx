@@ -5,7 +5,8 @@ import {
     LayoutDashboard, ClipboardList, Calculator,
     History, Settings, LogOut, FileText, BarChart2,
     Receipt, Bot, Building2, GitBranch, Lock,
-    FileCheck, Users, BookOpen,
+    FileCheck, Users, BookOpen, Home, Landmark,
+    Briefcase, TrendingUp, Building, CreditCard,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/store'
 import { useRouter } from 'next/navigation'
@@ -22,6 +23,8 @@ const NAV_PRO = [
     { href: '/dashboard/bulletins', label: 'Bulletins de paie', icon: FileText, plan: 'pro' },
     { href: '/dashboard/simulateur', label: 'Simulateur fiscal', icon: BarChart2, plan: 'pro' },
     { href: '/dashboard/tva', label: 'Module TVA', icon: Receipt, plan: 'pro' },
+    { href: '/dashboard/irf', label: 'IRF — Revenus fonciers', icon: Home, plan: 'pro' },
+    { href: '/dashboard/ircm', label: 'IRCM — Capitaux mob.', icon: Landmark, plan: 'pro' },
     { href: '/dashboard/assistant', label: 'Assistant IA', icon: Bot, plan: 'pro' },
 ]
 
@@ -30,13 +33,18 @@ const NAV_ENTERPRISE = [
     { href: '/dashboard/workflow', label: 'Workflow approbation', icon: GitBranch, plan: 'enterprise' },
     { href: '/dashboard/retenues', label: 'Retenue à la source', icon: FileCheck, plan: 'enterprise' },
     { href: '/dashboard/cnss-patronal', label: 'CNSS Patronal', icon: Users, plan: 'enterprise' },
+    { href: '/dashboard/cme', label: 'CME — Micro-Entreprises', icon: Building, plan: 'enterprise' },
+    { href: '/dashboard/is', label: 'IS / MFP', icon: TrendingUp, plan: 'enterprise' },
+    { href: '/dashboard/patente', label: 'Patente professionnelle', icon: Briefcase, plan: 'enterprise' },
 ]
 
 const NAV_COMPTE = [
-    { href: '/dashboard/historique-fiscal', label: 'Historique fiscal', icon: BookOpen },
+    { href: '/dashboard/bilan', label: 'Bilan fiscal annuel', icon: BookOpen },
+    { href: '/dashboard/historique-fiscal', label: 'Historique fiscal', icon: BarChart2 },
 ]
 
 const NAV_SETTINGS = [
+    { href: '/dashboard/abonnement', label: 'Abonnement', icon: CreditCard },
     { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings },
 ]
 

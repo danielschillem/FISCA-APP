@@ -22,12 +22,11 @@ func NewExerciceHandler(db *pgxpool.Pool) *ExerciceHandler {
 
 // companyIDForUser retourne le company_id de l'utilisateur courant.
 func (h *ExerciceHandler) companyID(r *http.Request) (string, error) {
-	userID := middleware.GetUserID(r)
-	var cid string
-	err := h.DB.QueryRow(r.Context(),
-		`SELECT id FROM companies WHERE user_id=$1 LIMIT 1`, userID,
-	).Scan(&cid)
-	return cid, err
+	id := middleware.GetCompanyID(r)
+	if id == "" {
+		return "", fmt.Errorf("company not found")
+	}
+	return id, nil
 }
 
 func scanExercice(row interface {

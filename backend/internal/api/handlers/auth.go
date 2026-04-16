@@ -119,7 +119,7 @@ func generateToken(userID string) (string, error) {
 	claims := jwt.MapClaims{
 		"sub": userID,
 		"iat": time.Now().Unix(),
-		"exp": time.Now().Add(30 * 24 * time.Hour).Unix(),
+		"exp": time.Now().Add(24 * time.Hour).Unix(), // access token court-durée ; renouvelé via refresh
 	}
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secret)
 }

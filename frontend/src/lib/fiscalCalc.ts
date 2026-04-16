@@ -1,0 +1,236 @@
+// ─── Fiscal calculation utilities (mirroring CGI 2025 engine) ─
+
+export const fmt = (n: number): string =>
+    `${Math.round(n).toLocaleString('fr-BF')} FCFA`;
+
+export const fmtN = (n: number): string =>
+    Math.round(n).toLocaleString('fr-BF');
+
+export const pct = (n: number): string =>
+    (n * 100).toFixed(1) + ' %';
+
+// IUTS tranches CGI 2025 — 9 tranches barème marginal (Art. 107-112)
+const IUTS_TRANCHES = [
+    { plafond: 30_000, taux: 0.00 },   // 0 – 30 000 : exonéré
+    { plafond: 50_000, taux: 0.12 },   // 30 001 – 50 000
+    { plafond: 80_000, taux: 0.14 },   // 50 001 – 80 000
+    { plafond: 120_000, taux: 0.16 },  // 80 001 – 120 000
+    { plafond: 170_000, taux: 0.18 },  // 120 001 – 170 000
+    { plafond: 250_000, taux: 0.20 },  // 170 001 – 250 000
+    { plafond: 400_000, taux: 0.24 },  // 250 001 – 400 000
+    { plafond: 600_000, taux: 0.28 },  // 400 001 – 600 000
+    { plafond: Infinity, taux: 0.30 }, // > 600 000
+];
+
+export function calcIUTS(baseImp: number): number {
+    let impot = 0;
+    let prev = 0;
+    for (const t of IUTS_TRANCHES) {
+        if (baseImp <= prev) break;
+        const tranche = Math.min(baseImp, t.plafond) - prev;
+        impot += tranche * t.taux;
+        prev = t.plafond;
+        if (!isFinite(t.plafond)) break;
+    }
+    return Math.round(impot);
+}
+
+// Abattement familial CGI 2025 Art. 113
+const ABATT_FAM: Record<number, number> = { 0: 0, 1: 0.08, 2: 0.10, 3: 0.12, 4: 0.14 };
+
+export function calcAbattFamilial(iutsBrut: number, charges: number): number {
+    const n = Math.min(Math.max(0, Math.round(charges)), 4);
+    return Math.round(iutsBrut * (ABATT_FAM[n] ?? 0));
+}
+
+export const EXO = { LOGEMENT: 75_000, TRANSPORT: 30_000, FONCTION: 50_000 };
+export const CNSS_PLAFOND = 600_000;
+
+export interface EmployeeInput {
+    salaire_base: number;
+    anciennete: number;
+    heures_sup: number;
+    logement: number;
+    transport: number;
+    fonction: number;
+    charges: number;
+    categorie: 'Cadre' | 'Non-cadre';
+    cotisation: 'CNSS' | 'CARFO';
+}
+
+export interface EmployeeCalcResult {
+    remBrute: number;
+    cotSoc: number;
+    tpa: number;
+    exoLog: number; exoTrans: number; exoFonct: number;
+    tauxForf: number; abattForf: number;
+    sni: number; baseImp: number;
+    iutsBrut: number; abattFam: number; iutsNet: number;
+    retPersonnel: number; netAPayer: number;
+    tauxEffectif: number;
+}
+
+export function calcEmploye(e: EmployeeInput): EmployeeCalcResult {
+    const remBrute = e.salaire_base + e.anciennete + e.heures_sup +
+        e.logement + e.transport + e.fonction;
+
+    const taux = e.cotisation === 'CARFO' ? 0.06 : 0.055;
+    const baseCot = Math.min(remBrute, CNSS_PLAFOND);
+    const cotSoc = Math.round(baseCot * taux);
+    const tpa = Math.round(remBrute * 0.03);
+
+    const exoLog = Math.min(e.logement, EXO.LOGEMENT);
+    const exoTrans = Math.min(e.transport, EXO.TRANSPORT);
+    const exoFonct = Math.min(e.fonction, EXO.FONCTION);
+
+    const tauxForf = e.categorie === 'Cadre' ? 0.20 : 0.25;
+    const abattForf = Math.round(e.salaire_base * tauxForf);
+
+    const sni = remBrute - exoLog - exoTrans - exoFonct - cotSoc;
+    const baseImp = Math.max(0, sni - abattForf);
+
+    const iutsBrut = calcIUTS(baseImp);
+    const abattFam = calcAbattFamilial(iutsBrut, e.charges);
+    const iutsNet = Math.max(0, iutsBrut - abattFam);
+
+    const netAvant = remBrute - iutsNet - cotSoc;
+    const retPersonnel = Math.round(netAvant * 0.01);
+    const netAPayer = netAvant - retPersonnel;
+
+    const tauxEffectif = remBrute > 0 ? (iutsNet / remBrute) * 100 : 0;
+
+    return {
+        remBrute, cotSoc, tpa,
+        exoLog, exoTrans, exoFonct,
+        tauxForf, abattForf,
+        sni, baseImp,
+        iutsBrut, abattFam, iutsNet,
+        retPersonnel, netAPayer,
+        tauxEffectif,
+    };
+}
+
+// TVA
+export function calcTVA(ht: number, taux = 0.18) {
+    const tva = Math.round(ht * taux);
+    return { ht, tva, ttc: ht + tva };
+}
+
+// IRF CGI 2025
+export function calcIRF(loyerBrut: number) {
+    const abatt = Math.round(loyerBrut * 0.50);
+    const base = loyerBrut - abatt;
+    const seuil = 100_000;
+    let irf1 = 0, irf2 = 0;
+    if (base <= seuil) {
+        irf1 = Math.round(base * 0.18);
+    } else {
+        irf1 = Math.round(seuil * 0.18);
+        irf2 = Math.round((base - seuil) * 0.25);
+    }
+    const irfTotal = irf1 + irf2;
+    return {
+        loyerBrut, abattement: abatt, baseNette: base,
+        irf1, irf2, irfTotal, loyerNet: loyerBrut - irfTotal,
+        tauxEffectif: loyerBrut > 0 ? (irfTotal / loyerBrut * 100).toFixed(2) : '0',
+    };
+}
+
+// IRCM CGI 2025
+const IRCM_TAUX: Record<string, number> = {
+    CREANCES: 0.25, OBLIGATIONS: 0.06, DIVIDENDES: 0.125,
+};
+export function calcIRCM(brut: number, type: string) {
+    const taux = IRCM_TAUX[type] ?? 0.25;
+    const ircm = Math.round(brut * taux);
+    return { brut, ircm, net: brut - ircm, taux };
+}
+
+// RAS CGI 2025
+const RAS_TAUX: Record<string, number> = {
+    RESIDENT_IFU: 0.05, RESIDENT_IFU_IMMO: 0.01, RESIDENT_SANS_IFU: 0.25,
+    TRAVAIL_TEMPORAIRE: 0.02, NON_RESIDENT: 0.20, NON_RESIDENT_CEDEAO: 0.10,
+    NONDETER_VACATION: 0.02, NONDETER_PUBLIC: 0.05, NONDETER_SALARIE: 0.10,
+    COMMANDE_PUBLIQUE: 0.05, COMMANDE_PUB_BIENS: 0.01,
+};
+const RAS_NO_SEUIL = new Set([
+    'NON_RESIDENT', 'NON_RESIDENT_CEDEAO', 'NONDETER_VACATION', 'NONDETER_PUBLIC', 'NONDETER_SALARIE',
+]);
+export function calcRAS(ht: number, typeKey: string) {
+    const taux = RAS_TAUX[typeKey] ?? 0.05;
+    const exonere = !RAS_NO_SEUIL.has(typeKey) && ht < 50_000;
+    const ras = exonere ? 0 : Math.round(ht * taux);
+    return { ht, ras, net: ht - ras, taux, exonere };
+}
+
+export const RAS_LABELS: Record<string, string> = {
+    RESIDENT_IFU: 'Résident avec IFU (5 %)',
+    RESIDENT_IFU_IMMO: 'Résident IFU — Immo/TP (1 %)',
+    RESIDENT_SANS_IFU: 'Résident sans IFU (25 %)',
+    TRAVAIL_TEMPORAIRE: 'Travail temporaire (2 %)',
+    NON_RESIDENT: 'Non-résident (20 %)',
+    NON_RESIDENT_CEDEAO: 'Non-résident CEDEAO Transport (10 %)',
+    NONDETER_VACATION: 'Non-déterminé — vacation/manuel (2 %)',
+    NONDETER_PUBLIC: 'Non-déterminé — entité publique (5 %)',
+    NONDETER_SALARIE: 'Non-déterminé — salarié/intellectuel (10 %)',
+    COMMANDE_PUBLIQUE: 'Commande publique (5 %)',
+    COMMANDE_PUB_BIENS: 'Commande pub. — biens/TP (1 %)',
+};
+
+// CME CGI 2025
+const CME_TARIFS: Record<string, number[]> = {
+    A: [200000, 160000, 120000, 80000, 60000, 30000, 20000, 10000],
+    B: [160000, 120000, 80000, 60000, 42000, 20000, 12000, 6000],
+    C: [120000, 80000, 54000, 42000, 30000, 12000, 9000, 2500],
+    D: [80000, 48000, 30000, 18000, 14000, 6000, 3500, 2000],
+};
+const CME_TRANCHES = [
+    { max: 1_500_000, classe: 8 }, { max: 3_000_000, classe: 7 }, { max: 5_000_000, classe: 6 },
+    { max: 7_000_000, classe: 5 }, { max: 9_000_000, classe: 4 }, { max: 11_000_000, classe: 3 },
+    { max: 13_000_000, classe: 2 }, { max: 15_000_000, classe: 1 },
+];
+export function calcCME(ca: number, zone: string, adhesionCGA: boolean) {
+    let classe = 1;
+    for (const t of CME_TRANCHES) { if (ca <= t.max) { classe = t.classe; break; } }
+    const tarifs = CME_TARIFS[zone] ?? CME_TARIFS.A;
+    const cme = tarifs[classe - 1];
+    return { ca, zone, classe, cme, cmeNet: adhesionCGA ? Math.round(cme * 0.75) : cme };
+}
+
+// IS / MFP CGI 2025
+export function calcIS(benefice: number, adhesionCGA: boolean) {
+    let is = Math.round(benefice * 0.275);
+    if (adhesionCGA) is = Math.round(is * 0.70);
+    return { benefice, is };
+}
+export function calcMFP(ca: number, regime: string, adhesionCGA: boolean) {
+    const calc = Math.round(ca * 0.005);
+    const minimum = regime === 'RSI' ? 300_000 : 1_000_000;
+    let mfpDu = Math.max(calc, minimum);
+    if (adhesionCGA) mfpDu = Math.round(mfpDu * 0.50);
+    return { ca, mfpCalcule: calc, mfpMinimum: minimum, mfpDu };
+}
+
+// Patentes CGI 2025
+const PATENTE_A = [
+    { max: 5_000_000, droit: 10_000 }, { max: 7_000_000, droit: 15_000 },
+    { max: 10_000_000, droit: 25_000 }, { max: 15_000_000, droit: 40_000 },
+    { max: 20_000_000, droit: 60_000 }, { max: 30_000_000, droit: 85_000 },
+    { max: 50_000_000, droit: 120_000 }, { max: 75_000_000, droit: 170_000 },
+    { max: 100_000_000, droit: 220_000 }, { max: 150_000_000, droit: 280_000 },
+    { max: 200_000_000, droit: 350_000 }, { max: 300_000_000, droit: 430_000 },
+    { max: 500_000_000, droit: 530_000 }, { max: Infinity, droit: 660_000 },
+];
+export function calcPatente(ca: number, valeurLocative: number) {
+    let droitFixe = 0;
+    for (const t of PATENTE_A) { if (ca <= t.max) { droitFixe = t.droit; break; } }
+    const droitProp = Math.round(valeurLocative * 0.01);
+    return { ca, droitFixe, valeurLocative, droitProp, totalPatente: droitFixe + droitProp };
+}
+
+// Pénalités de retard CGI 2025 Art. 607
+export function calcPenalite(montant: number, moisRetard: number): number {
+    if (moisRetard <= 0 || montant <= 0) return 0;
+    const taux = 0.10 + (moisRetard - 1) * 0.03;
+    return Math.round(montant * taux);
+}

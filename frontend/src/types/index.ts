@@ -1,0 +1,365 @@
+// ─── Fiscal types — CGI 2025 Burkina Faso ───────────────────
+
+export interface Company {
+    id: string;
+    user_id: string;
+    nom: string;
+    ifu: string;
+    rc: string;
+    secteur: string;
+    adresse: string;
+    tel: string;
+}
+
+export interface Employee {
+    id: string;
+    company_id: string;
+    nom: string;
+    categorie: 'Cadre' | 'Non-cadre';
+    cotisation: 'CNSS' | 'CARFO';
+    charges: number;
+    salaire_base: number;
+    anciennete: number;
+    heures_sup: number;
+    logement: number;
+    transport: number;
+    fonction: number;
+}
+
+export interface CalculRequest {
+    salaire_base: number;
+    anciennete: number;
+    heures_sup: number;
+    logement: number;
+    transport: number;
+    fonction: number;
+    charges: number;
+    categorie: 'Cadre' | 'Non-cadre';
+    cotisation: 'CNSS' | 'CARFO';
+}
+
+export interface CalculResult {
+    brut_total: number;
+    base_imposable: number;
+    iuts_brut: number;
+    iuts_net: number;
+    cotisation_sociale: number;
+    tpa: number;
+    salaire_net: number;
+    abattement_forfaitaire: number;
+    abattement_familial: number;
+    retenue_personnel: number;
+}
+
+export interface Declaration {
+    id: string;
+    company_id: string;
+    periode: string;
+    mois: number;
+    annee: number;
+    nb_salaries: number;
+    brut_total: number;
+    iuts_total: number;
+    tpa_total: number;
+    css_total: number;
+    total: number;
+    statut: 'ok' | 'retard' | 'en_cours';
+    ref: string | null;
+    date_depot: string | null;
+    created_at: string;
+}
+
+export interface Bulletin {
+    id: string;
+    company_id: string;
+    employee_id: string;
+    mois: number;
+    annee: number;
+    periode: string;
+    nom_employe: string;
+    categorie: string;
+    salaire_base: number;
+    anciennete: number;
+    heures_sup: number;
+    logement: number;
+    transport: number;
+    fonction: number;
+    charges: number;
+    cotisation: string;
+    brut_total: number;
+    base_imposable: number;
+    iuts_brut: number;
+    iuts_net: number;
+    cotisation_sociale: number;
+    tpa: number;
+    salaire_net: number;
+    created_at: string;
+}
+
+export interface Simulation {
+    id: string;
+    company_id: string;
+    label: string;
+    cotisation: string;
+    input_data: Record<string, unknown>;
+    result_data: Record<string, unknown>;
+    created_at: string;
+}
+
+export interface TVADeclaration {
+    id: string;
+    company_id: string;
+    periode: string;
+    mois: number;
+    annee: number;
+    ca_ttc: number;
+    ca_ht: number;
+    tva_collectee: number;
+    tva_deductible: number;
+    tva_nette: number;
+    statut: string;
+    ref: string | null;
+    created_at: string;
+    lignes?: TVALigne[];
+}
+
+export interface TVALigne {
+    id: string;
+    declaration_id: string;
+    type_op: 'vente' | 'achat';
+    description: string;
+    montant_ht: number;
+    taux_tva: number;
+    montant_tva: number;
+    montant_ttc: number;
+}
+
+export interface RetenueSource {
+    id: string;
+    company_id: string;
+    periode: string;
+    mois: number;
+    annee: number;
+    beneficiaire: string;
+    type_retenue: string;
+    montant_brut: number;
+    taux_retenue: number;
+    montant_retenue: number;
+    montant_net: number;
+    statut: string;
+    ref: string | null;
+    created_at: string;
+}
+
+export interface CNSSPatronal {
+    id: string;
+    company_id: string;
+    periode: string;
+    mois: number;
+    annee: number;
+    nb_salaries_cnss: number;
+    nb_salaries_carfo: number;
+    base_cnss: number;
+    base_carfo: number;
+    cotisation_pat_cnss: number;
+    cotisation_sal_cnss: number;
+    cotisation_pat_carfo: number;
+    cotisation_sal_carfo: number;
+    total_cnss: number;
+    total_carfo: number;
+    total_general: number;
+    statut: string;
+    created_at: string;
+}
+
+export interface IRFDeclaration {
+    id: string;
+    company_id: string;
+    periode: string;
+    mois: number;
+    annee: number;
+    bailleur: string;
+    adresse: string;
+    loyer_brut: number;
+    abattement: number;
+    base_nette: number;
+    irf_total: number;
+    loyer_net: number;
+    statut: string;
+    ref: string | null;
+    created_at: string;
+}
+
+export interface IRCMDeclaration {
+    id: string;
+    company_id: string;
+    periode: string;
+    annee: number;
+    type_revenu: 'CREANCES' | 'OBLIGATIONS' | 'DIVIDENDES';
+    description: string;
+    montant_brut: number;
+    taux: number;
+    ircm: number;
+    montant_net: number;
+    statut: string;
+    created_at: string;
+}
+
+export interface ISDeclaration {
+    id: string;
+    company_id: string;
+    annee: number;
+    regime: 'RNI' | 'RSI';
+    ca_ht: number;
+    benefice: number;
+    is: number;
+    mfp_calcule: number;
+    mfp_du: number;
+    adhesion_cga: boolean;
+    statut: string;
+    created_at: string;
+}
+
+export interface CMEDeclaration {
+    id: string;
+    company_id: string;
+    annee: number;
+    ca: number;
+    zone: 'A' | 'B' | 'C' | 'D';
+    classe: number;
+    cme: number;
+    cme_net: number;
+    adhesion_cga: boolean;
+    statut: string;
+    created_at: string;
+}
+
+export interface PatenteDeclaration {
+    id: string;
+    company_id: string;
+    annee: number;
+    ca: number;
+    valeur_locative: number;
+    droit_fixe: number;
+    droit_proportionnel: number;
+    total_patente: number;
+    statut: string;
+    created_at: string;
+}
+
+export interface WorkflowEtape {
+    id: string;
+    declaration_id: string;
+    etape: 'soumis' | 'en_revision' | 'approuve' | 'rejete';
+    commentaire: string;
+    user_id: string;
+    created_at: string;
+}
+
+export interface HistoriqueFiscalAnnee {
+    annee: number;
+    iuts_total: number;
+    tpa_total: number;
+    css_total: number;
+    cnss_patronal: number;
+    tva_nette: number;
+    retenue_total: number;
+    total_obligations: number;
+    mois: HistoriqueFiscalMois[];
+}
+
+export interface HistoriqueFiscalMois {
+    mois: number;
+    periode: string;
+    iuts_total: number;
+    tpa_total: number;
+    css_total: number;
+    cnss_patronal: number;
+    tva_nette: number;
+    retenue_total: number;
+    total_obligations: number;
+}
+
+export interface BilanAnnuel {
+    annee: number;
+    iuts_total: number;
+    tpa_total: number;
+    css_total: number;
+    cnss_patronal_total: number;
+    tva_nette_total: number;
+    ras_total: number;
+    irf_total: number;
+    ircm_total: number;
+    is_total: number;
+    mfp_total: number;
+    cme_total: number;
+    patente_total: number;
+    grand_total: number;
+    nb_declarations: number;
+    nb_salaries: number;
+}
+
+export interface Notification {
+    id: string;
+    type: string;
+    niveau: 'warning' | 'error' | 'info' | 'success';
+    titre: string;
+    message: string;
+    periode?: string;
+    ref?: string;
+    lien?: string;
+}
+
+export interface User {
+    id: string;
+    email: string;
+    plan: 'starter' | 'pro' | 'enterprise';
+    created_at: string;
+}
+
+export interface AuthResponse {
+    token: string;
+    refresh_token?: string;
+    user: User;
+}
+
+export interface ExerciceFiscal {
+    id: string;
+    company_id: string;
+    annee: number;
+    date_debut: string;
+    date_fin: string;
+    statut: 'en_cours' | 'cloture';
+    date_cloture: string | null;
+    note: string;
+    created_at: string;
+}
+
+export type Plan = 'starter' | 'pro' | 'enterprise';
+
+export const PLAN_FEATURES: Record<Plan, Set<string>> = {
+    starter: new Set([
+        'dashboard', 'saisie', 'calcul', 'rapport', 'historique', 'export-csv', 'parametres',
+    ]),
+    pro: new Set([
+        'dashboard', 'saisie', 'calcul', 'rapport', 'historique', 'bilan', 'export-csv', 'parametres',
+        'bulletin', 'simulateur', 'tva', 'irf', 'ircm', 'import', 'n1-copy', 'notifications', 'assistant',
+    ]),
+    enterprise: new Set([
+        'dashboard', 'saisie', 'calcul', 'rapport', 'historique', 'bilan', 'export-csv', 'parametres',
+        'bulletin', 'simulateur', 'tva', 'irf', 'ircm', 'import', 'n1-copy', 'notifications', 'assistant',
+        'multi-company', 'workflow', 'ras', 'cnss-patronal', 'cme', 'is', 'patente',
+        'api-webhooks', 'audit-trail', 'dgi-connect', 'roles', 'archivage',
+    ]),
+};
+
+export const PLAN_LIMITS: Record<Plan, { employees: number; historyMonths: number }> = {
+    starter: { employees: 5, historyMonths: 3 },
+    pro: { employees: 50, historyMonths: 12 },
+    enterprise: { employees: Infinity, historyMonths: 120 },
+};
+
+export const MOIS_FR = [
+    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+];

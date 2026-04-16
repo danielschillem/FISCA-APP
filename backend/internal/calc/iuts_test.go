@@ -112,3 +112,77 @@ func TestCalcIUTS_HauteTranche(t *testing.T) {
 		t.Errorf("CalcIUTS(700000) = %v, want %v", got, want)
 	}
 }
+
+// TestCalcIUTS_Negatif vérifie que les valeurs négatives retournent 0.
+func TestCalcIUTS_Negatif(t *testing.T) {
+	got := calc.CalcIUTS(-10000)
+	if got != 0 {
+		t.Errorf("CalcIUTS(-10000) = %v, want 0", got)
+	}
+}
+
+// TestCalcIUTS_Exact30k vérifie la limite exacte de la première tranche.
+func TestCalcIUTS_Exact30k(t *testing.T) {
+	got := calc.CalcIUTS(30001)
+	// Juste 1 FCFA dans la tranche 12% → 0.12, arrondi → 0
+	if got < 0 {
+		t.Errorf("CalcIUTS(30001) = %v, should be >= 0", got)
+	}
+}
+
+// TestCalcSalarie_SalaireNetPositif vérifie que le salaire net est toujours >= 0.
+func TestCalcSalarie_SalaireNetPositif(t *testing.T) {
+	tests := []calc.SalarieInput{
+		{SalaireBase: 0, Cotisation: "CNSS"},
+		{SalaireBase: 30000, Cotisation: "CNSS"},
+		{SalaireBase: 30000, Logement: 100000, Transport: 100000, Cotisation: "CNSS"},
+		{SalaireBase: 1000000, Charges: 50, Cotisation: "CARFO"},
+	}
+	for _, e := range tests {
+		res := calc.CalcSalarie(e)
+		if res.SalaireNet < 0 {
+			t.Errorf("SalaireNet négatif (%v) pour input %+v", res.SalaireNet, e)
+		}
+		if res.IUTSNet < 0 {
+			t.Errorf("IUTSNet négatif (%v) pour input %+v", res.IUTSNet, e)
+		}
+	}
+}
+
+// TestCalcSalarie_BaseImpPositive vérifie que la base imposable ne peut pas être négative.
+func TestCalcSalarie_BaseImpPositive(t *testing.T) {
+	// Nombreuses exonérations → base imposable plancher à 0
+	e := calc.SalarieInput{
+		SalaireBase: 10000,
+		Logement:    500000,
+		Transport:   500000,
+		Cotisation:  "CNSS",
+	}
+	res := calc.CalcSalarie(e)
+	if res.BaseImp < 0 {
+		t.Errorf("BaseImp = %v, doit être >= 0", res.BaseImp)
+	}
+	if res.IUTSBrut < 0 {
+		t.Errorf("IUTSBrut = %v, doit être >= 0", res.IUTSBrut)
+	}
+}
+
+// TestCalcSalarie_TableDrivenIUTS valide plusieurs bases imposables connues.
+func TestCalcSalarie_TableDrivenIUTS(t *testing.T) {
+	cases := []struct {
+		baseImp  float64
+		wantIUTS float64
+	}{
+		{0, 0},
+		{30000, 0},
+		{50000, 2400},
+		{80000, 6600},   // 2400 + 30k×14% = 2400+4200 = 6600
+		{120000, 13000}, // 6600 + 40k×16% = 6600+6400 = 13000
+	}
+	for _, tc := range cases {
+		got := calc.CalcIUTS(tc.baseImp)
+		if got != tc.wantIUTS {
+			t.Errorf("CalcIUTS(%.0f) = %.0f, want %.0f", tc.baseImp, got, tc.wantIUTS)
+		}
+	}
+}
