@@ -39,17 +39,17 @@ const navSections: { label: string; items: NavItem[] }[] = [
             { to: '/bulletins', label: 'Bulletins de paie', Icon: FileCheck, feat: 'bulletin' },
             { to: '/simulateur', label: 'Simulateur fiscal', Icon: Sliders, feat: 'simulateur' },
             { to: '/tva', label: 'Module TVA', Icon: Receipt, feat: 'tva' },
-            { to: '/irf', label: 'IRF â€” Revenus fonciers', Icon: Home, feat: 'irf' },
-            { to: '/ircm', label: 'IRCM â€” Capitaux mob.', Icon: TrendingUp, feat: 'ircm' },
+            { to: '/irf', label: 'IRF - Revenus fonciers', Icon: Home, feat: 'irf' },
+            { to: '/ircm', label: 'IRCM - Capitaux mob.', Icon: TrendingUp, feat: 'ircm' },
             { to: '/assistant', label: 'Assistant IA', Icon: Bot, feat: 'assistant' },
         ],
     },
     {
         label: 'Entreprise',
         items: [
-            { to: '/societes', label: 'Multi-sociÃ©tÃ©s', Icon: Building2, feat: 'multi-company' },
+            { to: '/societes', label: 'Multi-sociétés', Icon: Building2, feat: 'multi-company' },
             { to: '/workflow', label: 'Workflow approbation', Icon: GitBranch, feat: 'workflow' },
-            { to: '/retenues', label: 'Retenue Ã  la source', Icon: BarChart2, feat: 'ras' },
+            { to: '/retenues', label: 'Retenue à la source', Icon: BarChart2, feat: 'ras' },
             { to: '/cnss-patronal', label: 'CNSS Patronal', Icon: Users, feat: 'cnss-patronal' },
             { to: '/cme', label: 'CME Micro-Entreprises', Icon: Store, feat: 'cme' },
             { to: '/is', label: 'IS / MFP', Icon: BookOpen, feat: 'is' },
@@ -63,7 +63,7 @@ const navSections: { label: string; items: NavItem[] }[] = [
             { to: '/bilan', label: 'Bilan annuel', Icon: BarChart, feat: 'bilan' },
             { to: '/exercice', label: 'Exercice fiscal', Icon: BookOpen, feat: null },
             { to: '/abonnement', label: 'Mon abonnement', Icon: Star, feat: null },
-            { to: '/parametres', label: 'ParamÃ¨tres', Icon: Settings, feat: null },
+            { to: '/parametres', label: 'Paramètres', Icon: Settings, feat: null },
         ],
     },
 ];
@@ -171,7 +171,7 @@ export default function Sidebar() {
                         <button
                             onClick={handleLogout}
                             className="text-slate-600 hover:text-red-400 transition-colors p-1 rounded"
-                            title="DÃ©connexion"
+                            title="Déconnexion"
                         >
                             <LogOut className="w-4 h-4" />
                         </button>

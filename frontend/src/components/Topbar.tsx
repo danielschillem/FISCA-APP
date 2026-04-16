@@ -10,7 +10,7 @@ interface TopbarProps {
 }
 
 const JOURS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-const MOIS = ['jan', 'fÃ©v', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoÃ»', 'sep', 'oct', 'nov', 'dÃ©c'];
+const MOIS = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'];
 
 export default function Topbar({ title, subtitle }: TopbarProps) {
     const { toggleSidebar, toggleNotif } = useAppStore();

@@ -6,10 +6,10 @@ import type { AuthResponse } from '../../types';
 import { ShieldCheck, BarChart2, FileCheck, Calculator } from 'lucide-react';
 
 const FEATURES = [
-    { Icon: BarChart2, text: 'Tableaux de bord fiscaux en temps rÃ©el' },
-    { Icon: FileCheck, text: 'Bulletins de paie & dÃ©clarations IUTS' },
-    { Icon: Calculator, text: 'Calculateur CGI 2025 â€” tous les impÃ´ts BF' },
-    { Icon: ShieldCheck, text: 'DonnÃ©es sÃ©curisÃ©es Â· Conforme OHADA' },
+    { Icon: BarChart2, text: 'Tableaux de bord fiscaux en temps réel' },
+    { Icon: FileCheck, text: 'Bulletins de paie & déclarations IUTS' },
+    { Icon: Calculator, text: 'Calculateur CGI 2025 - tous les impôts BF' },
+    { Icon: ShieldCheck, text: 'Données sécurisées · Conforme OHADA' },
 ];
 
 export default function LoginPage() {
@@ -39,7 +39,7 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen flex">
-            {/* Left panel â€” brand / features (desktop only) */}
+            {/* Left panel - brand / features (desktop only) */}
             <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 flex-col justify-between p-10 relative overflow-hidden"
                 style={{ background: 'linear-gradient(145deg, #0f172a 0%, #0d2818 60%, #14532d 100%)' }}>
                 {/* Background pattern */}
@@ -63,11 +63,11 @@ export default function LoginPage() {
                 {/* Hero */}
                 <div className="relative">
                     <h2 className="text-3xl font-bold text-white leading-tight mb-3">
-                        GÃ©rez votre fiscalitÃ©<br />
-                        <span className="text-green-400">en toute simplicitÃ©</span>
+                        Gérez votre fiscalité<br />
+                        <span className="text-green-400">en toute simplicité</span>
                     </h2>
                     <p className="text-slate-400 text-sm mb-8">
-                        Conforme au Code GÃ©nÃ©ral des ImpÃ´ts 2025 â€” Burkina Faso
+                        Conforme au Code Général des Impôts 2025 - Burkina Faso
                     </p>
                     <div className="space-y-3">
                         {FEATURES.map(({ Icon, text }) => (
@@ -83,11 +83,11 @@ export default function LoginPage() {
 
                 {/* Footer */}
                 <p className="relative text-slate-600 text-xs">
-                    Â© 2025 FISCA Â· CGI 2025 Â· Burkina Faso
+                    © 2025 FISCA · CGI 2025 · Burkina Faso
                 </p>
             </div>
 
-            {/* Right panel â€” form */}
+            {/* Right panel - form */}
             <div className="flex-1 flex items-center justify-center p-6 bg-gray-50">
                 <div className="w-full max-w-sm">
                     {/* Mobile logo */}
@@ -133,14 +133,14 @@ export default function LoginPage() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent focus:bg-white transition-all"
-                                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                                    placeholder="••••••••"
                                     required
                                     autoComplete="current-password"
                                 />
                             </div>
                             <div className="flex justify-end">
                                 <Link to="/forgot-password" className="text-xs text-green-600 hover:text-green-700 hover:underline font-medium">
-                                    Mot de passe oubliÃ© ?
+                                    Mot de passe oublié ?
                                 </Link>
                             </div>
                             <button
@@ -152,7 +152,7 @@ export default function LoginPage() {
                                 {loading ? (
                                     <span className="flex items-center justify-center gap-2">
                                         <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                                        Connexionâ€¦
+                                        Connexion...
                                     </span>
                                 ) : 'Se connecter'}
                             </button>
@@ -167,7 +167,7 @@ export default function LoginPage() {
                     </div>
 
                     <p className="text-center text-[11px] text-gray-400 mt-5">
-                        CGI 2025 Â· Burkina Faso Â· DonnÃ©es sÃ©curisÃ©es ðŸ”’
+                        CGI 2025 · Burkina Faso · Données sécurisées
                     </p>
                 </div>
             </div>
