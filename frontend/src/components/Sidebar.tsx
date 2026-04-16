@@ -187,6 +187,7 @@ export default function Sidebar() {
                                 Mon Organisation
                             </p>
                             {[
+                                { to: '/org/info', label: 'Vue d\'ensemble', Icon: Building2 },
                                 { to: '/org/membres', label: 'Membres & Rôles', Icon: Users },
                                 { to: '/org/societes', label: 'Accès sociétés', Icon: UserCog },
                             ].map(({ to, label, Icon }) => (

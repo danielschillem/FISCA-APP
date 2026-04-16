@@ -298,6 +298,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			r.Patch("/admin/users/{id}/status", adminH.SetUserStatus)
 			r.Patch("/admin/users/{id}/plan", adminH.SetUserPlan)
 			r.Post("/admin/users/{id}/reset-password", adminH.ResetUserPassword)
+			r.Post("/admin/users/{id}/impersonate", adminH.Impersonate)
 
 			// Licences
 			r.Put("/admin/users/{id}/license", adminH.UpsertLicense)

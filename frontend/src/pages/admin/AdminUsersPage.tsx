@@ -1,11 +1,13 @@
 ﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../lib/api';
-import type { AdminUser, License } from '../../types';
+import { useAuthStore } from '../../lib/store';
+import type { AdminUser, License, User } from '../../types';
 import {
     Search, X, ChevronDown, MoreHorizontal,
     ShieldOff, ShieldCheck, KeyRound, Edit3,
-    Building2, Calendar, User, RefreshCw,
+    Building2, Calendar, User as UserIcon, RefreshCw, Eye,
 } from 'lucide-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -127,6 +129,8 @@ function LicenseModal({ userId, license, onClose }: { userId: string; license?: 
 // ─── User Detail Slide-Over ───────────────────────────────────────────────────
 function UserDrawer({ user, onClose }: { user: AdminUser; onClose: () => void }) {
     const qc = useQueryClient();
+    const navigate = useNavigate();
+    const { startImpersonate } = useAuthStore();
     const [licenseOpen, setLicenseOpen] = useState(false);
     const [reason, setReason] = useState('');
 
@@ -137,6 +141,14 @@ function UserDrawer({ user, onClose }: { user: AdminUser; onClose: () => void })
 
     const resetPwd = useMutation({
         mutationFn: () => adminApi.resetUserPassword(user.id),
+    });
+
+    const impersonate = useMutation({
+        mutationFn: () => adminApi.impersonate(user.id),
+        onSuccess: (res: { data: { token: string; user: User } }) => {
+            startImpersonate(res.data.token, res.data.user as unknown as import('../../types').User);
+            navigate('/dashboard');
+        },
     });
 
     return (
@@ -196,7 +208,7 @@ function UserDrawer({ user, onClose }: { user: AdminUser; onClose: () => void })
                         {user.license && (
                             <>
                                 <div className="flex items-center gap-2 text-sm">
-                                    <User className="w-4 h-4 text-gray-400" />
+                                    <UserIcon className="w-4 h-4 text-gray-400" />
                                     <span className="text-gray-500">Max employes</span>
                                     <span className="ml-auto font-medium text-gray-700">{user.license.max_employees}</span>
                                 </div>
@@ -222,6 +234,17 @@ function UserDrawer({ user, onClose }: { user: AdminUser; onClose: () => void })
                     {/* Actions */}
                     <div className="space-y-2">
                         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Actions</p>
+                        <button
+                            onClick={() => impersonate.mutate()}
+                            disabled={impersonate.isPending}
+                            className="w-full flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm font-medium text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
+                        >
+                            {impersonate.isPending
+                                ? <RefreshCw className="w-4 h-4 animate-spin" />
+                                : <Eye className="w-4 h-4" />
+                            }
+                            Inspecter (vue utilisateur)
+                        </button>
                         <button
                             onClick={() => setLicenseOpen(true)}
                             className="w-full flex items-center gap-3 px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
@@ -252,8 +275,8 @@ function UserDrawer({ user, onClose }: { user: AdminUser; onClose: () => void })
                                 onClick={() => toggleStatus.mutate()}
                                 disabled={toggleStatus.isPending}
                                 className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${user.is_active
-                                        ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
-                                        : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
+                                    ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
+                                    : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
                                     }`}
                             >
                                 {user.is_active

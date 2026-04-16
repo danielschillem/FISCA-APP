@@ -322,20 +322,3 @@ export default function RegisterPage() {
         </div>
     );
 }
-                                </div>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-                                >
-                                    {loading ? 'Création en cours…' : (<>Créer mon compte <ArrowRight className="w-4 h-4" /></>)}
-                                </button>
-                            </form>
-
-                            <p className="text-center text-xs text-gray-500 mt-6">
-                                Déjà un compte ?{' '}
-                                <Link to="/login" className="text-green-600 font-medium hover:underline">Se connecter</Link>
-                            </p>
-                        </div>
-                    )}
-                </div>

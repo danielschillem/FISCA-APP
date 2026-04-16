@@ -90,7 +90,49 @@ func SendResetPassword(to, token string) error {
 	return Send(to, subject, body)
 }
 
-// SendWelcome envoie l'email de bienvenue après inscription.
+// SendInvitation envoie les credentials d'accès à un nouveau membre invité par un org_admin.
+func SendInvitation(to, orgNom, invitedByEmail, password, orgRole string) error {
+	appURL := os.Getenv("APP_URL")
+	if appURL == "" {
+		appURL = "http://localhost:3000"
+	}
+	roleLabels := map[string]string{
+		"org_admin":       "Administrateur",
+		"comptable":       "Comptable",
+		"gestionnaire_rh": "Gestionnaire RH",
+		"auditeur":        "Auditeur (lecture seule)",
+	}
+	roleLabel := roleLabels[orgRole]
+	if roleLabel == "" {
+		roleLabel = orgRole
+	}
+	subject := fmt.Sprintf("Invitation FISCA — %s vous a ajouté à %s", invitedByEmail, orgNom)
+	body := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px;color:#1e293b">
+  <div style="background:linear-gradient(135deg,#16a34a,#059669);padding:24px;border-radius:12px;margin-bottom:24px">
+    <h1 style="color:#fff;margin:0;font-size:22px">FISCA</h1>
+    <p style="color:#d1fae5;margin:4px 0 0;font-size:13px">Plateforme Fiscale · Burkina Faso</p>
+  </div>
+  <h2 style="color:#1a3c2e">Vous avez été invité(e) sur FISCA</h2>
+  <p><strong>%s</strong> vous a ajouté(e) à l'organisation <strong>%s</strong> avec le rôle <strong>%s</strong>.</p>
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin:20px 0">
+    <h3 style="margin:0 0 12px;font-size:14px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">Vos identifiants de connexion</h3>
+    <p style="margin:6px 0"><strong>Email :</strong> %s</p>
+    <p style="margin:6px 0"><strong>Mot de passe temporaire :</strong> <code style="background:#e2e8f0;padding:2px 8px;border-radius:4px;font-size:14px">%s</code></p>
+    <p style="margin:12px 0 0;font-size:12px;color:#94a3b8">Changez votre mot de passe dès votre première connexion depuis Paramètres.</p>
+  </div>
+  <p style="margin:24px 0">
+    <a href="%s/login" style="background:#16a34a;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px">
+      Se connecter à FISCA
+    </a>
+  </p>
+  <p style="color:#94a3b8;font-size:12px">Si vous ne vous attendiez pas à recevoir cet email, ignorez-le. Pour toute question : <a href="mailto:support@fisca.bf" style="color:#16a34a">support@fisca.bf</a></p>
+</body>
+</html>`, invitedByEmail, orgNom, roleLabel, to, password, appURL)
+	return Send(to, subject, body)
+}
 func SendWelcome(to, nomEntreprise string) error {
 	appURL := os.Getenv("APP_URL")
 	if appURL == "" {

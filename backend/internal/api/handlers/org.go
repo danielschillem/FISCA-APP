@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	mw "github.com/fisca-app/backend/internal/api/middleware"
+	"github.com/fisca-app/backend/internal/mailer"
 	"github.com/fisca-app/backend/internal/models"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -142,6 +143,16 @@ func (h *OrgHandler) InviteMember(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "Email déjà utilisé", http.StatusConflict)
 		return
 	}
+
+	// Envoyer l'email d'invitation (asynchrone — ne bloque pas la réponse)
+	inviterEmail := mw.GetUserID(r) // on récupère l'email de l'invitant
+	var orgNom, inviterEmailStr string
+	h.DB.QueryRow(r.Context(), `SELECT nom FROM organizations WHERE id=$1`, orgID).Scan(&orgNom)              //nolint:errcheck
+	h.DB.QueryRow(r.Context(), `SELECT email FROM users WHERE id=$1`, mw.GetUserID(r)).Scan(&inviterEmailStr) //nolint:errcheck
+	_ = inviterEmail
+	go func() {
+		_ = mailer.SendInvitation(req.Email, orgNom, inviterEmailStr, req.Password, req.OrgRole)
+	}()
 
 	jsonCreated(w, member)
 }

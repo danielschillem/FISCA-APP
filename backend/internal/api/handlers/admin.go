@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/fisca-app/backend/internal/mailer"
 	"github.com/fisca-app/backend/internal/models"
 	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -355,4 +357,50 @@ func (h *AdminHandler) logAudit(ctx context.Context, adminID, action, targetType
 		`INSERT INTO audit_logs (admin_id, action, target_type, target_id, details) VALUES ($1,$2,$3,$4,$5)`,
 		adminID, action, targetType, targetID, raw,
 	)
+}
+
+// POST /api/admin/users/{id}/impersonate — génère un JWT court (1h) au nom de l'utilisateur
+// avec le claim "impersonated_by" pour traçabilité. Lecture seule côté frontend.
+func (h *AdminHandler) Impersonate(w http.ResponseWriter, r *http.Request) {
+	targetID := chi.URLParam(r, "id")
+	adminID := mw.GetUserID(r)
+	ctx := r.Context()
+
+	var u models.User
+	var orgID *string
+	var orgRole *string
+	err := h.DB.QueryRow(ctx,
+		`SELECT id, email, COALESCE(password_hash,''), plan, role, user_type, org_id, org_role, is_active, created_at
+		 FROM users WHERE id=$1 AND role != 'super_admin'`, targetID,
+	).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Plan, &u.Role, &u.UserType, &orgID, &orgRole, &u.IsActive, &u.CreatedAt)
+	if err != nil {
+		jsonError(w, "Utilisateur introuvable", http.StatusNotFound)
+		return
+	}
+	u.OrgID = orgID
+	u.OrgRole = orgRole
+
+	secret := []byte(os.Getenv("JWT_SECRET"))
+	claims := jwt.MapClaims{
+		"sub":             u.ID,
+		"role":            u.Role,
+		"userType":        u.UserType,
+		"impersonated_by": adminID,
+		"iat":             time.Now().Unix(),
+		"exp":             time.Now().Add(1 * time.Hour).Unix(), // TTL court
+	}
+	if u.OrgID != nil {
+		claims["orgId"] = *u.OrgID
+	}
+	if u.OrgRole != nil {
+		claims["orgRole"] = *u.OrgRole
+	}
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secret)
+	if err != nil {
+		jsonError(w, "Erreur génération token", http.StatusInternalServerError)
+		return
+	}
+
+	h.logAudit(ctx, adminID, "admin.impersonate", "user", targetID, map[string]any{"target_email": u.Email})
+	jsonOK(w, map[string]any{"token": token, "user": u})
 }

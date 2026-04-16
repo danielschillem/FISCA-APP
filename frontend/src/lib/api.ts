@@ -257,6 +257,8 @@ export const adminApi = {
         api.patch(`/admin/users/${id}/plan`, { plan }),
     resetUserPassword: (id: string) =>
         api.post(`/admin/users/${id}/reset-password`),
+    impersonate: (id: string) =>
+        api.post(`/admin/users/${id}/impersonate`),
     // Licences
     upsertLicense: (id: string, data: object) =>
         api.put(`/admin/users/${id}/license`, data),

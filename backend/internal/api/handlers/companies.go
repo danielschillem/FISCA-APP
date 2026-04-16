@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/fisca-app/backend/internal/api/middleware"
@@ -50,6 +51,37 @@ func (h *CompaniesHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Nom == "" {
 		jsonError(w, "nom requis", http.StatusBadRequest)
 		return
+	}
+
+	// Vérifier la limite de sociétés selon le plan
+	var plan string
+	var orgID *string
+	h.DB.QueryRow(r.Context(), `SELECT plan, org_id FROM users WHERE id=$1`, userID).Scan(&plan, &orgID) //nolint:errcheck
+
+	var maxCompanies int
+	if orgID != nil {
+		h.DB.QueryRow(r.Context(), `SELECT max_companies FROM organizations WHERE id=$1`, *orgID).Scan(&maxCompanies) //nolint:errcheck
+	} else {
+		switch plan {
+		case "physique_starter", "physique_pro", "starter", "pro":
+			maxCompanies = 1
+		case "moral_team":
+			maxCompanies = 2
+		default:
+			maxCompanies = 0 // illimité
+		}
+	}
+	if maxCompanies > 0 {
+		var currentCount int
+		if orgID != nil {
+			h.DB.QueryRow(r.Context(), `SELECT COUNT(*) FROM companies WHERE org_id=$1`, *orgID).Scan(&currentCount) //nolint:errcheck
+		} else {
+			h.DB.QueryRow(r.Context(), `SELECT COUNT(*) FROM companies WHERE user_id=$1`, userID).Scan(&currentCount) //nolint:errcheck
+		}
+		if currentCount >= maxCompanies {
+			jsonError(w, fmt.Sprintf("Limite atteinte : votre plan autorise %d société(s) maximum. Passez à un plan supérieur.", maxCompanies), http.StatusPaymentRequired)
+			return
+		}
 	}
 
 	var c models.Company

@@ -133,15 +133,39 @@ func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Gating plan : starter ≤ 10 employés
+	// Gating plan : vérification de la limite d'employés selon le plan
 	userID := middleware.GetUserID(r)
 	var plan string
-	h.DB.QueryRow(r.Context(), `SELECT plan FROM users WHERE id=$1`, userID).Scan(&plan)
-	if plan == "starter" {
-		var count int
-		h.DB.QueryRow(r.Context(), `SELECT COUNT(*) FROM employees WHERE company_id=$1`, companyID).Scan(&count)
-		if count >= 10 {
-			jsonError(w, "Limite atteinte : le plan Starter est limité à 10 employés. Passez au plan Pro pour continuer.", http.StatusPaymentRequired)
+	var orgID *string
+	h.DB.QueryRow(r.Context(), `SELECT plan, org_id FROM users WHERE id=$1`, userID).Scan(&plan, &orgID) //nolint:errcheck
+
+	var maxEmp int
+	if orgID != nil {
+		// Personne morale : limite définie dans organizations
+		h.DB.QueryRow(r.Context(), `SELECT max_employees FROM organizations WHERE id=$1`, *orgID).Scan(&maxEmp) //nolint:errcheck
+	} else {
+		// Personne physique : limite par plan
+		switch plan {
+		case "physique_starter", "starter":
+			maxEmp = 3
+		case "physique_pro", "pro":
+			maxEmp = 10
+		default:
+			maxEmp = 0 // 0 = illimité
+		}
+	}
+	if maxEmp > 0 {
+		var currentCount int
+		// Pour morale : compter tous les employés de l'org
+		if orgID != nil {
+			h.DB.QueryRow(r.Context(),
+				`SELECT COUNT(*) FROM employees e JOIN companies c ON e.company_id=c.id WHERE c.org_id=$1`, *orgID,
+			).Scan(&currentCount) //nolint:errcheck
+		} else {
+			h.DB.QueryRow(r.Context(), `SELECT COUNT(*) FROM employees WHERE company_id=$1`, companyID).Scan(&currentCount) //nolint:errcheck
+		}
+		if currentCount >= maxEmp {
+			jsonError(w, fmt.Sprintf("Limite atteinte : votre plan autorise %d employés maximum. Passez à un plan supérieur.", maxEmp), http.StatusPaymentRequired)
 			return
 		}
 	}

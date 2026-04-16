@@ -45,6 +45,7 @@ const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage'));
 // Org Admin pages : lazy loaded
 const OrgMembersPage = lazy(() => import('./pages/org/OrgMembersPage'));
 const OrgCompaniesPage = lazy(() => import('./pages/org/OrgCompaniesPage'));
+const OrgInfoPage = lazy(() => import('./pages/org/OrgInfoPage'));
 
 const qc = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
@@ -94,6 +95,7 @@ function App() {
               <Route path="/abonnement" element={<AbonnementPage />} />
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               {/* Organisation Admin */}
+              <Route path="/org/info" element={<OrgInfoPage />} />
               <Route path="/org/membres" element={<OrgMembersPage />} />
               <Route path="/org/societes" element={<OrgCompaniesPage />} />
             </Route>
