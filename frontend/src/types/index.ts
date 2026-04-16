@@ -9,6 +9,17 @@ export interface Company {
     secteur: string;
     adresse: string;
     tel: string;
+    // Champs DGI contribuable
+    forme_juridique: string;
+    regime: string;
+    centre_impots: string;
+    code_activite: string;
+    date_debut_activite: string;
+    email_entreprise: string;
+    ville: string;
+    quartier: string;
+    bp: string;
+    fax: string;
 }
 
 export interface Employee {

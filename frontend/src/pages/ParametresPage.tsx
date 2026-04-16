@@ -1,10 +1,33 @@
 ﻿import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { companyApi, authApi } from '../lib/api';
-import { Card, Btn, Input, Spinner } from '../components/ui';
+import { Card, Btn, Input, Select, Spinner } from '../components/ui';
 import { useAuthStore } from '../lib/store';
 import type { Company } from '../types';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Building2, MapPin, FileText, UserCircle } from 'lucide-react';
+
+const FORMES_JURIDIQUES = [
+    { value: '', label: '— Sélectionner —' },
+    { value: 'SARL', label: 'SARL – Société à Responsabilité Limitée' },
+    { value: 'SA', label: 'SA – Société Anonyme' },
+    { value: 'SAS', label: 'SAS – Société par Actions Simplifiée' },
+    { value: 'SNC', label: 'SNC – Société en Nom Collectif' },
+    { value: 'GIE', label: 'GIE – Groupement d\'Intérêt Économique' },
+    { value: 'EI', label: 'EI – Entreprise Individuelle' },
+    { value: 'EURL', label: 'EURL – Entreprise Unipersonnelle à Responsabilité Limitée' },
+    { value: 'SCS', label: 'SCS – Société en Commandite Simple' },
+    { value: 'Association', label: 'Association / ONG' },
+    { value: 'Autre', label: 'Autre' },
+];
+
+const REGIMES = [
+    { value: '', label: '— Sélectionner —' },
+    { value: 'RNI', label: 'RNI – Régime du Réel Normal d\'Imposition' },
+    { value: 'RSI', label: 'RSI – Régime du Réel Simplifié d\'Imposition' },
+    { value: 'CME', label: 'CME – Contribution des Micro-Entreprises' },
+    { value: 'BNC', label: 'BNC – Bénéfices Non Commerciaux' },
+    { value: 'TVA', label: 'Assujetti TVA' },
+];
 
 export default function ParametresPage() {
     const qc = useQueryClient();
@@ -26,7 +49,7 @@ export default function ParametresPage() {
         mutationFn: (data: Partial<Company>) => companyApi.update(data),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['company'] });
-            setSuccess('Paramètres mis à jour.');
+            setSuccess('Paramètres mis à jour avec succès.');
             setTimeout(() => setSuccess(''), 3000);
         },
     });
@@ -74,45 +97,100 @@ export default function ParametresPage() {
 
     if (isLoading) return <Spinner />;
 
-    const f = (key: keyof Company, label: string, placeholder?: string) => (
+    const f = (key: keyof Company, label: string, placeholder?: string, type?: string) => (
         <Input
             label={label}
+            type={type ?? 'text'}
             value={String(form[key] ?? '')}
             onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
             placeholder={placeholder}
         />
     );
 
+    const SectionTitle = ({ icon, title }: { icon: React.ReactNode; title: string }) => (
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
+            <span className="text-green-600">{icon}</span>
+            <span className="text-sm font-semibold text-gray-700">{title}</span>
+        </div>
+    );
+
     return (
-        <div className="max-w-2xl space-y-6">
-            <Card title="Informations de l'entreprise">
-                <div className="grid grid-cols-2 gap-4">
-                    {f('nom', 'Nom de l\'entreprise', 'Ma Société SARL')}
-                    {f('ifu', 'Numéro IFU', '0012345BF')}
-                    {f('rc', 'Registre du commerce', 'BF-OUA-2024-B-0001')}
-                    {f('secteur', 'Secteur d\'activité', 'Commerce général')}
-                    {f('tel', 'Téléphone', '+226 70 00 00 00')}
-                    {f('adresse', 'Adresse', 'Ouagadougou, Burkina Faso')}
+        <div className="max-w-3xl space-y-6">
+
+            {/* ── Fiche contribuable DGI ─────────────────────────── */}
+            <Card title="Fiche contribuable – Informations DGI">
+                <p className="text-xs text-gray-500 mb-5">
+                    Ces informations sont pré-remplies automatiquement sur vos déclarations DGI (IUTS, TVA, IS, IRF, IRCM, retenues à la source…).
+                    Complétez-les une fois, elles s'appliquent à tous vos formulaires.
+                </p>
+
+                {/* Section 1 : Identité fiscale */}
+                <div className="mb-5">
+                    <SectionTitle icon={<FileText className="w-4 h-4" />} title="Identité fiscale" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {f('nom', 'Raison sociale / Nom', 'Ma Société SARL')}
+                        <Select
+                            label="Forme juridique"
+                            value={String(form.forme_juridique ?? '')}
+                            options={FORMES_JURIDIQUES}
+                            onChange={(e) => setForm((p) => ({ ...p, forme_juridique: e.target.value }))}
+                        />
+                        {f('ifu', 'Numéro IFU', '0012345678BF')}
+                        {f('rc', 'Registre du commerce', 'BF-OUA-2024-B-0001')}
+                        {f('secteur', 'Profession / Activité principale', 'Commerce général')}
+                        {f('code_activite', 'Code activité DGI', 'ex : 4711')}
+                    </div>
+                </div>
+
+                {/* Section 2 : Régime fiscal */}
+                <div className="mb-5">
+                    <SectionTitle icon={<Building2 className="w-4 h-4" />} title="Régime fiscal" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Select
+                            label="Régime d'imposition"
+                            value={String(form.regime ?? '')}
+                            options={REGIMES}
+                            onChange={(e) => setForm((p) => ({ ...p, regime: e.target.value }))}
+                        />
+                        {f('centre_impots', 'Centre des impôts de rattachement', 'ex : CDI Ouaga I')}
+                        {f('date_debut_activite', 'Date de début d\'activité', '', 'date')}
+                    </div>
+                </div>
+
+                {/* Section 3 : Coordonnées */}
+                <div className="mb-5">
+                    <SectionTitle icon={<MapPin className="w-4 h-4" />} title="Coordonnées et adresse du siège" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {f('adresse', 'Adresse (N° et rue)', 'ex : Avenue Kwame N\'Krumah')}
+                        {f('ville', 'Localité / Ville', 'Ouagadougou')}
+                        {f('quartier', 'Quartier / Secteur', 'ex : Secteur 04')}
+                        {f('bp', 'Boîte postale (BP)', 'ex : BP 1234')}
+                        {f('tel', 'Téléphone', '+226 70 00 00 00')}
+                        {f('fax', 'Fax', '+226 25 00 00 00')}
+                        {f('email_entreprise', 'Email de l\'entreprise', 'contact@masociete.bf', 'email')}
+                    </div>
                 </div>
 
                 {success && (
-                    <div className="mt-4 bg-green-50 text-green-700 text-sm px-4 py-2 rounded-lg border border-green-100">
-                        <div className="flex items-center gap-2 text-green-700 text-sm"><CheckCircle2 className="w-4 h-4" /> {success}</div>
+                    <div className="mt-2 bg-green-50 text-green-700 text-sm px-4 py-2 rounded-lg border border-green-100">
+                        <div className="flex items-center gap-2 text-green-700 text-sm">
+                            <CheckCircle2 className="w-4 h-4" /> {success}
+                        </div>
                     </div>
                 )}
 
                 <div className="mt-4 flex justify-end">
-                    <Btn
-                        onClick={() => update.mutate(form)}
-                        disabled={update.isPending}
-                    >
-                        {update.isPending ? 'Sauvegarde…' : 'Sauvegarder'}
+                    <Btn onClick={() => update.mutate(form)} disabled={update.isPending}>
+                        {update.isPending ? 'Sauvegarde…' : 'Sauvegarder la fiche contribuable'}
                     </Btn>
                 </div>
             </Card>
 
+            {/* ── Compte utilisateur ────────────────────────────── */}
             <Card title="Compte utilisateur">
                 <div className="space-y-5">
+                    <SectionTitle icon={<UserCircle className="w-4 h-4" />} title="Identifiants de connexion" />
+
                     {/* Email */}
                     <div>
                         <Input
@@ -143,7 +221,7 @@ export default function ParametresPage() {
                         </div>
                     </div>
 
-                    {/* Password change */}
+                    {/* Mot de passe */}
                     <div className="border-t border-gray-100 pt-4">
                         <p className="text-sm font-medium text-gray-700 mb-3">Changer le mot de passe</p>
                         <div className="space-y-3">
@@ -200,4 +278,5 @@ export default function ParametresPage() {
         </div>
     );
 }
+
 

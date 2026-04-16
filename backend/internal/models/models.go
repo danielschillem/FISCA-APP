@@ -16,6 +16,17 @@ type Company struct {
 	Secteur string `json:"secteur" db:"secteur"`
 	Adresse string `json:"adresse" db:"adresse"`
 	Tel     string `json:"tel" db:"tel"`
+	// Champs DGI contribuable
+	FormeJuridique    string `json:"forme_juridique" db:"forme_juridique"`
+	Regime            string `json:"regime" db:"regime"`
+	CentreImpots      string `json:"centre_impots" db:"centre_impots"`
+	CodeActivite      string `json:"code_activite" db:"code_activite"`
+	DateDebutActivite string `json:"date_debut_activite" db:"date_debut_activite"`
+	EmailEntreprise   string `json:"email_entreprise" db:"email_entreprise"`
+	Ville             string `json:"ville" db:"ville"`
+	Quartier          string `json:"quartier" db:"quartier"`
+	BP                string `json:"bp" db:"bp"`
+	Fax               string `json:"fax" db:"fax"`
 }
 
 // ─── EXERCICE FISCAL ─────────────────────────────────────────

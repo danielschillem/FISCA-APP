@@ -268,6 +268,18 @@ func RunMigrations(pool *pgxpool.Pool) error {
 	-- Migration idempotente : ajout colonne fsp sur bulletins existants
 	ALTER TABLE bulletins ADD COLUMN IF NOT EXISTS fsp NUMERIC(12,2) NOT NULL DEFAULT 0;
 
+	-- Migration idempotente : champs contribuable DGI sur companies
+	ALTER TABLE companies ADD COLUMN IF NOT EXISTS forme_juridique    TEXT NOT NULL DEFAULT '';
+	ALTER TABLE companies ADD COLUMN IF NOT EXISTS regime             TEXT NOT NULL DEFAULT '';
+	ALTER TABLE companies ADD COLUMN IF NOT EXISTS centre_impots      TEXT NOT NULL DEFAULT '';
+	ALTER TABLE companies ADD COLUMN IF NOT EXISTS code_activite      TEXT NOT NULL DEFAULT '';
+	ALTER TABLE companies ADD COLUMN IF NOT EXISTS date_debut_activite DATE;
+	ALTER TABLE companies ADD COLUMN IF NOT EXISTS email_entreprise   TEXT NOT NULL DEFAULT '';
+	ALTER TABLE companies ADD COLUMN IF NOT EXISTS ville              TEXT NOT NULL DEFAULT '';
+	ALTER TABLE companies ADD COLUMN IF NOT EXISTS quartier           TEXT NOT NULL DEFAULT '';
+	ALTER TABLE companies ADD COLUMN IF NOT EXISTS bp                 TEXT NOT NULL DEFAULT '';
+	ALTER TABLE companies ADD COLUMN IF NOT EXISTS fax                TEXT NOT NULL DEFAULT '';
+
 	-- Unicité déclaration IUTS par entreprise/période (évite les doublons)
 	CREATE UNIQUE INDEX IF NOT EXISTS idx_declarations_unique_period
 	    ON declarations(company_id, mois, annee);
