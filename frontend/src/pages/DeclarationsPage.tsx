@@ -53,9 +53,6 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
         t(label, x + 2, y + h - 2, 7, true);
     };
 
-    // Formateur PDF-safe : evite le separateur unicode (fr-FR) non rendu par Helvetica
-    const pdfNum = (n: number): string =>
-        Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
     const BLACK: [number, number, number] = [0, 0, 0];
 
     // ==================== PAGE 1 ====================
@@ -166,9 +163,9 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
     y += tHH;
 
     box(ML, y, t1, tRH); box(ML + t1, y, t2, tRH); box(ML + t1 + t2, y, t3, tRH);
-    t(pdfNum(d.brut_total) + ' F', ML + 2, y + 5.5, 8, true, 'left', BLACK);
+    t(fmtN(d.brut_total) + ' F', ML + 2, y + 5.5, 8, true, 'left', BLACK);
     t('3 %', ML + t1 + t2 / 2, y + 5.5, 8, true, 'center');
-    t(pdfNum(d.tpa_total) + ' F', ML + t1 + t2 + 2, y + 5.5, 8, true, 'left', BLACK);
+    t(fmtN(d.tpa_total) + ' F', ML + t1 + t2 + 2, y + 5.5, 8, true, 'left', BLACK);
     y += tRH;
 
     box(ML, y, t1, tRH); box(ML + t1, y, t2, tRH); box(ML + t1 + t2, y, t3, tRH);
@@ -178,7 +175,7 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
 
     doc.setFillColor(245, 245, 245); box(ML, y, CW, tRH, 'FD'); vl(ML + t1 + t2, y, y + tRH);
     t('Sous total TPA', ML + 2, y + 5.5, 7, true);
-    t(pdfNum(d.tpa_total) + ' F', ML + t1 + t2 + 2, y + 5.5, 8, true, 'left', BLACK);
+    t(fmtN(d.tpa_total) + ' F', ML + t1 + t2 + 2, y + 5.5, 8, true, 'left', BLACK);
     y += tRH;
 
     // --- IV. IUTS ---
@@ -196,15 +193,15 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
 
     box(ML, y, iW, iRH); box(ML + iW, y, iW, iRH); box(ML + 2 * iW, y, iW, iRH);
     t(String(d.nb_salaries), ML + iW / 2, y + 7, 11, true, 'center', BLACK);
-    t(pdfNum(d.brut_total) + ' F', ML + iW + iW / 2, y + 7, 8, true, 'center', BLACK);
-    t(pdfNum(d.iuts_total) + ' F', ML + 2 * iW + iW / 2, y + 7, 8, true, 'center', BLACK);
+    t(fmtN(d.brut_total) + ' F', ML + iW + iW / 2, y + 7, 8, true, 'center', BLACK);
+    t(fmtN(d.iuts_total) + ' F', ML + 2 * iW + iW / 2, y + 7, 8, true, 'center', BLACK);
     y += iRH;
 
     // TOTAL GENERAL
     const totH = 9;
     doc.setFillColor(240, 240, 240); box(ML, y, CW, totH, 'FD'); vl(ML + 2 * iW, y, y + totH);
     t('TOTAL GENERAL', ML + iW, y + 6.5, 8, true, 'center');
-    t(pdfNum(d.iuts_total + d.tpa_total) + ' FCFA', ML + 2 * iW + 3, y + 7, 9, true, 'left', [0, 0, 0]);
+    t(fmtN(d.iuts_total + d.tpa_total) + ' FCFA', ML + 2 * iW + 3, y + 7, 9, true, 'left', [0, 0, 0]);
     y += totH;
 
     // --- REGLEMENT ---
@@ -277,10 +274,10 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
         const tableBody = bulletins.map((b, idx) => [
             String(idx + 1),
             b.nom_employe,
-            pdfNum(b.brut_total),
-            pdfNum(b.base_imposable),
+            fmtN(b.brut_total),
+            fmtN(b.base_imposable),
             String(b.charges),
-            pdfNum(b.iuts_net),
+            fmtN(b.iuts_net),
         ]);
         const totBrut = bulletins.reduce((s, b) => s + Number(b.brut_total), 0);
         const totBase = bulletins.reduce((s, b) => s + Number(b.base_imposable), 0);
@@ -290,7 +287,7 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
             startY: y2,
             head: [['N', 'Noms et prenoms des salaries', 'Salaires bruts\n(FCFA)', 'Bases imposables\n(FCFA)', 'Nombre\nde charges', 'IUTS du\n(FCFA)']],
             body: tableBody,
-            foot: [['', 'TOTAUX', pdfNum(totBrut), pdfNum(totBase), '', pdfNum(totIUTS)]],
+            foot: [['', 'TOTAUX', fmtN(totBrut), fmtN(totBase), '', fmtN(totIUTS)]],
             styles: {
                 fontSize: 8,
                 cellPadding: { top: 3, bottom: 3, left: 2, right: 2 },

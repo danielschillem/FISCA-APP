@@ -1,10 +1,14 @@
 ﻿// ─── Fiscal calculation utilities (mirroring CGI 2025 engine) ─
 
-export const fmt = (n: number): string =>
-    `${Math.round(n).toLocaleString('fr-FR')} FCFA`;
+// Formateur PDF-safe : espace ASCII ordinaire comme séparateur de milliers.
+// toLocaleString('fr-FR') produit \u202F (espace fine insécable) non rendu
+// par les polices embarquées de jsPDF (affichage "/" au lieu d'espace).
+const numFmt = (n: number): string =>
+    Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0');
 
-export const fmtN = (n: number): string =>
-    Math.round(n).toLocaleString('fr-FR');
+export const fmt = (n: number): string => `${numFmt(n)} FCFA`;
+
+export const fmtN = (n: number): string => numFmt(n);
 
 export const pct = (n: number): string =>
     (n * 100).toFixed(1) + ' %';
