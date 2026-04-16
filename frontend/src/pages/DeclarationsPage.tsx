@@ -10,8 +10,8 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const MOIS_NOMS_FR = [
-    'Janvier','Fevrier','Mars','Avril','Mai','Juin',
-    'Juillet','Aout','Septembre','Octobre','Novembre','Decembre'
+    'Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'
 ];
 
 function statutBadge(statut: string) {
@@ -53,8 +53,10 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
         t(label, x + 2, y + h - 2, 7, true);
     };
 
-    const BLUE: [number, number, number] = [0, 0, 180];
-    const GRAY: [number, number, number] = [100, 100, 100];
+    // Formateur PDF-safe : evite le separateur unicode (fr-FR) non rendu par Helvetica
+    const pdfNum = (n: number): string =>
+        Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    const BLACK: [number, number, number] = [0, 0, 0];
 
     // ==================== PAGE 1 ====================
     let y = 10;
@@ -87,11 +89,11 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
     const pw = CW / 3;
     const periodeH = 9;
     box(ML, y, pw, periodeH); box(ML + pw, y, pw, periodeH); box(ML + 2 * pw, y, pw, periodeH);
-    t('Mois', ML + 2, y + 3.5, 5.5, false, 'left', GRAY);
-    t('Semestre', ML + pw + 2, y + 3.5, 5.5, false, 'left', GRAY);
-    t('Annee', ML + 2 * pw + 2, y + 3.5, 5.5, false, 'left', GRAY);
-    t(MOIS_NOMS_FR[d.mois - 1], ML + 2, y + 8, 8.5, true, 'left', BLUE);
-    t(String(d.annee), ML + 2 * pw + 2, y + 8, 8.5, true, 'left', BLUE);
+    t('Mois', ML + 2, y + 3.5, 5.5, false);
+    t('Semestre', ML + pw + 2, y + 3.5, 5.5, false);
+    t('Annee', ML + 2 * pw + 2, y + 3.5, 5.5, false);
+    t(MOIS_NOMS_FR[d.mois - 1], ML + 2, y + 8, 8.5, true, 'left', BLACK);
+    t(String(d.annee), ML + 2 * pw + 2, y + 8, 8.5, true, 'left', BLACK);
     y += periodeH;
 
     // --- II. IDENTIFICATION ---
@@ -101,53 +103,53 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
     // RC | IFU
     const rcW = CW * 0.45;
     box(ML, y, rcW, lineH); box(ML + rcW, y, CW - rcW, lineH);
-    t('N Registre de commerce', ML + 2, y + 3, 5, false, 'left', GRAY);
-    t('N IFU', ML + rcW + 2, y + 3, 5, false, 'left', GRAY);
-    t(company?.rc ?? '', ML + 2, y + 6.5, 8, true, 'left', BLUE);
-    t(company?.ifu ?? '', ML + rcW + 2, y + 6.5, 8, true, 'left', BLUE);
+    t('N Registre de commerce', ML + 2, y + 3, 5, false);
+    t('N IFU', ML + rcW + 2, y + 3, 5, false);
+    t(company?.rc ?? '', ML + 2, y + 6.5, 8, true, 'left', BLACK);
+    t(company?.ifu ?? '', ML + rcW + 2, y + 6.5, 8, true, 'left', BLACK);
     y += lineH;
 
     // Nom | Code activite
     const nomW = CW * 0.72;
     box(ML, y, nomW, lineH); box(ML + nomW, y, CW - nomW, lineH);
-    t('Nom, prenoms ou raison sociale', ML + 2, y + 3, 5, false, 'left', GRAY);
-    t('Code activite', ML + nomW + 2, y + 3, 5, false, 'left', GRAY);
-    t(company?.nom ?? '', ML + 2, y + 6.5, 8, true, 'left', BLUE);
+    t('Nom, prenoms ou raison sociale', ML + 2, y + 3, 5, false);
+    t('Code activite', ML + nomW + 2, y + 3, 5, false);
+    t(company?.nom ?? '', ML + 2, y + 6.5, 8, true, 'left', BLACK);
     y += lineH;
 
     // Profession
     box(ML, y, CW, lineH);
-    t('Profession ou activite', ML + 2, y + 3, 5, false, 'left', GRAY);
-    t(company?.secteur ?? '', ML + 2, y + 6.5, 7.5, true, 'left', BLUE);
+    t('Profession ou activite', ML + 2, y + 3, 5, false);
+    t(company?.secteur ?? '', ML + 2, y + 6.5, 7.5, true, 'left', BLACK);
     y += lineH;
 
     // Adresse siege
     box(ML, y, CW, lineH);
-    t('Adresse du siege (Localite)', ML + 2, y + 3, 5, false, 'left', GRAY);
-    t(company?.adresse ?? '', ML + 2, y + 6.5, 7.5, true, 'left', BLUE);
+    t('Adresse du siege (Localite)', ML + 2, y + 3, 5, false);
+    t(company?.adresse ?? '', ML + 2, y + 6.5, 7.5, true, 'left', BLACK);
     y += lineH;
 
     // BP
     const bpH = 6;
     box(ML, y, CW, bpH);
-    t('BP ..........  Quartier ................  Secteur ...  N et rue ..................  Section ...........  Lot ....  Parcelle ....', ML + 2, y + 4.5, 5, false, 'left', GRAY);
+    t('BP ..........  Quartier ................  Secteur ...  N et rue ..................  Section ...........  Lot ....  Parcelle ....', ML + 2, y + 4.5, 5, false);
     y += bpH;
 
     // Etablissements secondaires
     const etabH = 5.5;
     for (let i = 1; i <= 3; i++) {
         box(ML, y, CW, etabH);
-        t(`${i}. Adresse etablissement secondaire ...............................................................................................................`, ML + 2, y + 4, 5, false, 'left', GRAY);
+        t(`${i}. Adresse etablissement secondaire ...............................................................................................................`, ML + 2, y + 4, 5, false);
         y += etabH;
     }
 
     // Adresse domicile
     box(ML, y, CW, lineH);
-    t('Adresse du domicile (Localite) ...................................................................................................................', ML + 2, y + 4.5, 5, false, 'left', GRAY);
+    t('Adresse du domicile (Localite) ...................................................................................................................', ML + 2, y + 4.5, 5, false);
     y += lineH;
 
     box(ML, y, CW, bpH);
-    t('BP ..........  Quartier ................  Secteur ...  N et rue ..................  Section ...........  Lot ....  Parcelle ....', ML + 2, y + 4.5, 5, false, 'left', GRAY);
+    t('BP ..........  Quartier ................  Secteur ...  N et rue ..................  Section ...........  Lot ....  Parcelle ....', ML + 2, y + 4.5, 5, false);
     y += bpH;
 
     // --- III. TPA ---
@@ -164,9 +166,9 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
     y += tHH;
 
     box(ML, y, t1, tRH); box(ML + t1, y, t2, tRH); box(ML + t1 + t2, y, t3, tRH);
-    t(fmtN(d.brut_total) + ' F', ML + 2, y + 5.5, 8, true, 'left', BLUE);
+    t(pdfNum(d.brut_total) + ' F', ML + 2, y + 5.5, 8, true, 'left', BLACK);
     t('3 %', ML + t1 + t2 / 2, y + 5.5, 8, true, 'center');
-    t(fmtN(d.tpa_total) + ' F', ML + t1 + t2 + 2, y + 5.5, 8, true, 'left', BLUE);
+    t(pdfNum(d.tpa_total) + ' F', ML + t1 + t2 + 2, y + 5.5, 8, true, 'left', BLACK);
     y += tRH;
 
     box(ML, y, t1, tRH); box(ML + t1, y, t2, tRH); box(ML + t1 + t2, y, t3, tRH);
@@ -176,7 +178,7 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
 
     doc.setFillColor(245, 245, 245); box(ML, y, CW, tRH, 'FD'); vl(ML + t1 + t2, y, y + tRH);
     t('Sous total TPA', ML + 2, y + 5.5, 7, true);
-    t(fmtN(d.tpa_total) + ' F', ML + t1 + t2 + 2, y + 5.5, 8, true, 'left', BLUE);
+    t(pdfNum(d.tpa_total) + ' F', ML + t1 + t2 + 2, y + 5.5, 8, true, 'left', BLACK);
     y += tRH;
 
     // --- IV. IUTS ---
@@ -193,40 +195,40 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
     y += iHH;
 
     box(ML, y, iW, iRH); box(ML + iW, y, iW, iRH); box(ML + 2 * iW, y, iW, iRH);
-    t(String(d.nb_salaries), ML + iW / 2, y + 7, 11, true, 'center', BLUE);
-    t(fmtN(d.brut_total) + ' F', ML + iW + iW / 2, y + 7, 8, true, 'center', BLUE);
-    t(fmtN(d.iuts_total) + ' F', ML + 2 * iW + iW / 2, y + 7, 8, true, 'center', BLUE);
+    t(String(d.nb_salaries), ML + iW / 2, y + 7, 11, true, 'center', BLACK);
+    t(pdfNum(d.brut_total) + ' F', ML + iW + iW / 2, y + 7, 8, true, 'center', BLACK);
+    t(pdfNum(d.iuts_total) + ' F', ML + 2 * iW + iW / 2, y + 7, 8, true, 'center', BLACK);
     y += iRH;
 
     // TOTAL GENERAL
     const totH = 9;
-    doc.setFillColor(218, 235, 218); box(ML, y, CW, totH, 'FD'); vl(ML + 2 * iW, y, y + totH);
+    doc.setFillColor(240, 240, 240); box(ML, y, CW, totH, 'FD'); vl(ML + 2 * iW, y, y + totH);
     t('TOTAL GENERAL', ML + iW, y + 6.5, 8, true, 'center');
-    t(fmtN(d.iuts_total + d.tpa_total) + ' FCFA', ML + 2 * iW + 3, y + 7, 9, true, 'left', [0, 120, 0]);
+    t(pdfNum(d.iuts_total + d.tpa_total) + ' FCFA', ML + 2 * iW + 3, y + 7, 9, true, 'left', [0, 0, 0]);
     y += totH;
 
     // --- REGLEMENT ---
     const reglH = 28;
     box(ML, y, CW, reglH);
     t("Reglement joint a l'ordre du receveur des impots :", ML + 2, y + 5, 6.5, true);
-    t("- Cheque bancaire sur _________________ N __________  du ___________  Montant ____________________", ML + 4, y + 11, 5.5, false, 'left', GRAY);
-    t("- Espece d'un montant de ___________________________________________________________________________", ML + 4, y + 16, 5.5, false, 'left', GRAY);
-    t("- Virement bancaire : Code banque __________ Code guichet __________  N compte _______________  Cle RIB _____", ML + 4, y + 21, 5.5, false, 'left', GRAY);
-    t("  Swift code _________________  Code IBAN _________________", ML + 4, y + 26, 5.5, false, 'left', GRAY);
+    t("- Cheque bancaire sur _________________ N __________  du ___________  Montant ____________________", ML + 4, y + 11, 5.5, false);
+    t("- Espece d'un montant de ___________________________________________________________________________", ML + 4, y + 16, 5.5, false);
+    t("- Virement bancaire : Code banque __________ Code guichet __________  N compte _______________  Cle RIB _____", ML + 4, y + 21, 5.5, false);
+    t("  Swift code _________________  Code IBAN _________________", ML + 4, y + 26, 5.5, false);
     y += reglH;
 
     // --- SIGNATURE ---
     const sigLH = 7;
     box(ML, y, CW, sigLH);
-    t('A ______________________________   Le _______________________________', ML + 2, y + 5, 6.5, false, 'left', GRAY);
-    t('Nom - Qualite - Signature', ML + CW - 60, y + 5, 6, false, 'left', GRAY);
+    t('A ______________________________   Le _______________________________', ML + 2, y + 5, 6.5, false);
+    t('Nom - Qualite - Signature', ML + CW - 60, y + 5, 6, false);
     y += sigLH;
 
     const sigBH = 22;
     const sw = CW * 0.46;
     box(ML, y, sw, sigBH); box(ML + CW - sw, y, sw, sigBH);
-    t("Cachet et signature de l'employeur", ML + 2, y + 4.5, 5.5, false, 'left', GRAY);
-    t('Visa DGI / DGTCP', ML + CW - sw + 2, y + 4.5, 5.5, false, 'left', GRAY);
+    t("Cachet et signature de l'employeur", ML + 2, y + 4.5, 5.5, false);
+    t('Visa DGI / DGTCP', ML + CW - sw + 2, y + 4.5, 5.5, false);
     y += sigBH;
 
     // --- V. CADRE RESERVE A L'ADMINISTRATION ---
@@ -275,10 +277,10 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
         const tableBody = bulletins.map((b, idx) => [
             String(idx + 1),
             b.nom_employe,
-            fmtN(b.brut_total),
-            fmtN(b.base_imposable),
+            pdfNum(b.brut_total),
+            pdfNum(b.base_imposable),
             String(b.charges),
-            fmtN(b.iuts_net),
+            pdfNum(b.iuts_net),
         ]);
         const totBrut = bulletins.reduce((s, b) => s + Number(b.brut_total), 0);
         const totBase = bulletins.reduce((s, b) => s + Number(b.base_imposable), 0);
@@ -288,7 +290,7 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
             startY: y2,
             head: [['N', 'Noms et prenoms des salaries', 'Salaires bruts\n(FCFA)', 'Bases imposables\n(FCFA)', 'Nombre\nde charges', 'IUTS du\n(FCFA)']],
             body: tableBody,
-            foot: [['', 'TOTAUX', fmtN(totBrut), fmtN(totBase), '', fmtN(totIUTS)]],
+            foot: [['', 'TOTAUX', pdfNum(totBrut), pdfNum(totBase), '', pdfNum(totIUTS)]],
             styles: {
                 fontSize: 8,
                 cellPadding: { top: 3, bottom: 3, left: 2, right: 2 },
