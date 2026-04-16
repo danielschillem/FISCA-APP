@@ -1,23 +1,23 @@
-name: Frontend CI/CD — Next.js (Vercel)
+name: Frontend CI — Vite + React
 
 on:
   push:
     branches: [main]
     paths:
-      - 'dashboard/**'
+      - 'frontend/**'
       - '.github/workflows/frontend-ci.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'dashboard/**'
+      - 'frontend/**'
 
 jobs:
   build:
-    name: Build & lint Next.js
+    name: Build, lint & test Vite
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: dashboard
+        working-directory: frontend
 
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: dashboard/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -36,24 +36,12 @@ jobs:
         run: npm audit --audit-level=critical
 
       - name: Type-check
-        run: npm run type-check
+        run: npx tsc --noEmit
 
-      - name: Lint
-        run: npm run lint
+      - name: Unit tests (Vitest)
+        run: npm test
 
       - name: Build
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:8080' }}
-
-  deploy:
-    name: Deploy to Vercel
-    needs: [build]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Trigger Vercel deploy
-        # Vercel se déclenche automatiquement via l'intégration GitHub Bot.
-        # Cette étape confirme juste le succès du pipeline CI avant deploy.
-        run: echo "CI passé. Vercel déploie automatiquement via GitHub integration."
+          VITE_API_URL: ""

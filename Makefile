@@ -1,4 +1,4 @@
-.PHONY: help up down dev-db dev-backend dev-frontend dev-dashboard build test test-e2e lint lint-backend lint-frontend lint-dashboard clean logs ps
+.PHONY: help up down dev-db dev-backend dev-frontend build test lint lint-backend lint-frontend clean logs ps
 
 # ── Aide ──────────────────────────────────────────────────────
 help:
@@ -8,7 +8,6 @@ help:
 	@echo "  make dev-db            Démarrer uniquement PostgreSQL"
 	@echo "  make dev-backend       Lancer le backend Go"
 	@echo "  make dev-frontend      Lancer le frontend Vite (port 5173)"
-	@echo "  make dev-dashboard     Lancer le dashboard Next.js (port 3000)"
 	@echo ""
 	@echo "  Docker"
 	@echo "  make up                Démarrer la stack complète (rebuild)"
@@ -21,12 +20,11 @@ help:
 	@echo "  make test              Tests unitaires Go (race detector)"
 	@echo "  make test-cover        Tests Go avec rapport de couverture"
 	@echo "  make test-frontend     Tests unitaires Vitest (fiscalCalc.ts)"
-	@echo "  make test-e2e          Tests E2E Playwright (dashboard)"
 	@echo "  make test-all          CI : Go + Vitest + lint + type-check"
 	@echo ""
 	@echo "  Build & qualité"
-	@echo "  make build             Builder backend + frontend + dashboard"
-	@echo "  make lint              Linter backend + frontend + dashboard"
+	@echo "  make build             Builder backend + frontend"
+	@echo "  make lint              Linter backend + frontend"
 	@echo "  make clean             Supprimer binaires et volumes Docker"
 
 # ── Docker ────────────────────────────────────────────────────
@@ -77,34 +75,14 @@ lint-frontend:
 test-frontend:
 	cd frontend && npm test
 
-# ── Dashboard Next.js (port 3000) ────────────────────────────
-dev-dashboard:
-	cd dashboard && npm run dev
-
-build-dashboard:
-	cd dashboard && npm run build
-
-lint-dashboard:
-	cd dashboard && npm run lint
-
-type-check-dashboard:
-	cd dashboard && npx tsc --noEmit
-
-# ── Tests E2E Playwright ─────────────────────────────────────
-test-e2e:
-	cd dashboard && npx playwright test
-
-test-e2e-ui:
-	cd dashboard && npx playwright test --ui
-
 # ── All tests (CI) ───────────────────────────────────────────
-test-all: test test-frontend lint-backend lint-frontend type-check-dashboard
+test-all: test test-frontend lint-backend lint-frontend
 	@echo "✅ All tests and type-checks passed"
 
 # ── All ───────────────────────────────────────────────────────
-build: build-backend build-frontend build-dashboard
+build: build-backend build-frontend
 
-lint: lint-backend lint-frontend lint-dashboard
+lint: lint-backend lint-frontend
 
 clean:
 	rm -f backend/fisca-server backend/fisca-server.exe

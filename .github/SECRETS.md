@@ -8,21 +8,13 @@ Configurer ces secrets dans :
 | Secret | Valeur | Où trouver |
 |--------|--------|-----------|
 | `RENDER_DEPLOY_HOOK_BACKEND` | URL webhook de déploiement Render | Render Dashboard → fisca-backend → Settings → Deploy Hook → Copy |
-| `RENDER_DEPLOY_HOOK_DASHBOARD` | URL webhook de déploiement Render | Render Dashboard → fisca-dashboard → Settings → Deploy Hook → Copy |
-
-## Frontend Build
-
-| Secret | Valeur | Notes |
-|--------|--------|-------|
-| `NEXT_PUBLIC_API_URL` | `https://fisca-backend.onrender.com` | URL de production du backend |
 
 ## Procédure de premier déploiement
 
-1. Pousser le code sur `main` → Render détecte `render.yaml` et crée les services
+1. Pousser le code sur `main` → Render détecte `render.yaml` et crée le service backend
 2. Une fois le backend déployé, noter son URL (`https://fisca-backend.onrender.com`)
-3. Dans Render Dashboard → fisca-dashboard → Environment → ajouter `NEXT_PUBLIC_API_URL`
-4. Copier les Deploy Hook URLs des deux services dans les secrets GitHub ci-dessus
-5. Les prochains pushs sur `main` déploient automatiquement via GitHub Actions
+3. Copier le Deploy Hook URL du backend dans les secrets GitHub ci-dessus
+4. Le frontend Vite est servi via Docker nginx sur Render ou un VPS
 
 ## Notes de sécurité
 

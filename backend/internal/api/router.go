@@ -42,7 +42,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 	}
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   allowedOrigins,
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Company-ID"},
 		ExposedHeaders:   []string{"X-Total-Count", "X-Page", "X-Limit"},
 		AllowCredentials: false,
