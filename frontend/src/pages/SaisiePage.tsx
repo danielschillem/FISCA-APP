@@ -75,13 +75,16 @@ export default function SaisiePage() {
     const handleGenerate = async () => {
         setSaving(true);
         setSuccess('');
+        setImportMsg('');
         try {
             // Le backend recalcule depuis les employés : on n'envoie que la période
             await declarationApi.create({ mois, annee });
             qc.invalidateQueries({ queryKey: ['declarations'] });
             setSuccess(`Déclaration ${MOIS_FR[mois - 1]} ${annee} générée.`);
-        } catch {
-            // handled
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+                ?? 'Erreur lors de la génération.';
+            setImportMsg('err:' + msg);
         } finally {
             setSaving(false);
         }

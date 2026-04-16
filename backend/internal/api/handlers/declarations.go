@@ -194,6 +194,17 @@ func (h *DeclarationHandler) Create(w http.ResponseWriter, r *http.Request) {
 		  brut_total, iuts_total, tpa_total, css_total, total,
 		  statut, ref, date_depot)
 		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+		 ON CONFLICT (company_id, mois, annee) DO UPDATE SET
+		   periode     = EXCLUDED.periode,
+		   nb_salaries = EXCLUDED.nb_salaries,
+		   brut_total  = EXCLUDED.brut_total,
+		   iuts_total  = EXCLUDED.iuts_total,
+		   tpa_total   = EXCLUDED.tpa_total,
+		   css_total   = EXCLUDED.css_total,
+		   total       = EXCLUDED.total,
+		   statut      = EXCLUDED.statut,
+		   ref         = EXCLUDED.ref,
+		   date_depot  = EXCLUDED.date_depot
 		 RETURNING id, company_id, periode, mois, annee, nb_salaries,
 		   brut_total, iuts_total, tpa_total, css_total, total,
 		   statut, ref, date_depot, created_at`,
@@ -204,7 +215,7 @@ func (h *DeclarationHandler) Create(w http.ResponseWriter, r *http.Request) {
 		&d.BrutTotal, &d.IUTSTotal, &d.TPATotal, &d.CSSTotal, &d.Total,
 		&d.Statut, &d.Ref, &d.DateDepot, &d.CreatedAt)
 	if err != nil {
-		jsonError(w, "Erreur création déclaration", http.StatusInternalServerError)
+		jsonError(w, "Erreur création déclaration : "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	jsonCreated(w, d)
