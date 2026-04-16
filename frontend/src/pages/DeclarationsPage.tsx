@@ -1,183 +1,343 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { declarationApi, companyApi } from '../lib/api';
+import { declarationApi, companyApi, bulletinApi } from '../lib/api';
 import { fmtN } from '../lib/fiscalCalc';
 import { Card, Btn, Badge, Spinner } from '../components/ui';
-import type { Declaration } from '../types';
+import type { Declaration, Company, Bulletin } from '../types';
 import { MOIS_FR } from '../types';
-import { FileDown, FileText, Trash2, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { FileDown, FileText, Trash2, CheckCircle2, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+const MOIS_NOMS_FR = [
+    'Janvier','Fevrier','Mars','Avril','Mai','Juin',
+    'Juillet','Aout','Septembre','Octobre','Novembre','Decembre'
+];
+
 function statutBadge(statut: string) {
-    if (statut === 'ok' || statut === 'approuve') return <Badge color="green"><CheckCircle2 className="w-3 h-3 inline mr-1" />Validée</Badge>;
+    if (statut === 'ok' || statut === 'approuve') return <Badge color="green"><CheckCircle2 className="w-3 h-3 inline mr-1" />Validee</Badge>;
     if (statut === 'retard') return <Badge color="red"><AlertCircle className="w-3 h-3 inline mr-1" />En retard</Badge>;
     if (statut === 'soumis') return <Badge color="blue"><Clock className="w-3 h-3 inline mr-1" />Soumise</Badge>;
     return <Badge color="orange"><Clock className="w-3 h-3 inline mr-1" />En cours</Badge>;
 }
 
-function generatePDF(d: Declaration, companyName?: string) {
+// Reproduit fidelement le formulaire officiel DGI Burkina Faso
+// DECLARATION DE VERSEMENT DE L'IUTS ET TPA (ref. IUTS 1)
+function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bulletin[] = []) {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const W = 210;
-    const MARGIN = 16;
-    const DARK = [20, 20, 20] as [number, number, number];
-    const GRAY = [110, 110, 110] as [number, number, number];
-    const LIGHT = [220, 220, 220] as [number, number, number];
-    const ACCENT = [22, 101, 52] as [number, number, number]; // vert sombre discret
+    const ML = 10;
+    const CW = 190;
 
-    // ── Bande latérale gauche (fine ligne) ──
-    doc.setFillColor(...ACCENT);
-    doc.rect(0, 0, 4, 297, 'F');
+    const box = (x: number, y: number, w: number, h: number, style: 'D' | 'F' | 'FD' = 'D') => {
+        doc.setDrawColor(0); doc.setLineWidth(0.25);
+        doc.rect(x, y, w, h, style);
+    };
+    const vl = (x: number, y1: number, y2: number) => {
+        doc.setDrawColor(0); doc.setLineWidth(0.25); doc.line(x, y1, x, y2);
+    };
+    const t = (
+        text: string, x: number, y: number,
+        size: number,
+        bold = false,
+        align: 'left' | 'center' | 'right' = 'left',
+        color: [number, number, number] = [0, 0, 0]
+    ) => {
+        doc.setFontSize(size);
+        doc.setFont('helvetica', bold ? 'bold' : 'normal');
+        doc.setTextColor(...color);
+        doc.text(text, x, y, { align });
+    };
+    const secBar = (x: number, y: number, w: number, h: number, label: string) => {
+        doc.setFillColor(220, 220, 220);
+        box(x, y, w, h, 'FD');
+        t(label, x + 2, y + h - 2, 7, true);
+    };
 
-    // ── Logo / Titre haut ──
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...ACCENT);
-    doc.text('FISCA', MARGIN + 2, 18);
+    const BLUE: [number, number, number] = [0, 0, 180];
+    const GRAY: [number, number, number] = [100, 100, 100];
 
-    doc.setFontSize(7.5);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...GRAY);
-    doc.text('Plateforme Fiscale Numérique · Burkina Faso', MARGIN + 2, 24);
+    // ==================== PAGE 1 ====================
+    let y = 10;
+    const secH = 7;
+    const lineH = 7;
 
-    // ── Titre document (droite) ──
-    doc.setFontSize(13);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...DARK);
-    doc.text('DÉCLARATION MENSUELLE', W - MARGIN, 15, { align: 'right' });
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...GRAY);
-    doc.text('IUTS · TPA · CSS', W - MARGIN, 21, { align: 'right' });
+    // --- HEADER : 3 boites cote a cote ---
+    const bW = CW / 3;
+    const hH = 24;
 
-    // ── Ligne de séparation ──
-    doc.setDrawColor(...LIGHT);
-    doc.setLineWidth(0.4);
-    doc.line(MARGIN + 2, 28, W - MARGIN, 28);
+    box(ML, y, bW, hH);
+    t('CACHET DU SERVICE', ML + 2, y + 5.5, 7, true);
 
-    // ── Bloc informations (deux colonnes) ──
-    const infoY = 35;
-    // Colonne gauche : entreprise
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...GRAY);
-    doc.text('ENTREPRISE / EMPLOYEUR', MARGIN + 2, infoY);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...DARK);
-    doc.text(companyName ?? '—', MARGIN + 2, infoY + 6);
+    box(ML + bW, y, bW, hH);
+    t('DIRECTION GENERALE DES IMPOTS', ML + bW + bW / 2, y + 5.5, 7.5, true, 'center');
+    t('DECLARATION DE VERSEMENT DE', ML + bW + bW / 2, y + 10.5, 8, true, 'center');
+    t("- Retenue de l'Impot Unique sur les", ML + bW + 3, y + 15.5, 5.5);
+    t('  Traitements et Salaires (IUTS)', ML + bW + 3, y + 19, 5.5);
+    t("- Taxe Patronale d'Apprentissage (TPA)", ML + bW + 3, y + 22.5, 5.5);
 
-    // Colonne droite : période & référence
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...GRAY);
-    doc.text('PÉRIODE', W - MARGIN, infoY, { align: 'right' });
-    doc.setFontSize(13);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...DARK);
-    doc.text(`${MOIS_FR[d.mois - 1].toUpperCase()} ${d.annee}`, W - MARGIN, infoY + 6, { align: 'right' });
+    box(ML + 2 * bW, y, bW, hH);
+    t('DATE DE RECEPTION', ML + 2 * bW + 2, y + 5.5, 7, true);
 
-    // Sous-infos
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...GRAY);
-    const dateGen = new Date(d.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-    doc.text(`Générée le : ${dateGen}`, MARGIN + 2, infoY + 13);
-    if (d.ref) doc.text(`Référence : ${d.ref}`, MARGIN + 2, infoY + 19);
-    doc.text(`${d.nb_salaries} salarié(s) déclaré(s)`, W - MARGIN, infoY + 13, { align: 'right' });
+    y += hH;
 
-    // ── Ligne de séparation ──
-    doc.setDrawColor(...LIGHT);
-    doc.line(MARGIN + 2, infoY + 24, W - MARGIN, infoY + 24);
+    // --- I. PERIODE ---
+    secBar(ML, y, CW, secH, 'I. PERIODE');
+    y += secH;
 
-    // ── Tableau récapitulatif ──
-    const tableY = infoY + 30;
-    autoTable(doc, {
-        startY: tableY,
-        head: [['Rubrique', 'Base de calcul', 'Montant (FCFA)']],
-        body: [
-            ['Masse salariale brute', 'Ensemble des rémunérations', fmtN(d.brut_total) + ' F'],
-            ['IUTS net retenu', 'Barème progressif CGI Art. 107', fmtN(d.iuts_total) + ' F'],
-            ['TPA patronale', '3 % de la masse brute', fmtN(d.tpa_total) + ' F'],
-            ['CSS / CNSS salarial', '5,5 % (CNSS) ou 6 % (CARFO)', fmtN(d.css_total) + ' F'],
-        ],
-        styles: {
-            fontSize: 9,
-            cellPadding: { top: 4, bottom: 4, left: 5, right: 5 },
-            textColor: DARK,
-            lineColor: LIGHT,
-            lineWidth: 0.3,
-        },
-        headStyles: {
-            fillColor: [245, 245, 245],
-            textColor: GRAY,
-            fontStyle: 'bold',
-            fontSize: 7.5,
-            lineColor: LIGHT,
-            lineWidth: 0.3,
-        },
-        alternateRowStyles: { fillColor: [250, 250, 250] },
-        columnStyles: {
-            0: { cellWidth: 72, fontStyle: 'bold' },
-            1: { cellWidth: 78, textColor: GRAY, fontSize: 8 },
-            2: { halign: 'right', fontStyle: 'bold', cellWidth: 36 },
-        },
-        tableLineColor: LIGHT,
-        tableLineWidth: 0.3,
+    const pw = CW / 3;
+    const periodeH = 9;
+    box(ML, y, pw, periodeH); box(ML + pw, y, pw, periodeH); box(ML + 2 * pw, y, pw, periodeH);
+    t('Mois', ML + 2, y + 3.5, 5.5, false, 'left', GRAY);
+    t('Semestre', ML + pw + 2, y + 3.5, 5.5, false, 'left', GRAY);
+    t('Annee', ML + 2 * pw + 2, y + 3.5, 5.5, false, 'left', GRAY);
+    t(MOIS_NOMS_FR[d.mois - 1], ML + 2, y + 8, 8.5, true, 'left', BLUE);
+    t(String(d.annee), ML + 2 * pw + 2, y + 8, 8.5, true, 'left', BLUE);
+    y += periodeH;
+
+    // --- II. IDENTIFICATION ---
+    secBar(ML, y, CW, secH, 'II. IDENTIFICATION DU REDEVABLE');
+    y += secH;
+
+    // RC | IFU
+    const rcW = CW * 0.45;
+    box(ML, y, rcW, lineH); box(ML + rcW, y, CW - rcW, lineH);
+    t('N Registre de commerce', ML + 2, y + 3, 5, false, 'left', GRAY);
+    t('N IFU', ML + rcW + 2, y + 3, 5, false, 'left', GRAY);
+    t(company?.rc ?? '', ML + 2, y + 6.5, 8, true, 'left', BLUE);
+    t(company?.ifu ?? '', ML + rcW + 2, y + 6.5, 8, true, 'left', BLUE);
+    y += lineH;
+
+    // Nom | Code activite
+    const nomW = CW * 0.72;
+    box(ML, y, nomW, lineH); box(ML + nomW, y, CW - nomW, lineH);
+    t('Nom, prenoms ou raison sociale', ML + 2, y + 3, 5, false, 'left', GRAY);
+    t('Code activite', ML + nomW + 2, y + 3, 5, false, 'left', GRAY);
+    t(company?.nom ?? '', ML + 2, y + 6.5, 8, true, 'left', BLUE);
+    y += lineH;
+
+    // Profession
+    box(ML, y, CW, lineH);
+    t('Profession ou activite', ML + 2, y + 3, 5, false, 'left', GRAY);
+    t(company?.secteur ?? '', ML + 2, y + 6.5, 7.5, true, 'left', BLUE);
+    y += lineH;
+
+    // Adresse siege
+    box(ML, y, CW, lineH);
+    t('Adresse du siege (Localite)', ML + 2, y + 3, 5, false, 'left', GRAY);
+    t(company?.adresse ?? '', ML + 2, y + 6.5, 7.5, true, 'left', BLUE);
+    y += lineH;
+
+    // BP
+    const bpH = 6;
+    box(ML, y, CW, bpH);
+    t('BP ..........  Quartier ................  Secteur ...  N et rue ..................  Section ...........  Lot ....  Parcelle ....', ML + 2, y + 4.5, 5, false, 'left', GRAY);
+    y += bpH;
+
+    // Etablissements secondaires
+    const etabH = 5.5;
+    for (let i = 1; i <= 3; i++) {
+        box(ML, y, CW, etabH);
+        t(`${i}. Adresse etablissement secondaire ...............................................................................................................`, ML + 2, y + 4, 5, false, 'left', GRAY);
+        y += etabH;
+    }
+
+    // Adresse domicile
+    box(ML, y, CW, lineH);
+    t('Adresse du domicile (Localite) ...................................................................................................................', ML + 2, y + 4.5, 5, false, 'left', GRAY);
+    y += lineH;
+
+    box(ML, y, CW, bpH);
+    t('BP ..........  Quartier ................  Secteur ...  N et rue ..................  Section ...........  Lot ....  Parcelle ....', ML + 2, y + 4.5, 5, false, 'left', GRAY);
+    y += bpH;
+
+    // --- III. TPA ---
+    secBar(ML, y, CW, secH, "III. TAXE PATRONALE ET D'APPRENTISSAGE  (articles 127 a 130 du Code des Impots)");
+    y += secH;
+
+    const t1 = 90; const t2 = 30; const t3 = CW - t1 - t2;
+    const tHH = 6; const tRH = 7;
+
+    box(ML, y, t1, tHH); box(ML + t1, y, t2, tHH); box(ML + t1 + t2, y, t3, tHH);
+    t('Montant base taxable', ML + 2, y + 4.5, 6, true);
+    t('Taux', ML + t1 + t2 / 2, y + 4.5, 6, true, 'center');
+    t('Montant TPA du', ML + t1 + t2 + 2, y + 4.5, 6, true);
+    y += tHH;
+
+    box(ML, y, t1, tRH); box(ML + t1, y, t2, tRH); box(ML + t1 + t2, y, t3, tRH);
+    t(fmtN(d.brut_total) + ' F', ML + 2, y + 5.5, 8, true, 'left', BLUE);
+    t('3 %', ML + t1 + t2 / 2, y + 5.5, 8, true, 'center');
+    t(fmtN(d.tpa_total) + ' F', ML + t1 + t2 + 2, y + 5.5, 8, true, 'left', BLUE);
+    y += tRH;
+
+    box(ML, y, t1, tRH); box(ML + t1, y, t2, tRH); box(ML + t1 + t2, y, t3, tRH);
+    t('Montant deductions TPA', ML + 2, y + 5.5, 6.5);
+    t('0', ML + t1 + t2 + 2, y + 5.5, 7, true);
+    y += tRH;
+
+    doc.setFillColor(245, 245, 245); box(ML, y, CW, tRH, 'FD'); vl(ML + t1 + t2, y, y + tRH);
+    t('Sous total TPA', ML + 2, y + 5.5, 7, true);
+    t(fmtN(d.tpa_total) + ' F', ML + t1 + t2 + 2, y + 5.5, 8, true, 'left', BLUE);
+    y += tRH;
+
+    // --- IV. IUTS ---
+    secBar(ML, y, CW, secH, "IV. IMPOT UNIQUE SUR LES TRAITEMENTS ET SALAIRES  (articles 59 a 71 du Code des Impots)");
+    y += secH;
+
+    const iW = CW / 3;
+    const iHH = 6; const iRH = 9;
+
+    box(ML, y, iW, iHH); box(ML + iW, y, iW, iHH); box(ML + 2 * iW, y, iW, iHH);
+    t('Nombre de salaries', ML + iW / 2, y + 4.5, 6, true, 'center');
+    t('Total salaires bruts', ML + iW + iW / 2, y + 4.5, 6, true, 'center');
+    t('Total IUTS du', ML + 2 * iW + iW / 2, y + 4.5, 6, true, 'center');
+    y += iHH;
+
+    box(ML, y, iW, iRH); box(ML + iW, y, iW, iRH); box(ML + 2 * iW, y, iW, iRH);
+    t(String(d.nb_salaries), ML + iW / 2, y + 7, 11, true, 'center', BLUE);
+    t(fmtN(d.brut_total) + ' F', ML + iW + iW / 2, y + 7, 8, true, 'center', BLUE);
+    t(fmtN(d.iuts_total) + ' F', ML + 2 * iW + iW / 2, y + 7, 8, true, 'center', BLUE);
+    y += iRH;
+
+    // TOTAL GENERAL
+    const totH = 9;
+    doc.setFillColor(218, 235, 218); box(ML, y, CW, totH, 'FD'); vl(ML + 2 * iW, y, y + totH);
+    t('TOTAL GENERAL', ML + iW, y + 6.5, 8, true, 'center');
+    t(fmtN(d.iuts_total + d.tpa_total) + ' FCFA', ML + 2 * iW + 3, y + 7, 9, true, 'left', [0, 120, 0]);
+    y += totH;
+
+    // --- REGLEMENT ---
+    const reglH = 28;
+    box(ML, y, CW, reglH);
+    t("Reglement joint a l'ordre du receveur des impots :", ML + 2, y + 5, 6.5, true);
+    t("- Cheque bancaire sur _________________ N __________  du ___________  Montant ____________________", ML + 4, y + 11, 5.5, false, 'left', GRAY);
+    t("- Espece d'un montant de ___________________________________________________________________________", ML + 4, y + 16, 5.5, false, 'left', GRAY);
+    t("- Virement bancaire : Code banque __________ Code guichet __________  N compte _______________  Cle RIB _____", ML + 4, y + 21, 5.5, false, 'left', GRAY);
+    t("  Swift code _________________  Code IBAN _________________", ML + 4, y + 26, 5.5, false, 'left', GRAY);
+    y += reglH;
+
+    // --- SIGNATURE ---
+    const sigLH = 7;
+    box(ML, y, CW, sigLH);
+    t('A ______________________________   Le _______________________________', ML + 2, y + 5, 6.5, false, 'left', GRAY);
+    t('Nom - Qualite - Signature', ML + CW - 60, y + 5, 6, false, 'left', GRAY);
+    y += sigLH;
+
+    const sigBH = 22;
+    const sw = CW * 0.46;
+    box(ML, y, sw, sigBH); box(ML + CW - sw, y, sw, sigBH);
+    t("Cachet et signature de l'employeur", ML + 2, y + 4.5, 5.5, false, 'left', GRAY);
+    t('Visa DGI / DGTCP', ML + CW - sw + 2, y + 4.5, 5.5, false, 'left', GRAY);
+    y += sigBH;
+
+    // --- V. CADRE RESERVE A L'ADMINISTRATION ---
+    secBar(ML, y, CW, secH, "V. CADRE RESERVE A L'ADMINISTRATION");
+    y += secH;
+
+    const admH = 30;
+    const admW = CW / 4;
+    const admLabels = ['PRISE EN RECETTE', 'PRISE EN CHARGE', 'PENALITES', 'VISA DU RECEVEUR'];
+    admLabels.forEach((lbl, i) => {
+        box(ML + i * admW, y, admW, admH);
+        t(lbl, ML + i * admW + admW / 2, y + 5.5, 5.5, true, 'center');
     });
 
-    const finalY: number = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
+    // --- FOOTER ---
+    doc.setDrawColor(190, 190, 190); doc.setLineWidth(0.2);
+    doc.line(ML, 287, ML + CW, 287);
+    doc.setFontSize(6); doc.setFont('helvetica', 'italic'); doc.setTextColor(130, 130, 130);
+    doc.text('IUTS 1 - 1 -', ML, 292);
+    doc.text('Genere par FISCA - Plateforme Fiscale Numerique Burkina Faso - CGI 2025', ML + CW / 2, 292, { align: 'center' });
 
-    // ── Total net à déclarer ──
-    const totalY = finalY + 6;
-    doc.setDrawColor(...ACCENT);
-    doc.setLineWidth(0.6);
-    doc.line(MARGIN + 2, totalY, W - MARGIN, totalY);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...DARK);
-    doc.text('TOTAL NET À DÉCLARER', MARGIN + 2, totalY + 8);
-    doc.setFontSize(13);
-    doc.setTextColor(...ACCENT);
-    doc.text(fmtN(d.total) + ' FCFA', W - MARGIN, totalY + 8, { align: 'right' });
-    doc.setDrawColor(...LIGHT);
-    doc.setLineWidth(0.3);
-    doc.line(MARGIN + 2, totalY + 12, W - MARGIN, totalY + 12);
+    // ==================== PAGE 2 : ETAT ANNEXE ====================
+    if (bulletins.length > 0) {
+        doc.addPage();
+        let y2 = 10;
 
-    // ── Zone signature ──
-    const sigY = totalY + 22;
-    doc.setFontSize(7.5);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...GRAY);
-    doc.text("Cachet et signature de l'employeur", MARGIN + 2, sigY);
-    doc.setDrawColor(...LIGHT);
-    doc.rect(MARGIN + 2, sigY + 3, 70, 22);
+        // Entete
+        doc.setFillColor(220, 220, 220); doc.rect(ML, y2, CW, 9, 'FD');
+        doc.setDrawColor(0); doc.setLineWidth(0.25); doc.rect(ML, y2, CW, 9);
+        doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(0);
+        doc.text('IV. ETAT ANNEXE DE DECLARATION DE VERSEMENT DE LA RETENUE IUTS - TPA', ML + CW / 2, y2 + 6.5, { align: 'center' });
+        y2 += 9;
 
-    doc.text('Visa DGI / DGTCP', W - MARGIN - 70, sigY);
-    doc.rect(W - MARGIN - 70, sigY + 3, 70, 22);
+        // Sous-entete periode
+        doc.rect(ML, y2, CW, 6); doc.setLineWidth(0.25);
+        doc.setFontSize(6); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 80, 80);
+        doc.text(
+            'Periode : ' + MOIS_NOMS_FR[d.mois - 1] + ' ' + d.annee +
+            '  -  ' + (company?.nom ?? '') +
+            '  -  IFU : ' + (company?.ifu ?? '') +
+            '  -  RC : ' + (company?.rc ?? ''),
+            ML + 2, y2 + 4.5
+        );
+        y2 += 6;
 
-    // ── Pied de page ──
-    const pageH = doc.internal.pageSize.height;
-    doc.setFillColor(245, 245, 245);
-    doc.rect(0, pageH - 14, W, 14, 'F');
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'italic');
-    doc.setTextColor(...GRAY);
-    doc.text(
-        'Document généré automatiquement par FISCA · Non opposable sans signature et cachet · CGI 2025 Burkina Faso',
-        W / 2, pageH - 7,
-        { align: 'center' }
-    );
+        const tableBody = bulletins.map((b, idx) => [
+            String(idx + 1),
+            b.nom_employe,
+            fmtN(b.brut_total),
+            fmtN(b.base_imposable),
+            String(b.charges),
+            fmtN(b.iuts_net),
+        ]);
+        const totBrut = bulletins.reduce((s, b) => s + Number(b.brut_total), 0);
+        const totBase = bulletins.reduce((s, b) => s + Number(b.base_imposable), 0);
+        const totIUTS = bulletins.reduce((s, b) => s + Number(b.iuts_net), 0);
 
-    doc.save(`Decl-IUTS-${d.annee}-${String(d.mois).padStart(2, '0')}-${companyName ?? 'entreprise'}.pdf`);
+        autoTable(doc, {
+            startY: y2,
+            head: [['N', 'Noms et prenoms des salaries', 'Salaires bruts\n(FCFA)', 'Bases imposables\n(FCFA)', 'Nombre\nde charges', 'IUTS du\n(FCFA)']],
+            body: tableBody,
+            foot: [['', 'TOTAUX', fmtN(totBrut), fmtN(totBase), '', fmtN(totIUTS)]],
+            styles: {
+                fontSize: 8,
+                cellPadding: { top: 3, bottom: 3, left: 2, right: 2 },
+                textColor: [0, 0, 0] as [number, number, number],
+                lineColor: [0, 0, 0] as [number, number, number],
+                lineWidth: 0.25,
+            },
+            headStyles: {
+                fillColor: [220, 220, 220] as [number, number, number],
+                textColor: [0, 0, 0] as [number, number, number],
+                fontStyle: 'bold',
+                fontSize: 7,
+                halign: 'center',
+            },
+            footStyles: {
+                fillColor: [218, 235, 218] as [number, number, number],
+                textColor: [0, 0, 0] as [number, number, number],
+                fontStyle: 'bold',
+                fontSize: 8,
+            },
+            columnStyles: {
+                0: { cellWidth: 10, halign: 'center' },
+                1: { cellWidth: 65 },
+                2: { cellWidth: 30, halign: 'right' },
+                3: { cellWidth: 30, halign: 'right' },
+                4: { cellWidth: 20, halign: 'center' },
+                5: { cellWidth: 30, halign: 'right' },
+            },
+            tableLineColor: [0, 0, 0] as [number, number, number],
+            tableLineWidth: 0.25,
+        });
+
+        doc.setDrawColor(190, 190, 190); doc.setLineWidth(0.2);
+        doc.line(ML, 287, ML + CW, 287);
+        doc.setFontSize(6); doc.setFont('helvetica', 'italic'); doc.setTextColor(130, 130, 130);
+        doc.text('IUTS 1 - 2 -', ML, 292);
+        doc.text('Genere par FISCA - Plateforme Fiscale Numerique Burkina Faso - CGI 2025', ML + CW / 2, 292, { align: 'center' });
+    }
+
+    doc.save('DGI-IUTS-TPA-' + d.annee + '-' + String(d.mois).padStart(2, '0') + '-' + (company?.nom ?? 'declaration').replace(/\s+/g, '_') + '.pdf');
 }
 
 export default function DeclarationsPage() {
     const [annee, setAnnee] = useState(new Date().getFullYear());
     const [deleting, setDeleting] = useState<string | null>(null);
+    const [downloadingPDF, setDownloadingPDF] = useState<string | null>(null);
     const qc = useQueryClient();
 
-    const { data: company } = useQuery({
+    const { data: company } = useQuery<Company>({
         queryKey: ['company'],
         queryFn: () => companyApi.get().then((r) => r.data),
         staleTime: Infinity,
@@ -206,9 +366,20 @@ export default function DeclarationsPage() {
         URL.revokeObjectURL(url);
     };
 
+    const handleDownloadPDF = async (d: Declaration) => {
+        setDownloadingPDF(d.id);
+        try {
+            const res = await bulletinApi.list(d.mois, d.annee);
+            const bulletins: Bulletin[] = res.data ?? [];
+            generateOfficialDGIPDF(d, company, bulletins);
+        } finally {
+            setDownloadingPDF(null);
+        }
+    };
+
     return (
         <div className="space-y-6">
-            {/* Filtre année */}
+            {/* Filtre annee */}
             <Card>
                 <div className="flex items-center gap-4">
                     <label className="text-sm font-medium text-gray-700">Exercice fiscal</label>
@@ -221,7 +392,7 @@ export default function DeclarationsPage() {
                             <option key={a} value={a}>{a}</option>
                         ))}
                     </select>
-                    <span className="text-sm text-gray-500">{declarations.length} déclaration(s)</span>
+                    <span className="text-sm text-gray-500">{declarations.length} declaration(s)</span>
                 </div>
             </Card>
 
@@ -232,8 +403,8 @@ export default function DeclarationsPage() {
                 <Card>
                     <div className="text-center py-12">
                         <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-500 font-medium">Aucune déclaration pour {annee}</p>
-                        <p className="text-gray-400 text-sm mt-1">Allez dans la saisie mensuelle et cliquez sur "Générer déclaration"</p>
+                        <p className="text-gray-500 font-medium">Aucune declaration pour {annee}</p>
+                        <p className="text-gray-400 text-sm mt-1">Allez dans la saisie mensuelle et cliquez sur "Generer declaration"</p>
                     </div>
                 </Card>
             ) : (
@@ -254,7 +425,7 @@ export default function DeclarationsPage() {
                                             {statutBadge(d.statut)}
                                         </div>
                                         <p className="text-xs text-gray-500">
-                                            {d.nb_salaries} salarié(s) · Créée le {new Date(d.created_at).toLocaleDateString('fr-FR')}
+                                            {d.nb_salaries} salarie(s) - Cree le {new Date(d.created_at).toLocaleDateString('fr-FR')}
                                             {d.ref && <span className="ml-2 font-mono bg-gray-100 px-1 rounded">{d.ref}</span>}
                                         </p>
                                     </div>
@@ -286,17 +457,21 @@ export default function DeclarationsPage() {
                                         variant="outline"
                                         size="sm"
                                         onClick={() => handleDownloadCSV(d.id, d.mois, d.annee)}
-                                        title="Télécharger DIPE (CSV pour DGI)"
+                                        title="Telecharger DIPE (CSV pour DGI)"
                                     >
                                         <FileDown className="w-4 h-4" /> DIPE CSV
                                     </Btn>
                                     <Btn
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => generatePDF(d, company?.nom)}
-                                        title="Télécharger résumé PDF"
+                                        onClick={() => handleDownloadPDF(d)}
+                                        disabled={downloadingPDF === d.id}
+                                        title="Formulaire officiel DGI IUTS/TPA"
                                     >
-                                        <FileDown className="w-4 h-4" /> PDF
+                                        {downloadingPDF === d.id
+                                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                                            : <FileDown className="w-4 h-4" />}
+                                        {' '}Formulaire DGI
                                     </Btn>
                                     {deleting === d.id ? (
                                         <div className="flex items-center gap-1">
@@ -329,7 +504,7 @@ export default function DeclarationsPage() {
                 </div>
             )}
 
-            {/* Résumé annuel */}
+            {/* Resume annuel */}
             {declarations.length > 0 && (
                 <Card>
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Cumul {annee}</p>
@@ -338,7 +513,7 @@ export default function DeclarationsPage() {
                             { label: 'Brut total', value: declarations.reduce((s, d) => s + Number(d.brut_total), 0), color: 'text-gray-900' },
                             { label: 'IUTS total (DGI)', value: declarations.reduce((s, d) => s + Number(d.iuts_total), 0), color: 'text-green-700' },
                             { label: 'TPA total', value: declarations.reduce((s, d) => s + Number(d.tpa_total), 0), color: 'text-blue-700' },
-                            { label: 'Total déclaré', value: declarations.reduce((s, d) => s + Number(d.total), 0), color: 'text-gray-900 font-bold' },
+                            { label: 'Total declare', value: declarations.reduce((s, d) => s + Number(d.total), 0), color: 'text-gray-900 font-bold' },
                         ].map((s) => (
                             <div key={s.label} className="bg-gray-50 rounded-xl p-3 text-center">
                                 <p className="text-xs text-gray-400 mb-1">{s.label}</p>
