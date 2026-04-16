@@ -31,6 +31,8 @@ services:
       PORT: "8080"
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-http://localhost:3000,http://localhost:5173}
       ADMIN_SECRET: ${ADMIN_SECRET:-}
+      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}

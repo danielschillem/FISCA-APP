@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppLayout from './layouts/AppLayout';
+import AdminLayout from './layouts/AdminLayout';
 
 // Auth pages — chargées immédiatement (point d'entrée)
 import LoginPage from './pages/auth/LoginPage';
@@ -32,6 +33,12 @@ const IRCMPage = lazy(() => import('./pages/IRCMPage'));
 const CMEPage = lazy(() => import('./pages/CMEPage'));
 const ISPage = lazy(() => import('./pages/ISPage'));
 const PatentePage = lazy(() => import('./pages/PatentePage'));
+
+// Admin pages — lazy loaded
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
+const AdminCompaniesPage = lazy(() => import('./pages/admin/AdminCompaniesPage'));
+const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage'));
 
 const qc = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
@@ -79,6 +86,15 @@ function App() {
               <Route path="/abonnement" element={<AbonnementPage />} />
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
             </Route>
+
+            {/* Super Admin — accès restreint role=super_admin */}
+            <Route element={<AdminLayout />}>
+              <Route path="/admin" element={<AdminDashboardPage />} />
+              <Route path="/admin/users" element={<AdminUsersPage />} />
+              <Route path="/admin/companies" element={<AdminCompaniesPage />} />
+              <Route path="/admin/audit" element={<AdminAuditPage />} />
+            </Route>
+
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Suspense>

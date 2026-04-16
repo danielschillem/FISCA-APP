@@ -6,13 +6,13 @@ import { ChevronLeft, ChevronRight, Shield, UserX, UserCheck, Key, CreditCard, B
 
 // ─── Action config ─────────────────────────────────────────────────────────
 const ACTION_CONFIG: Record<string, { icon: typeof Shield; dot: string; badge: string; label: string }> = {
-    'user.suspend':        { icon: UserX,      dot: 'bg-red-400',    badge: 'bg-red-50 text-red-700 border-red-200',      label: 'Suspension' },
-    'user.activate':       { icon: UserCheck,  dot: 'bg-green-400',  badge: 'bg-green-50 text-green-700 border-green-200', label: 'Activation' },
-    'user.plan_change':    { icon: CreditCard, dot: 'bg-blue-400',   badge: 'bg-blue-50 text-blue-700 border-blue-200',   label: 'Changement plan' },
-    'user.reset_password': { icon: Key,        dot: 'bg-amber-400',  badge: 'bg-amber-50 text-amber-700 border-amber-200', label: 'Reset mdp' },
-    'license.upsert':      { icon: Shield,     dot: 'bg-purple-400', badge: 'bg-purple-50 text-purple-700 border-purple-200', label: 'Licence' },
-    'company.suspend':     { icon: Building,   dot: 'bg-red-400',    badge: 'bg-red-50 text-red-700 border-red-200',      label: 'Soc. suspendue' },
-    'company.activate':    { icon: Building,   dot: 'bg-green-400',  badge: 'bg-green-50 text-green-700 border-green-200', label: 'Soc. activee' },
+    'user.suspend': { icon: UserX, dot: 'bg-red-400', badge: 'bg-red-50 text-red-700 border-red-200', label: 'Suspension' },
+    'user.activate': { icon: UserCheck, dot: 'bg-green-400', badge: 'bg-green-50 text-green-700 border-green-200', label: 'Activation' },
+    'user.plan_change': { icon: CreditCard, dot: 'bg-blue-400', badge: 'bg-blue-50 text-blue-700 border-blue-200', label: 'Changement plan' },
+    'user.reset_password': { icon: Key, dot: 'bg-amber-400', badge: 'bg-amber-50 text-amber-700 border-amber-200', label: 'Reset mdp' },
+    'license.upsert': { icon: Shield, dot: 'bg-purple-400', badge: 'bg-purple-50 text-purple-700 border-purple-200', label: 'Licence' },
+    'company.suspend': { icon: Building, dot: 'bg-red-400', badge: 'bg-red-50 text-red-700 border-red-200', label: 'Soc. suspendue' },
+    'company.activate': { icon: Building, dot: 'bg-green-400', badge: 'bg-green-50 text-green-700 border-green-200', label: 'Soc. activee' },
 };
 
 const DEFAULT_CONFIG = { icon: ScrollText, dot: 'bg-gray-400', badge: 'bg-gray-100 text-gray-600 border-gray-200', label: 'Action' };

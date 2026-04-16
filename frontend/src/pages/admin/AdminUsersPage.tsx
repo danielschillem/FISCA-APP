@@ -11,16 +11,16 @@ import {
 // ─── Constants ────────────────────────────────────────────────────────────────
 const PLAN_STYLES: Record<string, { label: string; badge: string }> = {
     starter: { label: 'Starter', badge: 'bg-slate-100 text-slate-600 border border-slate-200' },
-    pro:     { label: 'Pro',     badge: 'bg-sky-100 text-sky-700 border border-sky-200' },
+    pro: { label: 'Pro', badge: 'bg-sky-100 text-sky-700 border border-sky-200' },
     enterprise: { label: 'Enterprise', badge: 'bg-emerald-100 text-emerald-700 border border-emerald-200' },
-    custom:  { label: 'Custom',  badge: 'bg-purple-100 text-purple-700 border border-purple-200' },
+    custom: { label: 'Custom', badge: 'bg-purple-100 text-purple-700 border border-purple-200' },
 };
 
 const STATUS_STYLES: Record<string, string> = {
-    trial:     'bg-amber-50 text-amber-700 border border-amber-200',
-    active:    'bg-green-50 text-green-700 border border-green-200',
+    trial: 'bg-amber-50 text-amber-700 border border-amber-200',
+    active: 'bg-green-50 text-green-700 border border-green-200',
     suspended: 'bg-red-50 text-red-700 border border-red-200',
-    expired:   'bg-gray-100 text-gray-500 border border-gray-200',
+    expired: 'bg-gray-100 text-gray-500 border border-gray-200',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -251,11 +251,10 @@ function UserDrawer({ user, onClose }: { user: AdminUser; onClose: () => void })
                             <button
                                 onClick={() => toggleStatus.mutate()}
                                 disabled={toggleStatus.isPending}
-                                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
-                                    user.is_active
+                                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${user.is_active
                                         ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
                                         : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
-                                }`}
+                                    }`}
                             >
                                 {user.is_active
                                     ? <ShieldOff className="w-4 h-4" />

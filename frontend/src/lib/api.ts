@@ -243,3 +243,30 @@ export const workflowApi = {
 export const assistantApi = {
     chat: (message: string) => api.post('/assistant', { message }),
 };
+
+// ── Super Admin ───────────────────────────────────────────────
+export const adminApi = {
+    stats: () => api.get('/admin/stats'),
+    // Utilisateurs
+    listUsers: (params?: { search?: string; plan?: string; status?: string }) =>
+        api.get('/admin/users', { params }),
+    getUser: (id: string) => api.get(`/admin/users/${id}`),
+    setUserStatus: (id: string, is_active: boolean, reason?: string) =>
+        api.patch(`/admin/users/${id}/status`, { is_active, reason }),
+    setUserPlan: (id: string, plan: string) =>
+        api.patch(`/admin/users/${id}/plan`, { plan }),
+    resetUserPassword: (id: string) =>
+        api.post(`/admin/users/${id}/reset-password`),
+    // Licences
+    upsertLicense: (id: string, data: object) =>
+        api.put(`/admin/users/${id}/license`, data),
+    // Sociétés
+    listCompanies: (params?: { search?: string; status?: string }) =>
+        api.get('/admin/companies', { params }),
+    setCompanyStatus: (id: string, is_active: boolean, reason?: string) =>
+        api.patch(`/admin/companies/${id}/status`, { is_active, reason }),
+    // Audit
+    listAudit: (limit = 50, offset = 0) =>
+        api.get('/admin/audit', { params: { limit, offset } }),
+};
+

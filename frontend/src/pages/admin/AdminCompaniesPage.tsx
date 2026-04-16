@@ -131,11 +131,10 @@ export default function AdminCompaniesPage() {
                                         <span className="text-xs text-gray-600 truncate max-w-40 block">{c.user_email}</span>
                                     </td>
                                     <td className="px-4 py-3">
-                                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium border ${
-                                            c.is_active
+                                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium border ${c.is_active
                                                 ? 'bg-green-50 text-green-700 border-green-200'
                                                 : 'bg-red-50 text-red-700 border-red-200'
-                                        }`}>
+                                            }`}>
                                             {c.is_active ? 'Active' : 'Suspendue'}
                                         </span>
                                     </td>
@@ -152,11 +151,10 @@ export default function AdminCompaniesPage() {
                                                 <button
                                                     onClick={() => toggleStatus.mutate({ id: c.id, is_active: !c.is_active })}
                                                     disabled={toggleStatus.isPending}
-                                                    className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg font-medium transition-colors disabled:opacity-50 ${
-                                                        c.is_active
+                                                    className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg font-medium transition-colors disabled:opacity-50 ${c.is_active
                                                             ? 'bg-red-100 text-red-700 hover:bg-red-200'
                                                             : 'bg-green-100 text-green-700 hover:bg-green-200'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {c.is_active ? <ShieldOff className="w-3 h-3" /> : <ShieldCheck className="w-3 h-3" />}
                                                     {c.is_active ? 'Suspendre' : 'Activer'}
@@ -168,11 +166,10 @@ export default function AdminCompaniesPage() {
                                         ) : (
                                             <button
                                                 onClick={() => setConfirmId(c.id)}
-                                                className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors opacity-0 group-hover:opacity-100 ${
-                                                    c.is_active
+                                                className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors opacity-0 group-hover:opacity-100 ${c.is_active
                                                         ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
                                                         : 'bg-green-50 text-green-600 hover:bg-green-100 border border-green-200'
-                                                }`}
+                                                    }`}
                                             >
                                                 {c.is_active ? 'Suspendre' : 'Activer'}
                                             </button>

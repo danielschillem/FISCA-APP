@@ -74,6 +74,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 	cmeH := handlers.NewCMEHandler(db)
 	patenteH := handlers.NewPatenteHandler(db)
 	bilanH := handlers.NewBilanHandler(db)
+	adminH := handlers.NewAdminHandler(db)
 
 	// Routes publiques
 	r.Route("/api", func(r chi.Router) {
@@ -260,6 +261,31 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 
 			// Bilan fiscal annuel agrégé [Plan: Pro+]
 			r.Get("/bilan", bilanH.Get)
+		})
+
+		// Routes Super Admin — JWT requis + role=super_admin
+		r.Group(func(r chi.Router) {
+			r.Use(mw.Authenticate)
+			r.Use(mw.RequireSuperAdmin)
+
+			r.Get("/admin/stats", adminH.Stats)
+
+			// Utilisateurs
+			r.Get("/admin/users", adminH.ListUsers)
+			r.Get("/admin/users/{id}", adminH.GetUser)
+			r.Patch("/admin/users/{id}/status", adminH.SetUserStatus)
+			r.Patch("/admin/users/{id}/plan", adminH.SetUserPlan)
+			r.Post("/admin/users/{id}/reset-password", adminH.ResetUserPassword)
+
+			// Licences
+			r.Put("/admin/users/{id}/license", adminH.UpsertLicense)
+
+			// Sociétés
+			r.Get("/admin/companies", adminH.ListCompanies)
+			r.Patch("/admin/companies/{id}/status", adminH.SetCompanyStatus)
+
+			// Journal d'audit
+			r.Get("/admin/audit", adminH.ListAudit)
 		})
 	})
 

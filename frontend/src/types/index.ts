@@ -331,6 +331,8 @@ export interface User {
     id: string;
     email: string;
     plan: 'starter' | 'pro' | 'enterprise';
+    role: 'user' | 'super_admin';
+    is_active: boolean;
     created_at: string;
 }
 
@@ -380,3 +382,67 @@ export const MOIS_FR = [
     'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
 ];
+
+// ─── Super Admin types ────────────────────────────────────────
+
+export interface License {
+    id: string;
+    user_id: string;
+    plan: string;
+    status: 'trial' | 'active' | 'suspended' | 'expired';
+    trial_ends_at: string | null;
+    expires_at: string | null;
+    max_companies: number;
+    max_employees: number;
+    notes: string;
+    created_by: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface AdminUser {
+    id: string;
+    email: string;
+    plan: string;
+    role: string;
+    is_active: boolean;
+    company_count: number;
+    created_at: string;
+    license?: License;
+}
+
+export interface AdminCompany {
+    id: string;
+    user_id: string;
+    user_email: string;
+    nom: string;
+    ifu: string;
+    secteur: string;
+    is_active: boolean;
+}
+
+export interface AdminStats {
+    total_users: number;
+    active_users: number;
+    suspended_users: number;
+    trial_users: number;
+    plan_starter: number;
+    plan_pro: number;
+    plan_enterprise: number;
+    total_companies: number;
+    active_companies: number;
+    new_users_last30d: number;
+    estimated_mrr: number;
+}
+
+export interface AuditLog {
+    id: string;
+    admin_id: string;
+    admin_email: string;
+    action: string;
+    target_type: string;
+    target_id: string | null;
+    details: Record<string, unknown>;
+    created_at: string;
+}
+
