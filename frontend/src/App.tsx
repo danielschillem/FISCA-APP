@@ -41,6 +41,10 @@ const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
 const AdminCompaniesPage = lazy(() => import('./pages/admin/AdminCompaniesPage'));
 const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage'));
 
+// Org Admin pages — lazy loaded
+const OrgMembersPage = lazy(() => import('./pages/org/OrgMembersPage'));
+const OrgCompaniesPage = lazy(() => import('./pages/org/OrgCompaniesPage'));
+
 const qc = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
 });
@@ -87,6 +91,9 @@ function App() {
               <Route path="/parametres" element={<ParametresPage />} />
               <Route path="/abonnement" element={<AbonnementPage />} />
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              {/* Organisation Admin */}
+              <Route path="/org/membres" element={<OrgMembersPage />} />
+              <Route path="/org/societes" element={<OrgCompaniesPage />} />
             </Route>
 
             {/* Super Admin — accès restreint role=super_admin */}

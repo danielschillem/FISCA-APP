@@ -1,4 +1,6 @@
-﻿import { NavLink, useNavigate } from 'react-router-dom';
+﻿import { useMemo } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { getEcheancesAnnee } from '../lib/fiscalCalendar';
 import { useAuthStore, useAppStore } from '../lib/store';
 import { PLAN_FEATURES, type Plan } from '../types';
 import { authApi } from '../lib/api';
@@ -6,19 +8,27 @@ import {
     LayoutDashboard, PenLine, Calculator, FileText, FileCheck,
     Sliders, Receipt, Home, TrendingUp, Bot, Building2, GitBranch,
     BarChart2, Users, Store, BookOpen, Scroll, History, BarChart,
-    Star, Settings, Lock, LogOut, CalendarDays, type LucideIcon,
+    Star, Settings, Lock, LogOut, CalendarDays, ClipboardList, type LucideIcon,
 } from 'lucide-react';
 
 const PLAN_COLORS: Record<Plan, string> = {
-    starter: '#94a3b8',
-    pro: '#34d399',
-    enterprise: '#fb923c',
+    physique_starter: '#94a3b8',
+    physique_pro:     '#34d399',
+    moral_team:       '#60a5fa',
+    moral_enterprise: '#fb923c',
+    starter:          '#94a3b8',
+    pro:              '#34d399',
+    enterprise:       '#fb923c',
 };
 
 const PLAN_LABELS: Record<Plan, string> = {
-    starter: 'Starter',
-    pro: 'Pro',
-    enterprise: 'Entreprise',
+    physique_starter: 'Solo Starter',
+    physique_pro:     'Solo Pro',
+    moral_team:       'Équipe',
+    moral_enterprise: 'Entreprise',
+    starter:          'Starter',
+    pro:              'Pro',
+    enterprise:       'Entreprise',
 };
 
 type NavItem = { to: string; label: string; Icon: LucideIcon; feat: string | null };
@@ -29,6 +39,7 @@ const navSections: { label: string; items: NavItem[] }[] = [
         items: [
             { to: '/dashboard', label: 'Tableau de bord', Icon: LayoutDashboard, feat: null },
             { to: '/calendrier', label: 'Calendrier fiscal', Icon: CalendarDays, feat: null },
+            { to: '/checklist', label: 'Checklist mensuelle', Icon: ClipboardList, feat: null },
             { to: '/saisie', label: 'Saisie mensuelle', Icon: PenLine, feat: 'saisie' },
             { to: '/calcul', label: 'Calculateur Fiscal', Icon: Calculator, feat: 'calcul' },
             { to: '/rapport', label: 'Rapport du mois', Icon: FileText, feat: 'rapport' },
@@ -80,6 +91,13 @@ export default function Sidebar() {
         logout();
         navigate('/login');
     };
+
+    const alertCount = useMemo(() => {
+        const now = new Date();
+        return getEcheancesAnnee(now.getFullYear(), now)
+            .filter(e => e.urgence === 'critique' || e.urgence === 'proche')
+            .length;
+    }, []);
 
     const planColor = PLAN_COLORS[plan];
     const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'US';
@@ -146,6 +164,11 @@ export default function Sidebar() {
                                     >
                                         <Icon className="w-4 h-4 flex-shrink-0" />
                                         <span className="flex-1 truncate">{label}</span>
+                                        {to === '/calendrier' && alertCount > 0 && !locked && (
+                                            <span className="bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 shrink-0">
+                                                {alertCount > 9 ? '9+' : alertCount}
+                                            </span>
+                                        )}
                                         {locked && (
                                             <Lock className="w-3 h-3 text-slate-700 flex-shrink-0" />
                                         )}
@@ -154,6 +177,34 @@ export default function Sidebar() {
                             })}
                         </div>
                     ))}
+
+                    {/* Section Organisation — visible uniquement pour org_admin */}
+                    {user?.org_role === 'org_admin' && (
+                        <div className="mb-3">
+                            <p className="text-[10px] font-semibold text-blue-500 uppercase tracking-widest px-2 mb-1.5">
+                                Mon Organisation
+                            </p>
+                            {[
+                                { to: '/org/membres', label: 'Membres & Rôles', Icon: Users },
+                                { to: '/org/societes', label: 'Accès sociétés', Icon: UserCog },
+                            ].map(({ to, label, Icon }) => (
+                                <NavLink
+                                    key={to}
+                                    to={to}
+                                    onClick={() => { if (window.innerWidth < 768) toggleSidebar(); }}
+                                    className={({ isActive }) =>
+                                        `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${isActive
+                                            ? 'bg-blue-500/15 text-blue-400 font-semibold'
+                                            : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                                        }`
+                                    }
+                                >
+                                    <Icon className="w-4 h-4 flex-shrink-0" />
+                                    <span className="flex-1 truncate">{label}</span>
+                                </NavLink>
+                            ))}
+                        </div>
+                    )}
                 </nav>
 
                 {/* User footer */}

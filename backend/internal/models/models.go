@@ -75,8 +75,11 @@ type User struct {
 	ID           string    `json:"id" db:"id"`
 	Email        string    `json:"email" db:"email"`
 	PasswordHash string    `json:"-" db:"password_hash"`
-	Plan         string    `json:"plan" db:"plan"` // "starter" | "pro" | "enterprise"
+	Plan         string    `json:"plan" db:"plan"` // "physique_starter"|"physique_pro"|"moral_team"|"moral_enterprise"
 	Role         string    `json:"role" db:"role"` // "user" | "super_admin"
+	UserType     string    `json:"user_type"`      // "physique" | "morale"
+	OrgID        *string   `json:"org_id"`         // nil pour les personnes physiques
+	OrgRole      *string   `json:"org_role"`       // "org_admin"|"comptable"|"gestionnaire_rh"|"auditeur"
 	IsActive     bool      `json:"is_active" db:"is_active"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 }
@@ -89,13 +92,53 @@ type LoginRequest struct {
 type RegisterRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	Nom      string `json:"nom"`
+	Nom      string `json:"nom"`       // nom de l'entreprise (physique) ou de la structure (morale)
+	Plan     string `json:"plan"`      // physique_starter | physique_pro | moral_team | moral_enterprise
+	UserType string `json:"user_type"` // "physique" | "morale"
 }
 
 type AuthResponse struct {
 	Token        string `json:"token"`
 	RefreshToken string `json:"refresh_token,omitempty"`
 	User         User   `json:"user"`
+}
+
+// ─── ORGANISATION (Personne Morale) ──────────────────────────
+
+type Organization struct {
+	ID           string    `json:"id"`
+	Nom          string    `json:"nom"`
+	IFU          string    `json:"ifu"`
+	RCCM         string    `json:"rccm"`
+	Secteur      string    `json:"secteur"`
+	Plan         string    `json:"plan"`
+	MaxUsers     int       `json:"max_users"`
+	MaxCompanies int       `json:"max_companies"`
+	MaxEmployees int       `json:"max_employees"`
+	OwnerID      *string   `json:"owner_id"`
+	IsActive     bool      `json:"is_active"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+type OrgMember struct {
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	OrgRole   string    `json:"org_role"`
+	IsActive  bool      `json:"is_active"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type OrgStats struct {
+	MemberCount  int `json:"member_count"`
+	CompanyCount int `json:"company_count"`
+	MaxUsers     int `json:"max_users"`
+	MaxCompanies int `json:"max_companies"`
+	MaxEmployees int `json:"max_employees"`
+}
+
+type OrgInfo struct {
+	Organization Organization `json:"organization"`
+	Stats        OrgStats     `json:"stats"`
 }
 
 // ─── CALCUL ───────────────────────────────────────────────────

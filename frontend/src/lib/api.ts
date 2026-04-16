@@ -32,7 +32,7 @@ api.interceptors.response.use(
 export const authApi = {
     login: (data: { email: string; password: string }) =>
         api.post('/auth/login', data),
-    register: (data: { email: string; password: string; nom: string }) =>
+    register: (data: { email: string; password: string; nom: string; plan: string; user_type: string }) =>
         api.post('/auth/register', data),
     forgotPassword: (email: string) =>
         api.post('/auth/forgot-password', { email }),
@@ -270,3 +270,18 @@ export const adminApi = {
         api.get('/admin/audit', { params: { limit, offset } }),
 };
 
+// ── Organisation Admin ────────────────────────────────────────
+export const orgApi = {
+    getInfo: () => api.get('/org/info'),
+    listMembers: () => api.get('/org/members'),
+    inviteMember: (data: { email: string; password: string; org_role: string }) =>
+        api.post('/org/members', data),
+    setMemberRole: (id: string, org_role: string) =>
+        api.patch(`/org/members/${id}/role`, { org_role }),
+    removeMember: (id: string) => api.delete(`/org/members/${id}`),
+    listCompanies: () => api.get('/org/companies'),
+    grantAccess: (companyId: string, userId: string) =>
+        api.post(`/org/companies/${companyId}/access`, { user_id: userId }),
+    revokeAccess: (companyId: string, userId: string) =>
+        api.delete(`/org/companies/${companyId}/access/${userId}`),
+};

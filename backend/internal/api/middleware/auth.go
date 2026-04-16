@@ -11,10 +11,15 @@ import (
 
 type contextKey string
 
-const UserIDKey contextKey = "userID"
-const RoleKey contextKey = "userRole"
+const (
+	UserIDKey   contextKey = "userID"
+	RoleKey     contextKey = "userRole"
+	UserTypeKey contextKey = "userType"
+	OrgIDKey    contextKey = "orgID"
+	OrgRoleKey  contextKey = "orgRole"
+)
 
-// Authenticate vérifie le JWT Bearer et injecte userID + role dans le contexte.
+// Authenticate vérifie le JWT Bearer et injecte userID, role, userType, orgID, orgRole dans le contexte.
 func Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		header := r.Header.Get("Authorization")
@@ -53,9 +58,19 @@ func Authenticate(next http.Handler) http.Handler {
 		if role == "" {
 			role = "user"
 		}
+		userType, _ := claims["userType"].(string)
+		if userType == "" {
+			userType = "physique"
+		}
+		orgID, _ := claims["orgId"].(string)
+		orgRole, _ := claims["orgRole"].(string)
 
-		ctx := context.WithValue(r.Context(), UserIDKey, userID)
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, UserIDKey, userID)
 		ctx = context.WithValue(ctx, RoleKey, role)
+		ctx = context.WithValue(ctx, UserTypeKey, userType)
+		ctx = context.WithValue(ctx, OrgIDKey, orgID)
+		ctx = context.WithValue(ctx, OrgRoleKey, orgRole)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -72,6 +87,18 @@ func RequireSuperAdmin(next http.Handler) http.Handler {
 	})
 }
 
+// RequireOrgAdmin bloque les requêtes dont org_role n'est pas "org_admin".
+func RequireOrgAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		orgRole, _ := r.Context().Value(OrgRoleKey).(string)
+		if orgRole != "org_admin" {
+			http.Error(w, `{"error":"accès interdit — admin organisation requis"}`, http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // GetUserID extrait le userID du contexte.
 func GetUserID(r *http.Request) string {
 	v, _ := r.Context().Value(UserIDKey).(string)
@@ -81,5 +108,23 @@ func GetUserID(r *http.Request) string {
 // GetUserRole extrait le role du contexte.
 func GetUserRole(r *http.Request) string {
 	v, _ := r.Context().Value(RoleKey).(string)
+	return v
+}
+
+// GetUserType extrait le user_type du contexte (physique|morale).
+func GetUserType(r *http.Request) string {
+	v, _ := r.Context().Value(UserTypeKey).(string)
+	return v
+}
+
+// GetOrgID extrait l'org_id du contexte.
+func GetOrgID(r *http.Request) string {
+	v, _ := r.Context().Value(OrgIDKey).(string)
+	return v
+}
+
+// GetOrgRole extrait l'org_role du contexte.
+func GetOrgRole(r *http.Request) string {
+	v, _ := r.Context().Value(OrgRoleKey).(string)
 	return v
 }

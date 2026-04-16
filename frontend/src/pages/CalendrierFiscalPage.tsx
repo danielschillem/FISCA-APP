@@ -41,9 +41,9 @@ function EcheanceCard({ e, today }: { e: Echeance; today: Date }) {
     const isPast = e.urgence === 'passe';
     const borderClass =
         e.urgence === 'critique' ? 'border-red-200 bg-red-50/40' :
-        e.urgence === 'proche'   ? 'border-amber-200 bg-amber-50/30' :
-        isPast                   ? 'border-gray-100 bg-gray-50/30 opacity-60' :
-                                   'border-gray-100 bg-white';
+            e.urgence === 'proche' ? 'border-amber-200 bg-amber-50/30' :
+                isPast ? 'border-gray-100 bg-gray-50/30 opacity-60' :
+                    'border-gray-100 bg-white';
 
     return (
         <div className={`rounded-xl border ${borderClass} transition-all`}>
@@ -81,23 +81,21 @@ function EcheanceCard({ e, today }: { e: Echeance; today: Date }) {
                         </div>
                         <div className="flex justify-between text-xs">
                             <span className="text-gray-400">Accès plan</span>
-                            <span className={`font-semibold capitalize ${
-                                e.plan === 'all' ? 'text-green-600' :
-                                e.plan === 'pro' ? 'text-blue-600' : 'text-orange-600'
-                            }`}>
+                            <span className={`font-semibold capitalize ${e.plan === 'all' ? 'text-green-600' :
+                                    e.plan === 'pro' ? 'text-blue-600' : 'text-orange-600'
+                                }`}>
                                 {e.plan === 'all' ? 'Tous plans' : e.plan}
                             </span>
                         </div>
                         {!isPast && (
                             <div className="flex justify-between text-xs">
                                 <span className="text-gray-400">Jours restants</span>
-                                <span className={`font-bold ${
-                                    e.urgence === 'critique' ? 'text-red-600' :
-                                    e.urgence === 'proche'   ? 'text-amber-600' : 'text-gray-700'
-                                }`}>
+                                <span className={`font-bold ${e.urgence === 'critique' ? 'text-red-600' :
+                                        e.urgence === 'proche' ? 'text-amber-600' : 'text-gray-700'
+                                    }`}>
                                     {e.joursRestants === 0 ? "Aujourd'hui !" :
-                                     e.joursRestants === 1 ? 'Demain' :
-                                     `${e.joursRestants} jours`}
+                                        e.joursRestants === 1 ? 'Demain' :
+                                            `${e.joursRestants} jours`}
                                 </span>
                             </div>
                         )}
@@ -111,17 +109,17 @@ function EcheanceCard({ e, today }: { e: Echeance; today: Date }) {
 // ─── Stats bar ────────────────────────────────────────────────────────────────
 function StatsBar({ echeances, today }: { echeances: Echeance[]; today: Date }) {
     const critiques = echeances.filter(e => e.urgence === 'critique').length;
-    const proches   = echeances.filter(e => e.urgence === 'proche').length;
-    const aVenir    = echeances.filter(e => e.urgence === 'normal').length;
-    const passees   = echeances.filter(e => e.urgence === 'passe').length;
+    const proches = echeances.filter(e => e.urgence === 'proche').length;
+    const aVenir = echeances.filter(e => e.urgence === 'normal').length;
+    const passees = echeances.filter(e => e.urgence === 'passe').length;
 
     return (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
                 { label: 'Critiques (< 3j)', val: critiques, bg: 'bg-red-50 border-red-200', text: 'text-red-600', icon: <AlertTriangle className="w-4 h-4" /> },
-                { label: 'Proches (< 7j)',   val: proches,   bg: 'bg-amber-50 border-amber-200', text: 'text-amber-600', icon: <Clock className="w-4 h-4" /> },
-                { label: 'A venir',          val: aVenir,    bg: 'bg-blue-50 border-blue-200',   text: 'text-blue-600',  icon: <CalendarDays className="w-4 h-4" /> },
-                { label: 'Passees',          val: passees,   bg: 'bg-gray-50 border-gray-200',   text: 'text-gray-400',  icon: <CheckCircle2 className="w-4 h-4" /> },
+                { label: 'Proches (< 7j)', val: proches, bg: 'bg-amber-50 border-amber-200', text: 'text-amber-600', icon: <Clock className="w-4 h-4" /> },
+                { label: 'A venir', val: aVenir, bg: 'bg-blue-50 border-blue-200', text: 'text-blue-600', icon: <CalendarDays className="w-4 h-4" /> },
+                { label: 'Passees', val: passees, bg: 'bg-gray-50 border-gray-200', text: 'text-gray-400', icon: <CheckCircle2 className="w-4 h-4" /> },
             ].map(s => (
                 <div key={s.label} className={`${s.bg} border rounded-xl p-3 flex items-center gap-3`}>
                     <div className={s.text}>{s.icon}</div>
@@ -198,11 +196,10 @@ export default function CalendrierFiscalPage() {
                                 <button
                                     key={t}
                                     onClick={() => toggleType(t)}
-                                    className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-all ${
-                                        active
+                                    className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-all ${active
                                             ? 'text-white border-transparent shadow-sm'
                                             : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-300'
-                                    }`}
+                                        }`}
                                     style={active ? { background: color, borderColor: color } : {}}
                                 >
                                     {TYPE_LABELS[t]}
@@ -225,11 +222,10 @@ export default function CalendrierFiscalPage() {
                             <button
                                 key={i}
                                 onClick={() => setFiltreMois(filtreMois === i ? null : i)}
-                                className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-all ${
-                                    filtreMois === i
+                                className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-all ${filtreMois === i
                                         ? 'bg-green-600 text-white border-green-600'
                                         : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-300'
-                                }`}
+                                    }`}
                             >
                                 {nomMois(i).slice(0, 3)}
                             </button>
@@ -258,11 +254,10 @@ export default function CalendrierFiscalPage() {
                         <div key={`${groupe.annee}-${groupe.mois}`}>
                             {/* Month header */}
                             <div className={`flex items-center gap-3 mb-3`}>
-                                <div className={`px-3 py-1 rounded-lg text-sm font-bold ${
-                                    isCurrentMonth
+                                <div className={`px-3 py-1 rounded-lg text-sm font-bold ${isCurrentMonth
                                         ? 'bg-green-600 text-white'
                                         : 'bg-gray-100 text-gray-600'
-                                }`}>
+                                    }`}>
                                     {nomMois(groupe.mois)} {groupe.annee}
                                 </div>
                                 {isCurrentMonth && (

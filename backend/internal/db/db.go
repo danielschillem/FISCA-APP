@@ -398,6 +398,46 @@ func RunMigrations(pool *pgxpool.Pool) error {
 	CREATE INDEX IF NOT EXISTS idx_licenses_user_id    ON licenses(user_id);
 	CREATE INDEX IF NOT EXISTS idx_audit_logs_admin    ON audit_logs(admin_id);
 	CREATE INDEX IF NOT EXISTS idx_audit_logs_created  ON audit_logs(created_at DESC);
+
+	-- ─── Multi-tenant : Organisations (Personne Morale) ──────────────────────
+
+	CREATE TABLE IF NOT EXISTS organizations (
+		id            UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+		nom           TEXT    NOT NULL,
+		ifu           TEXT    NOT NULL DEFAULT '',
+		rccm          TEXT    NOT NULL DEFAULT '',
+		secteur       TEXT    NOT NULL DEFAULT '',
+		plan          TEXT    NOT NULL DEFAULT 'moral_team',
+		max_users     INT     NOT NULL DEFAULT 5,
+		max_companies INT     NOT NULL DEFAULT 2,
+		max_employees INT     NOT NULL DEFAULT 200,
+		owner_id      UUID,
+		is_active     BOOLEAN NOT NULL DEFAULT TRUE,
+		created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+
+	-- Colonnes supplémentaires sur users (idempotentes)
+	ALTER TABLE users ADD COLUMN IF NOT EXISTS user_type TEXT NOT NULL DEFAULT 'physique';
+	ALTER TABLE users ADD COLUMN IF NOT EXISTS org_id    UUID REFERENCES organizations(id);
+	ALTER TABLE users ADD COLUMN IF NOT EXISTS org_role  TEXT;
+
+	-- Colonne org_id sur companies
+	ALTER TABLE companies ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organizations(id);
+
+	-- Accès des membres aux sociétés de l'organisation
+	CREATE TABLE IF NOT EXISTS org_company_access (
+		user_id    UUID NOT NULL REFERENCES users(id)    ON DELETE CASCADE,
+		company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+		granted_by UUID REFERENCES users(id),
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		PRIMARY KEY (user_id, company_id)
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_orgs_owner        ON organizations(owner_id);
+	CREATE INDEX IF NOT EXISTS idx_users_org_id      ON users(org_id);
+	CREATE INDEX IF NOT EXISTS idx_companies_org_id  ON companies(org_id);
+	CREATE INDEX IF NOT EXISTS idx_oca_user          ON org_company_access(user_id);
+	CREATE INDEX IF NOT EXISTS idx_oca_company       ON org_company_access(company_id);
 	`
 	_, err := pool.Exec(context.Background(), schema)
 	if err != nil {

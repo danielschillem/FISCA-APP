@@ -43,17 +43,17 @@ export interface GroupeEcheances {
 }
 
 const TYPE_META: Record<EcheanceType, { label: string; color: string; plan: Echeance['plan']; ref: string }> = {
-    IUTS:       { label: 'IUTS',              color: '#16a34a', plan: 'all',        ref: 'Art. 107-119 CGI' },
-    CNSS:       { label: 'CNSS Patronal',     color: '#0891b2', plan: 'all',        ref: 'Code Sécurité Sociale' },
-    TVA:        { label: 'TVA',               color: '#7c3aed', plan: 'pro',        ref: 'Art. 210-275 CGI' },
-    IS_acompte: { label: 'IS — Acompte',      color: '#ea580c', plan: 'enterprise', ref: 'Art. 300 CGI' },
-    IS_solde:   { label: 'IS — Solde annuel', color: '#dc2626', plan: 'enterprise', ref: 'Art. 301 CGI' },
-    Patente:    { label: 'Patente',           color: '#ca8a04', plan: 'all',        ref: 'Art. 400-430 CGI' },
-    IRF:        { label: 'IRF',               color: '#059669', plan: 'pro',        ref: 'Art. 145-170 CGI' },
-    IRCM:       { label: 'IRCM',              color: '#2563eb', plan: 'pro',        ref: 'Art. 175-195 CGI' },
-    RAS:        { label: 'Retenue à la source', color: '#9333ea', plan: 'enterprise', ref: 'Art. 245 CGI' },
-    CME:        { label: 'CME',               color: '#0d9488', plan: 'enterprise', ref: 'Art. 350 CGI' },
-    TP:         { label: 'Taxe Professionnelle', color: '#b45309', plan: 'all',     ref: 'Art. 450 CGI' },
+    IUTS: { label: 'IUTS', color: '#16a34a', plan: 'all', ref: 'Art. 107-119 CGI' },
+    CNSS: { label: 'CNSS Patronal', color: '#0891b2', plan: 'all', ref: 'Code Sécurité Sociale' },
+    TVA: { label: 'TVA', color: '#7c3aed', plan: 'pro', ref: 'Art. 210-275 CGI' },
+    IS_acompte: { label: 'IS — Acompte', color: '#ea580c', plan: 'enterprise', ref: 'Art. 300 CGI' },
+    IS_solde: { label: 'IS — Solde annuel', color: '#dc2626', plan: 'enterprise', ref: 'Art. 301 CGI' },
+    Patente: { label: 'Patente', color: '#ca8a04', plan: 'all', ref: 'Art. 400-430 CGI' },
+    IRF: { label: 'IRF', color: '#059669', plan: 'pro', ref: 'Art. 145-170 CGI' },
+    IRCM: { label: 'IRCM', color: '#2563eb', plan: 'pro', ref: 'Art. 175-195 CGI' },
+    RAS: { label: 'Retenue à la source', color: '#9333ea', plan: 'enterprise', ref: 'Art. 245 CGI' },
+    CME: { label: 'CME', color: '#0d9488', plan: 'enterprise', ref: 'Art. 350 CGI' },
+    TP: { label: 'Taxe Professionnelle', color: '#b45309', plan: 'all', ref: 'Art. 450 CGI' },
 };
 
 export const TYPE_COLORS: Record<EcheanceType, string> = Object.fromEntries(

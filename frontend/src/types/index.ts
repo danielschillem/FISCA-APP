@@ -330,8 +330,11 @@ export interface BilanData {
 export interface User {
     id: string;
     email: string;
-    plan: 'starter' | 'pro' | 'enterprise';
+    plan: Plan;
     role: 'user' | 'super_admin';
+    user_type: 'physique' | 'morale';
+    org_id?: string;
+    org_role?: 'org_admin' | 'comptable' | 'gestionnaire_rh' | 'auditeur';
     is_active: boolean;
     created_at: string;
 }
@@ -354,34 +357,118 @@ export interface ExerciceFiscal {
     created_at: string;
 }
 
-export type Plan = 'starter' | 'pro' | 'enterprise';
+export type Plan =
+    | 'physique_starter'
+    | 'physique_pro'
+    | 'moral_team'
+    | 'moral_enterprise'
+    | 'starter'      // rétro-compat
+    | 'pro'          // rétro-compat
+    | 'enterprise';  // rétro-compat
+
+const PHYSIQUE_STARTER_FEATURES = new Set([
+    'dashboard', 'saisie', 'calcul', 'rapport', 'historique', 'export-csv', 'parametres',
+]);
+const PHYSIQUE_PRO_FEATURES = new Set([
+    'dashboard', 'saisie', 'calcul', 'rapport', 'historique', 'bilan', 'export-csv', 'parametres',
+    'bulletin', 'simulateur', 'tva', 'irf', 'ircm', 'import', 'n1-copy', 'notifications', 'assistant',
+]);
+const MORAL_FEATURES = new Set([
+    'dashboard', 'saisie', 'calcul', 'rapport', 'historique', 'bilan', 'export-csv', 'parametres',
+    'bulletin', 'simulateur', 'tva', 'irf', 'ircm', 'import', 'n1-copy', 'notifications', 'assistant',
+    'multi-company', 'workflow', 'ras', 'cnss-patronal', 'cme', 'is', 'patente',
+    'api-webhooks', 'audit-trail', 'dgi-connect', 'roles', 'archivage',
+]);
 
 export const PLAN_FEATURES: Record<Plan, Set<string>> = {
-    starter: new Set([
-        'dashboard', 'saisie', 'calcul', 'rapport', 'historique', 'export-csv', 'parametres',
-    ]),
-    pro: new Set([
-        'dashboard', 'saisie', 'calcul', 'rapport', 'historique', 'bilan', 'export-csv', 'parametres',
-        'bulletin', 'simulateur', 'tva', 'irf', 'ircm', 'import', 'n1-copy', 'notifications', 'assistant',
-    ]),
-    enterprise: new Set([
-        'dashboard', 'saisie', 'calcul', 'rapport', 'historique', 'bilan', 'export-csv', 'parametres',
-        'bulletin', 'simulateur', 'tva', 'irf', 'ircm', 'import', 'n1-copy', 'notifications', 'assistant',
-        'multi-company', 'workflow', 'ras', 'cnss-patronal', 'cme', 'is', 'patente',
-        'api-webhooks', 'audit-trail', 'dgi-connect', 'roles', 'archivage',
-    ]),
+    physique_starter: PHYSIQUE_STARTER_FEATURES,
+    physique_pro: PHYSIQUE_PRO_FEATURES,
+    moral_team: MORAL_FEATURES,
+    moral_enterprise: MORAL_FEATURES,
+    // rétro-compat
+    starter: PHYSIQUE_STARTER_FEATURES,
+    pro: PHYSIQUE_PRO_FEATURES,
+    enterprise: MORAL_FEATURES,
 };
 
-export const PLAN_LIMITS: Record<Plan, { employees: number; historyMonths: number }> = {
-    starter: { employees: 5, historyMonths: 3 },
-    pro: { employees: 50, historyMonths: 12 },
-    enterprise: { employees: Infinity, historyMonths: 120 },
+export const PLAN_LIMITS: Record<Plan, { employees: number; companies: number; users: number; historyMonths: number }> = {
+    physique_starter: { employees: 3, companies: 1, users: 1, historyMonths: 3 },
+    physique_pro: { employees: 10, companies: 1, users: 1, historyMonths: 12 },
+    moral_team: { employees: 200, companies: 2, users: 5, historyMonths: 24 },
+    moral_enterprise: { employees: Infinity, companies: Infinity, users: Infinity, historyMonths: 120 },
+    // rétro-compat
+    starter: { employees: 3, companies: 1, users: 1, historyMonths: 3 },
+    pro: { employees: 10, companies: 1, users: 1, historyMonths: 12 },
+    enterprise: { employees: Infinity, companies: Infinity, users: Infinity, historyMonths: 120 },
+};
+
+export const PLAN_LABELS: Record<Plan, string> = {
+    physique_starter: 'Solo Starter',
+    physique_pro: 'Solo Pro',
+    moral_team: 'Équipe',
+    moral_enterprise: 'Entreprise',
+    starter: 'Starter',
+    pro: 'Pro',
+    enterprise: 'Entreprise',
 };
 
 export const MOIS_FR = [
     'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
 ];
+
+// ─── Organisation (Personne Morale) ─────────────────────────
+
+export interface Organization {
+    id: string;
+    nom: string;
+    ifu: string;
+    rccm: string;
+    secteur: string;
+    plan: Plan;
+    max_users: number;
+    max_companies: number;
+    max_employees: number;
+    owner_id: string | null;
+    is_active: boolean;
+    created_at: string;
+}
+
+export interface OrgMember {
+    id: string;
+    email: string;
+    org_role: 'org_admin' | 'comptable' | 'gestionnaire_rh' | 'auditeur';
+    is_active: boolean;
+    created_at: string;
+}
+
+export interface OrgStats {
+    member_count: number;
+    company_count: number;
+    max_users: number;
+    max_companies: number;
+    max_employees: number;
+}
+
+export interface OrgInfo {
+    organization: Organization;
+    stats: OrgStats;
+}
+
+export interface OrgCompanyAccess {
+    user_id: string;
+    email: string;
+    org_role: string;
+}
+
+export interface OrgCompany {
+    id: string;
+    nom: string;
+    ifu: string;
+    secteur: string;
+    is_active: boolean;
+    members: OrgCompanyAccess[];
+}
 
 // ─── Super Admin types ────────────────────────────────────────
 

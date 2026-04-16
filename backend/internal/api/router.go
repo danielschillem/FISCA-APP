@@ -75,6 +75,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 	patenteH := handlers.NewPatenteHandler(db)
 	bilanH := handlers.NewBilanHandler(db)
 	adminH := handlers.NewAdminHandler(db)
+	orgH := handlers.NewOrgHandler(db)
 
 	// Routes publiques
 	r.Route("/api", func(r chi.Router) {
@@ -261,6 +262,27 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 
 			// Bilan fiscal annuel agrégé [Plan: Pro+]
 			r.Get("/bilan", bilanH.Get)
+		})
+
+		// Routes Organisation — JWT requis + org_role=org_admin
+		r.Group(func(r chi.Router) {
+			r.Use(mw.Authenticate)
+			r.Use(mw.RequireOrgAdmin)
+
+			r.Get("/org/info", orgH.GetInfo)
+			r.Get("/org/members", orgH.ListMembers)
+			r.Post("/org/members", orgH.InviteMember)
+			r.Patch("/org/members/{id}/role", orgH.SetMemberRole)
+			r.Delete("/org/members/{id}", orgH.RemoveMember)
+			r.Get("/org/companies", orgH.ListCompanies)
+			r.Post("/org/companies/{id}/access", orgH.GrantAccess)
+			r.Delete("/org/companies/{id}/access/{uid}", orgH.RevokeAccess)
+		})
+
+		// Route org/info accessible à tous les membres morale (lecture seule)
+		r.Group(func(r chi.Router) {
+			r.Use(mw.Authenticate)
+			r.Get("/org/info/me", orgH.GetInfo)
 		})
 
 		// Routes Super Admin — JWT requis + role=super_admin

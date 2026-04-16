@@ -14,6 +14,7 @@ import (
 	"github.com/fisca-app/backend/internal/mailer"
 	"github.com/fisca-app/backend/internal/models"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -42,7 +43,30 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(strings.TrimSpace(req.Nom)) == 0 || len(req.Nom) > 100 {
-		jsonError(w, "Nom d'entreprise requis (max 100 caractères)", http.StatusBadRequest)
+		jsonError(w, "Nom requis (max 100 caractères)", http.StatusBadRequest)
+		return
+	}
+
+	// Normaliser user_type et plan (rétro-compat si champs absents)
+	if req.UserType == "" {
+		req.UserType = "physique"
+	}
+	if req.Plan == "" {
+		req.Plan = "physique_starter"
+	}
+	// Valider que le plan correspond au type
+	planTypes := map[string]string{
+		"physique_starter": "physique",
+		"physique_pro":     "physique",
+		"moral_team":       "morale",
+		"moral_enterprise": "morale",
+		// Rétro-compat avec anciens plans
+		"starter":    "physique",
+		"pro":        "physique",
+		"enterprise": "morale",
+	}
+	if pt, ok := planTypes[req.Plan]; !ok || pt != req.UserType {
+		jsonError(w, "Plan incompatible avec le type de compte", http.StatusBadRequest)
 		return
 	}
 
@@ -52,33 +76,127 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user models.User
-	err = h.DB.QueryRow(r.Context(),
-		`INSERT INTO users (email, password_hash, role, is_active) VALUES ($1, $2, 'user', TRUE)
-		 RETURNING id, email, plan, role, is_active, created_at`,
-		req.Email, string(hash),
-	).Scan(&user.ID, &user.Email, &user.Plan, &user.Role, &user.IsActive, &user.CreatedAt)
-	if err != nil {
-		jsonError(w, "Email déjà utilisé", http.StatusConflict)
+	if req.UserType == "physique" {
+		// ── Personne Physique : un compte solo ─────────────────────────────────
+		var user models.User
+		err = h.DB.QueryRow(r.Context(),
+			`INSERT INTO users (email, password_hash, plan, role, user_type, is_active)
+			 VALUES ($1, $2, $3, 'user', 'physique', TRUE)
+			 RETURNING id, email, plan, role, user_type, org_id, org_role, is_active, created_at`,
+			req.Email, string(hash), req.Plan,
+		).Scan(&user.ID, &user.Email, &user.Plan, &user.Role, &user.UserType,
+			&user.OrgID, &user.OrgRole, &user.IsActive, &user.CreatedAt)
+		if err != nil {
+			jsonError(w, "Email déjà utilisé", http.StatusConflict)
+			return
+		}
+		// Créer une société par défaut
+		h.DB.Exec(r.Context(),
+			`INSERT INTO companies (user_id, nom) VALUES ($1, $2)`,
+			user.ID, req.Nom,
+		)
+		token, err := generateToken(user)
+		if err != nil {
+			jsonError(w, "Erreur génération token", http.StatusInternalServerError)
+			return
+		}
+		refreshToken, _ := h.storeRefreshToken(r.Context(), user.ID)
+		go mailer.SendWelcome(user.Email, req.Nom) //nolint:errcheck
+		jsonOK(w, models.AuthResponse{Token: token, RefreshToken: refreshToken, User: user})
 		return
 	}
 
-	// Créer une entreprise par défaut
-	h.DB.Exec(r.Context(),
-		`INSERT INTO companies (user_id, nom) VALUES ($1, $2)`,
-		user.ID, req.Nom,
-	)
+	// ── Personne Morale : organisation + admin interne ─────────────────────────
+	maxUsers, maxCompanies, maxEmployees := planLimits(req.Plan)
 
-	token, err := generateToken(user.ID, user.Role)
+	tx, err := h.DB.Begin(r.Context())
+	if err != nil {
+		jsonError(w, "Erreur interne", http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback(r.Context()) //nolint:errcheck
+
+	// 1. Créer l'utilisateur admin interne
+	var userID string
+	err = tx.QueryRow(r.Context(),
+		`INSERT INTO users (email, password_hash, plan, role, user_type, is_active)
+		 VALUES ($1, $2, $3, 'user', 'morale', TRUE)
+		 RETURNING id`,
+		req.Email, string(hash), req.Plan,
+	).Scan(&userID)
+	if err != nil {
+		if isPgDuplicate(err) {
+			jsonError(w, "Email déjà utilisé", http.StatusConflict)
+		} else {
+			jsonError(w, "Erreur interne", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// 2. Créer l'organisation
+	var orgID string
+	err = tx.QueryRow(r.Context(),
+		`INSERT INTO organizations (nom, plan, max_users, max_companies, max_employees, owner_id)
+		 VALUES ($1, $2, $3, $4, $5, $6)
+		 RETURNING id`,
+		req.Nom, req.Plan, maxUsers, maxCompanies, maxEmployees, userID,
+	).Scan(&orgID)
+	if err != nil {
+		jsonError(w, "Erreur interne", http.StatusInternalServerError)
+		return
+	}
+
+	// 3. Lier l'utilisateur à l'organisation comme org_admin
+	_, err = tx.Exec(r.Context(),
+		`UPDATE users SET org_id=$1, org_role='org_admin' WHERE id=$2`,
+		orgID, userID,
+	)
+	if err != nil {
+		jsonError(w, "Erreur interne", http.StatusInternalServerError)
+		return
+	}
+
+	// 4. Créer la première société liée à l'org
+	var companyID string
+	err = tx.QueryRow(r.Context(),
+		`INSERT INTO companies (user_id, nom, org_id) VALUES ($1, $2, $3) RETURNING id`,
+		userID, req.Nom, orgID,
+	).Scan(&companyID)
+	if err != nil {
+		jsonError(w, "Erreur interne", http.StatusInternalServerError)
+		return
+	}
+
+	// 5. Donner accès à la société au fondateur
+	_, err = tx.Exec(r.Context(),
+		`INSERT INTO org_company_access (user_id, company_id, granted_by) VALUES ($1,$2,$1)`,
+		userID, companyID,
+	)
+	if err != nil {
+		jsonError(w, "Erreur interne", http.StatusInternalServerError)
+		return
+	}
+
+	if err := tx.Commit(r.Context()); err != nil {
+		jsonError(w, "Erreur interne", http.StatusInternalServerError)
+		return
+	}
+
+	// Charger l'utilisateur complet
+	var user models.User
+	h.DB.QueryRow(r.Context(),
+		`SELECT id, email, plan, role, user_type, org_id, org_role, is_active, created_at
+		 FROM users WHERE id=$1`, userID,
+	).Scan(&user.ID, &user.Email, &user.Plan, &user.Role, &user.UserType,
+		&user.OrgID, &user.OrgRole, &user.IsActive, &user.CreatedAt)
+
+	token, err := generateToken(user)
 	if err != nil {
 		jsonError(w, "Erreur génération token", http.StatusInternalServerError)
 		return
 	}
 	refreshToken, _ := h.storeRefreshToken(r.Context(), user.ID)
-
-	// Email de bienvenue (non bloquant)
 	go mailer.SendWelcome(user.Email, req.Nom) //nolint:errcheck
-
 	jsonOK(w, models.AuthResponse{Token: token, RefreshToken: refreshToken, User: user})
 }
 
@@ -91,9 +209,11 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	var user models.User
 	err := h.DB.QueryRow(r.Context(),
-		`SELECT id, email, password_hash, plan, role, is_active, created_at FROM users WHERE email=$1`,
+		`SELECT id, email, password_hash, plan, role, user_type, org_id, org_role, is_active, created_at
+		 FROM users WHERE email=$1`,
 		req.Email,
-	).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Plan, &user.Role, &user.IsActive, &user.CreatedAt)
+	).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Plan, &user.Role,
+		&user.UserType, &user.OrgID, &user.OrgRole, &user.IsActive, &user.CreatedAt)
 	if err != nil {
 		jsonError(w, "Identifiants invalides", http.StatusUnauthorized)
 		return
@@ -109,7 +229,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := generateToken(user.ID, user.Role)
+	token, err := generateToken(user)
 	if err != nil {
 		jsonError(w, "Erreur génération token", http.StatusInternalServerError)
 		return
@@ -119,13 +239,20 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, models.AuthResponse{Token: token, RefreshToken: refreshToken, User: user})
 }
 
-func generateToken(userID, role string) (string, error) {
+func generateToken(u models.User) (string, error) {
 	secret := []byte(os.Getenv("JWT_SECRET"))
 	claims := jwt.MapClaims{
-		"sub":  userID,
-		"role": role,
-		"iat":  time.Now().Unix(),
-		"exp":  time.Now().Add(24 * time.Hour).Unix(), // access token court-durée ; renouvelé via refresh
+		"sub":      u.ID,
+		"role":     u.Role,
+		"userType": u.UserType,
+		"iat":      time.Now().Unix(),
+		"exp":      time.Now().Add(24 * time.Hour).Unix(),
+	}
+	if u.OrgID != nil {
+		claims["orgId"] = *u.OrgID
+	}
+	if u.OrgRole != nil {
+		claims["orgRole"] = *u.OrgRole
 	}
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secret)
 }
@@ -172,15 +299,16 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	var user models.User
 	h.DB.QueryRow(r.Context(),
-		`SELECT id, email, plan, role, is_active, created_at FROM users WHERE id=$1`, userID,
-	).Scan(&user.ID, &user.Email, &user.Plan, &user.Role, &user.IsActive, &user.CreatedAt)
+		`SELECT id, email, plan, role, user_type, org_id, org_role, is_active, created_at FROM users WHERE id=$1`, userID,
+	).Scan(&user.ID, &user.Email, &user.Plan, &user.Role, &user.UserType,
+		&user.OrgID, &user.OrgRole, &user.IsActive, &user.CreatedAt)
 
 	if !user.IsActive {
 		jsonError(w, "Compte suspendu", http.StatusForbidden)
 		return
 	}
 
-	token, err := generateToken(userID, user.Role)
+	token, err := generateToken(user)
 	if err != nil {
 		jsonError(w, "Erreur génération token", http.StatusInternalServerError)
 		return
@@ -308,3 +436,31 @@ func jsonError(w http.ResponseWriter, msg string, code int) {
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(map[string]string{"error": msg})
 }
+
+// planLimits retourne les limites d'un plan : (maxUsers, maxCompanies, maxEmployees).
+// -1 = illimité (sur devis pour moral_enterprise).
+func planLimits(plan string) (int, int, int) {
+	switch plan {
+	case "physique_starter", "starter":
+		return 1, 1, 3
+	case "physique_pro", "pro":
+		return 1, 1, 10
+	case "moral_team":
+		return 5, 2, 200
+	case "moral_enterprise", "enterprise":
+		return -1, -1, -1
+	default:
+		return 1, 1, 3
+	}
+}
+
+// isPgDuplicate vérifie si l'erreur pgx est une violation de contrainte unique (code 23505).
+func isPgDuplicate(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(err.Error(), "23505") || strings.Contains(err.Error(), "duplicate key")
+}
+
+// planFromContext — référence utilisée par pgx.Tx (évite "imported and not used")
+var _ = pgx.ErrNoRows

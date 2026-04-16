@@ -25,8 +25,10 @@ func (h *UserHandler) Me(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
 	var u models.User
 	err := h.DB.QueryRow(r.Context(),
-		`SELECT id, email, plan, role, is_active, created_at FROM users WHERE id=$1`, userID,
-	).Scan(&u.ID, &u.Email, &u.Plan, &u.Role, &u.IsActive, &u.CreatedAt)
+		`SELECT id, email, plan, role, user_type, org_id, org_role, is_active, created_at
+		 FROM users WHERE id=$1`, userID,
+	).Scan(&u.ID, &u.Email, &u.Plan, &u.Role, &u.UserType,
+		&u.OrgID, &u.OrgRole, &u.IsActive, &u.CreatedAt)
 	if err != nil {
 		jsonError(w, "Utilisateur introuvable", http.StatusNotFound)
 		return
@@ -53,9 +55,10 @@ func (h *UserHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 	var u models.User
 	err := h.DB.QueryRow(r.Context(),
 		`UPDATE users SET email=$1 WHERE id=$2
-		 RETURNING id, email, plan, role, is_active, created_at`,
+		 RETURNING id, email, plan, role, user_type, org_id, org_role, is_active, created_at`,
 		req.Email, userID,
-	).Scan(&u.ID, &u.Email, &u.Plan, &u.Role, &u.IsActive, &u.CreatedAt)
+	).Scan(&u.ID, &u.Email, &u.Plan, &u.Role, &u.UserType,
+		&u.OrgID, &u.OrgRole, &u.IsActive, &u.CreatedAt)
 	if err != nil {
 		jsonError(w, "Email déjà utilisé ou utilisateur introuvable", http.StatusConflict)
 		return
