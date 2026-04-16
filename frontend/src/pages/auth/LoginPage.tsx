@@ -56,12 +56,8 @@ export default function LoginPage() {
 
                 {/* Logo */}
                 <div className="relative flex items-center gap-3 z-10">
-                    <div
-                        className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg"
-                        style={{ background: 'linear-gradient(135deg, #16a34a, #059669)' }}
-                    >F</div>
                     <div>
-                        <span className="font-extrabold text-white text-xl tracking-widest">FISCA</span>
+                        <span style={{ fontFamily: '"Arial Black", "Arial Bold", Arial, sans-serif', fontWeight: 900 }} className="text-white text-2xl tracking-widest">FISCA</span>
                         <p className="text-green-400/70 text-[11px] tracking-wide">Plateforme Fiscale BF</p>
                     </div>
                 </div>
@@ -103,13 +99,9 @@ export default function LoginPage() {
             <div className="flex-1 flex items-center justify-center p-6 bg-[#f8fafc]">
                 <div className="w-full max-w-[400px]">
 
-                    {/* Logo mobile */}
+                    {/* Logo */}
                     <div className="lg:hidden text-center mb-8">
-                        <div
-                            className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-extrabold text-2xl mx-auto mb-3 shadow-lg"
-                            style={{ background: 'linear-gradient(135deg, #16a34a, #059669)' }}
-                        >F</div>
-                        <h1 className="text-2xl font-extrabold text-gray-900 tracking-wide">FISCA</h1>
+                        <h1 style={{ fontFamily: '"Arial Black", "Arial Bold", Arial, sans-serif', fontWeight: 900 }} className="text-3xl text-green-700 tracking-widest mb-1">FISCA</h1>
                         <p className="text-gray-400 text-sm">Plateforme Fiscale · Burkina Faso</p>
                     </div>
 

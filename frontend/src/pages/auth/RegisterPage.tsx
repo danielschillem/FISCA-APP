@@ -122,8 +122,7 @@ export default function RegisterPage() {
                 <div className="absolute inset-0 bg-black/50" />
                 <div className="relative z-10 p-10 flex flex-col h-full justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center text-white text-lg font-extrabold">F</div>
-                        <span className="text-white text-xl font-extrabold tracking-wide">FISCA</span>
+                        <span style={{ fontFamily: '"Arial Black", "Arial Bold", Arial, sans-serif', fontWeight: 900 }} className="text-white text-2xl tracking-widest">FISCA</span>
                     </div>
                     <div>
                         <h2 className="text-3xl xl:text-4xl font-extrabold text-white leading-tight mb-4">
@@ -139,8 +138,7 @@ export default function RegisterPage() {
 
             <div className="flex-1 flex flex-col items-center justify-start overflow-y-auto bg-gray-50 py-12 px-4 sm:px-8">
                 <div className="lg:hidden text-center mb-8">
-                    <div className="w-12 h-12 bg-green-600 rounded-2xl flex items-center justify-center text-white text-xl font-bold mx-auto mb-3 shadow-lg">F</div>
-                    <h1 className="text-2xl font-extrabold text-gray-900">FISCA</h1>
+                    <h1 style={{ fontFamily: '"Arial Black", "Arial Bold", Arial, sans-serif', fontWeight: 900 }} className="text-3xl text-green-700 tracking-widest mb-3">FISCA</h1>
                     <p className="text-gray-500 text-sm mt-1">Plateforme Fiscale · Burkina Faso</p>
                 </div>
 

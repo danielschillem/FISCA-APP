@@ -122,15 +122,9 @@ export default function Sidebar() {
             >
                 {/* Logo */}
                 <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-800">
-                    <div
-                        className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-lg"
-                        style={{ background: 'linear-gradient(135deg, #16a34a, #059669)' }}
-                    >
-                        F
-                    </div>
                     <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                            <span className="font-bold text-white text-sm tracking-wide">FISCA</span>
+                            <span style={{ fontFamily: '"Arial Black", "Arial Bold", Arial, sans-serif', fontWeight: 900 }} className="text-white text-lg tracking-wider">FISCA</span>
                             <span
                                 className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
                                 style={{ background: planColor + '22', color: planColor, border: `1px solid ${planColor}44` }}
