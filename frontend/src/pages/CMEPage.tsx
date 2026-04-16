@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { calculApi } from '../lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { cmeApi } from '../lib/api';
 import { calcCME, fmt, fmtN } from '../lib/fiscalCalc';
-import { Card, Btn } from '../components/ui';
+import { Card, Btn, Spinner } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
-import { Save, Lock } from 'lucide-react';
+import { Save, Trash2, Download, Lock, CheckCircle } from 'lucide-react';
+import type { CMEDeclaration } from '../types';
 
 type Zone = 'A' | 'B' | 'C' | 'D';
 const ZONES: { value: Zone; label: string; desc: string }[] = [
@@ -31,29 +33,55 @@ export default function CMEPage() {
 }
 
 function CMEContent() {
+    const qc = useQueryClient();
+    const [annee, setAnnee] = useState(new Date().getFullYear());
     const [ca, setCa] = useState(30_000_000);
     const [zone, setZone] = useState<Zone>('A');
     const [cga, setCga] = useState(false);
     const [result, setResult] = useState<ReturnType<typeof calcCME> | null>(null);
-    const [saving, setSaving] = useState(false);
+
+    const { data: history = [], isLoading } = useQuery<CMEDeclaration[]>({
+        queryKey: ['cme', annee],
+        queryFn: () => cmeApi.list(annee).then((r) => r.data),
+    });
+
+    const createMut = useMutation({
+        mutationFn: () => cmeApi.create({ annee, ca, zone, adhesion_cga: cga }),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['cme'] }),
+    });
+
+    const deleteMut = useMutation({
+        mutationFn: (id: string) => cmeApi.delete(id),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['cme'] }),
+    });
+
+    const validerMut = useMutation({
+        mutationFn: (id: string) => cmeApi.valider(id),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['cme'] }),
+    });
 
     const calc = () => setResult(calcCME(ca, zone, cga));
 
-    const save = async () => {
-        if (!result) return;
-        setSaving(true);
-        try {
-            await calculApi.cme({ ca, zone, cga });
-        } catch { /* ignore */ } finally { setSaving(false); }
-    };
+    const exportCSV = (id: string, yr: number) =>
+        cmeApi.export(id).then((r) => {
+            const url = URL.createObjectURL(r.data);
+            const a = document.createElement('a');
+            a.href = url; a.download = `CME-${yr}.csv`; a.click();
+            URL.revokeObjectURL(url);
+        });
 
     return (
-        <div className="max-w-2xl space-y-6">
+        <div className="max-w-3xl space-y-6">
             <Card title="CME — Contribution des Micro-Entreprises">
                 <p className="text-xs text-gray-500 mb-4">CGI 2025 — Art. 533-542 · Régime simplifié pour CA ≤ 150 M FCFA</p>
 
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Année fiscale</label>
+                        <input type="number" value={annee} onChange={(e) => setAnnee(+e.target.value)}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
+                    </div>
+                    <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Chiffre d'affaires annuel HT (FCFA)</label>
                         <input type="number" value={ca} onChange={(e) => setCa(+e.target.value)}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
@@ -83,8 +111,14 @@ function CMEContent() {
 
                 <div className="flex gap-2 mt-4">
                     <Btn onClick={calc}>Calculer</Btn>
-                    {result && <Btn variant="outline" onClick={save} disabled={saving}>{saving ? 'Enregistrement…' : <><Save className="w-4 h-4" /> Enregistrer</>}</Btn>}
+                    {result && (
+                        <Btn variant="outline" onClick={() => createMut.mutate()} disabled={createMut.isPending}>
+                            {createMut.isPending ? 'Enregistrement…' : <><Save className="w-4 h-4" /> Enregistrer</>}
+                        </Btn>
+                    )}
                 </div>
+                {createMut.isError && <p className="text-xs text-red-600 mt-2">Erreur lors de l'enregistrement</p>}
+                {createMut.isSuccess && <p className="text-xs text-green-600 mt-2">Déclaration enregistrée ✓</p>}
             </Card>
 
             {result && (
@@ -112,6 +146,69 @@ function CMEContent() {
                     <p className="text-xs text-gray-400 mt-2">Zone {result.zone} · CA : {fmtN(result.ca)} FCFA</p>
                 </Card>
             )}
+
+            <Card title="Historique CME">
+                <div className="flex items-center gap-3 mb-3">
+                    <label className="text-xs text-gray-600">Année :</label>
+                    <select value={annee} onChange={(e) => setAnnee(+e.target.value)}
+                        className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none">
+                        {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                        ))}
+                    </select>
+                </div>
+                {isLoading ? <Spinner /> : history.length === 0 ? (
+                    <p className="text-xs text-gray-400 py-4 text-center">Aucune déclaration CME pour {annee}</p>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                            <thead>
+                                <tr className="text-gray-500 border-b border-gray-100">
+                                    <th className="text-left py-2">Réf.</th>
+                                    <th className="text-left py-2">Zone</th>
+                                    <th className="text-right py-2">CA</th>
+                                    <th className="text-right py-2">CME nette</th>
+                                    <th className="text-center py-2">Statut</th>
+                                    <th className="text-right py-2">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {history.map((d) => (
+                                    <tr key={d.id} className="hover:bg-gray-50">
+                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? '—'}</td>
+                                        <td className="py-2">Zone {d.zone}</td>
+                                        <td className="py-2 text-right">{fmt(d.ca)}</td>
+                                        <td className="py-2 text-right font-semibold text-red-700">{fmt(d.cme_net)}</td>
+                                        <td className="py-2 text-center">
+                                            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${d.statut === 'declare' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                {d.statut === 'declare' ? 'Déclaré' : 'Brouillon'}
+                                            </span>
+                                        </td>
+                                        <td className="py-2 text-right">
+                                            <div className="flex justify-end gap-1">
+                                                {d.statut === 'brouillon' && (
+                                                    <button onClick={() => validerMut.mutate(d.id)} title="Valider"
+                                                        className="p-1 text-green-600 hover:bg-green-50 rounded">
+                                                        <CheckCircle className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                                <button onClick={() => exportCSV(d.id, d.annee)} title="Exporter CSV"
+                                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                                                    <Download className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button onClick={() => deleteMut.mutate(d.id)} title="Supprimer"
+                                                    className="p-1 text-red-500 hover:bg-red-50 rounded">
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </Card>
 
             <Card title="Base légale">
                 <ul className="text-xs text-gray-500 space-y-1">

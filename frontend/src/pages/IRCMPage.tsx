@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { calculApi } from '../lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ircmApi } from '../lib/api';
 import { calcIRCM, fmt } from '../lib/fiscalCalc';
-import { Card, Btn } from '../components/ui';
+import { Card, Btn, Spinner } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
-import { Save, Lock } from 'lucide-react';
+import { Save, Trash2, Download, Lock, CheckCircle } from 'lucide-react';
+import type { IRCMDeclaration } from '../types';
 
 type IRCMType = 'CREANCES' | 'OBLIGATIONS' | 'DIVIDENDES';
 
 const TYPES: { value: IRCMType; label: string; taux: number; desc: string }[] = [
     { value: 'CREANCES', label: 'Créances & dépôts', taux: 25, desc: 'Intérêts de prêts, comptes courants, dépôts' },
-    { value: 'OBLIGATIONS', label: 'Obligations & bons', taux: 6, desc: 'Intérêts d\'obligations, bons du trésor' },
+    { value: 'OBLIGATIONS', label: 'Obligations & bons', taux: 6, desc: "Intérêts d'obligations, bons du trésor" },
     { value: 'DIVIDENDES', label: 'Dividendes & parts', taux: 12.5, desc: 'Distributions de bénéfices, parts sociales' },
 ];
 
@@ -20,29 +22,59 @@ export default function IRCMPage() {
 }
 
 function IRCMContent() {
+    const qc = useQueryClient();
+    const [annee, setAnnee] = useState(new Date().getFullYear());
     const [type, setType] = useState<IRCMType>('CREANCES');
-    const [montant, setMontant] = useState(1000000);
+    const [montant, setMontant] = useState(1_000_000);
     const [result, setResult] = useState<ReturnType<typeof calcIRCM> | null>(null);
-    const [saving, setSaving] = useState(false);
 
-    const selected = TYPES.find((t) => t.value === type)!;
+    const { data: history = [], isLoading } = useQuery<IRCMDeclaration[]>({
+        queryKey: ['ircm', annee],
+        queryFn: () => ircmApi.list(annee).then((r) => r.data),
+    });
+
+    const createMut = useMutation({
+        mutationFn: () => ircmApi.create({ annee, montant_brut: montant, type_revenu: type }),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['ircm'] }),
+    });
+
+    const deleteMut = useMutation({
+        mutationFn: (id: string) => ircmApi.delete(id),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['ircm'] }),
+    });
+
+    const validerMut = useMutation({
+        mutationFn: (id: string) => ircmApi.valider(id),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['ircm'] }),
+    });
 
     const calc = () => setResult(calcIRCM(montant, type));
 
-    const save = async () => {
-        if (!result) return;
-        setSaving(true);
-        try {
-            await calculApi.ircm({ montant_brut: montant, type_revenu: type });
-        } catch { /* ignore */ } finally { setSaving(false); }
-    };
+    const exportCSV = (id: string, yr: number) =>
+        ircmApi.export(id).then((r) => {
+            const url = URL.createObjectURL(r.data);
+            const a = document.createElement('a');
+            a.href = url; a.download = `IRCM-${yr}.csv`; a.click();
+            URL.revokeObjectURL(url);
+        });
 
     return (
-        <div className="max-w-2xl space-y-6">
+        <div className="max-w-3xl space-y-6">
             <Card title="IRCM — Impôt sur les Revenus des Capitaux Mobiliers">
                 <p className="text-xs text-gray-500 mb-4">CGI 2025 — Art. 140-156 · Retenue libératoire à la source</p>
-
-                <div className="grid grid-cols-1 gap-3 mb-4">
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Année fiscale</label>
+                        <input type="number" value={annee} onChange={(e) => setAnnee(+e.target.value)}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Montant brut des revenus (FCFA)</label>
+                        <input type="number" value={montant} onChange={(e) => setMontant(+e.target.value)}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 gap-2 mb-4">
                     {TYPES.map((t) => (
                         <label key={t.value}
                             className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${type === t.value ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}>
@@ -56,35 +88,30 @@ function IRCMContent() {
                         </label>
                     ))}
                 </div>
-
-                <div className="mb-4">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Montant brut des revenus (FCFA)</label>
-                    <input
-                        type="number"
-                        value={montant}
-                        onChange={(e) => setMontant(+e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-                    />
-                </div>
-
                 <div className="flex gap-2">
                     <Btn onClick={calc}>Calculer</Btn>
-                    {result && <Btn variant="outline" onClick={save} disabled={saving}>{saving ? 'Enregistrement…' : <><Save className="w-4 h-4" /> Enregistrer</>}</Btn>}
+                    {result && (
+                        <Btn variant="outline" onClick={() => createMut.mutate()} disabled={createMut.isPending}>
+                            {createMut.isPending ? 'Enregistrement…' : <><Save className="w-4 h-4" /> Enregistrer</>}
+                        </Btn>
+                    )}
                 </div>
+                {createMut.isError && <p className="text-xs text-red-600 mt-2">Erreur lors de l'enregistrement</p>}
+                {createMut.isSuccess && <p className="text-xs text-green-600 mt-2">Déclaration enregistrée ✓</p>}
             </Card>
 
             {result && (
                 <Card title="Résultat IRCM">
                     <div className="space-y-2">
                         {[
-                            { l: 'Revenu brut', v: result.brut },
-                            { l: `IRCM (${(result.taux * 100).toFixed(1)} %)`, v: -result.ircm },
-                            { l: 'Net versé', v: result.net },
-                        ].map(({ l, v }) => (
+                            { l: 'Revenu brut', v: result.brut, neg: false },
+                            { l: `IRCM (${(result.taux * 100).toFixed(1)} %)`, v: result.ircm, neg: true },
+                            { l: 'Net versé', v: result.net, neg: false },
+                        ].map(({ l, v, neg }) => (
                             <div key={l} className="flex justify-between py-2 border-b border-gray-50 text-sm">
                                 <span className="text-gray-600">{l}</span>
-                                <span className={`font-medium ${v < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                                    {v < 0 ? `- ${fmt(-v)}` : fmt(v)}
+                                <span className={`font-medium ${neg ? 'text-red-600' : 'text-gray-900'}`}>
+                                    {neg ? `- ${fmt(v)}` : fmt(v)}
                                 </span>
                             </div>
                         ))}
@@ -96,13 +123,74 @@ function IRCMContent() {
                 </Card>
             )}
 
+            <Card title="Historique IRCM">
+                <div className="flex items-center gap-3 mb-3">
+                    <label className="text-xs text-gray-600">Année :</label>
+                    <select value={annee} onChange={(e) => setAnnee(+e.target.value)}
+                        className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none">
+                        {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                        ))}
+                    </select>
+                </div>
+                {isLoading ? <Spinner /> : history.length === 0 ? (
+                    <p className="text-xs text-gray-400 py-4 text-center">Aucune déclaration IRCM pour {annee}</p>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                            <thead>
+                                <tr className="text-gray-500 border-b border-gray-100">
+                                    <th className="text-left py-2">Réf.</th>
+                                    <th className="text-left py-2">Type</th>
+                                    <th className="text-right py-2">Brut</th>
+                                    <th className="text-right py-2">IRCM dû</th>
+                                    <th className="text-center py-2">Statut</th>
+                                    <th className="text-right py-2">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {history.map((d) => (
+                                    <tr key={d.id} className="hover:bg-gray-50">
+                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? '—'}</td>
+                                        <td className="py-2">{d.type_revenu}</td>
+                                        <td className="py-2 text-right">{fmt(d.montant_brut)}</td>
+                                        <td className="py-2 text-right font-semibold text-red-700">{fmt(d.ircm_total)}</td>
+                                        <td className="py-2 text-center">
+                                            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${d.statut === 'declare' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                {d.statut === 'declare' ? 'Déclaré' : 'Brouillon'}
+                                            </span>
+                                        </td>
+                                        <td className="py-2 text-right">
+                                            <div className="flex justify-end gap-1">
+                                                {d.statut === 'brouillon' && (
+                                                    <button onClick={() => validerMut.mutate(d.id)} title="Valider"
+                                                        className="p-1 text-green-600 hover:bg-green-50 rounded">
+                                                        <CheckCircle className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                                <button onClick={() => exportCSV(d.id, d.annee)} title="Exporter CSV"
+                                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                                                    <Download className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button onClick={() => deleteMut.mutate(d.id)} title="Supprimer"
+                                                    className="p-1 text-red-500 hover:bg-red-50 rounded">
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </Card>
+
             <Card title="Base légale">
                 <ul className="text-xs text-gray-500 space-y-1">
-                    <li>• Art. 140 CGI 2025 : Sont imposables les revenus des capitaux mobiliers</li>
-                    <li>• Art. 143 : Créances & dépôts — Taux 25 %</li>
-                    <li>• Art. 144 : Obligations & bons — Taux 6 %</li>
-                    <li>• Art. 145 : Dividendes — Taux 12,5 %</li>
-                    <li>• Retenue à la source opérée par le débiteur lors du paiement</li>
+                    <li>• Art. 140 CGI 2025 : IRCM — retenue libératoire à la source</li>
+                    <li>• Créances & dépôts : 25 % · Obligations & bons : 6 % · Dividendes : 12,5 %</li>
+                    <li>• Art. 150 : Déclaration et versement mensuel (avant le 15 du mois suivant)</li>
                 </ul>
             </Card>
         </div>

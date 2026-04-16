@@ -164,6 +164,57 @@ export const exerciceApi = {
     cloturer: (id: string) => api.put(`/exercice/${id}/cloturer`),
 };
 
+// ── IRF — Revenus Fonciers ────────────────────────────────────
+export const irfApi = {
+    list: (annee?: number) => api.get('/irf', { params: { annee } }),
+    create: (data: { annee: number; loyer_brut: number }) => api.post('/irf', data),
+    get: (id: string) => api.get(`/irf/${id}`),
+    valider: (id: string) => api.patch(`/irf/${id}/valider`),
+    delete: (id: string) => api.delete(`/irf/${id}`),
+    export: (id: string) => api.get(`/irf/${id}/export`, { responseType: 'blob' }),
+};
+
+// ── IRCM — Capitaux Mobiliers ─────────────────────────────────
+export const ircmApi = {
+    list: (annee?: number) => api.get('/ircm', { params: { annee } }),
+    create: (data: { annee: number; montant_brut: number; type_revenu: string }) => api.post('/ircm', data),
+    get: (id: string) => api.get(`/ircm/${id}`),
+    valider: (id: string) => api.patch(`/ircm/${id}/valider`),
+    delete: (id: string) => api.delete(`/ircm/${id}`),
+    export: (id: string) => api.get(`/ircm/${id}/export`, { responseType: 'blob' }),
+};
+
+// ── IS / MFP — Impôt sur les Sociétés ────────────────────────
+export const isApi = {
+    list: (annee?: number) => api.get('/is', { params: { annee } }),
+    create: (data: { annee: number; ca: number; benefice: number; regime: string; adhesion_cga: boolean }) =>
+        api.post('/is', data),
+    get: (id: string) => api.get(`/is/${id}`),
+    valider: (id: string) => api.patch(`/is/${id}/valider`),
+    delete: (id: string) => api.delete(`/is/${id}`),
+    export: (id: string) => api.get(`/is/${id}/export`, { responseType: 'blob' }),
+};
+
+// ── CME — Micro-Entreprises ───────────────────────────────────
+export const cmeApi = {
+    list: (annee?: number) => api.get('/cme', { params: { annee } }),
+    create: (data: { annee: number; ca: number; zone: string; adhesion_cga: boolean }) => api.post('/cme', data),
+    get: (id: string) => api.get(`/cme/${id}`),
+    valider: (id: string) => api.patch(`/cme/${id}/valider`),
+    delete: (id: string) => api.delete(`/cme/${id}`),
+    export: (id: string) => api.get(`/cme/${id}/export`, { responseType: 'blob' }),
+};
+
+// ── Patente Professionnelle ───────────────────────────────────
+export const patenteApi = {
+    list: (annee?: number) => api.get('/patente', { params: { annee } }),
+    create: (data: { annee: number; ca: number; valeur_locative: number }) => api.post('/patente', data),
+    get: (id: string) => api.get(`/patente/${id}`),
+    valider: (id: string) => api.patch(`/patente/${id}/valider`),
+    delete: (id: string) => api.delete(`/patente/${id}`),
+    export: (id: string) => api.get(`/patente/${id}/export`, { responseType: 'blob' }),
+};
+
 // ── Dashboard ─────────────────────────────────────────────────
 export const dashboardApi = {
     get: () => api.get('/dashboard'),

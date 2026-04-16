@@ -175,14 +175,12 @@ export interface CNSSPatronal {
 export interface IRFDeclaration {
     id: string;
     company_id: string;
-    periode: string;
-    mois: number;
     annee: number;
-    bailleur: string;
-    adresse: string;
     loyer_brut: number;
     abattement: number;
     base_nette: number;
+    irf1: number;
+    irf2: number;
     irf_total: number;
     loyer_net: number;
     statut: string;
@@ -193,15 +191,14 @@ export interface IRFDeclaration {
 export interface IRCMDeclaration {
     id: string;
     company_id: string;
-    periode: string;
     annee: number;
-    type_revenu: 'CREANCES' | 'OBLIGATIONS' | 'DIVIDENDES';
-    description: string;
     montant_brut: number;
+    type_revenu: 'CREANCES' | 'OBLIGATIONS' | 'DIVIDENDES';
     taux: number;
-    ircm: number;
+    ircm_total: number;
     montant_net: number;
     statut: string;
+    ref: string | null;
     created_at: string;
 }
 
@@ -209,14 +206,15 @@ export interface ISDeclaration {
     id: string;
     company_id: string;
     annee: number;
-    regime: 'RNI' | 'RSI';
-    ca_ht: number;
+    ca: number;
     benefice: number;
-    is: number;
-    mfp_calcule: number;
-    mfp_du: number;
+    regime: string;
     adhesion_cga: boolean;
+    is_theorique: number;
+    mfp_du: number;
+    is_du: number;
     statut: string;
+    ref: string | null;
     created_at: string;
 }
 
@@ -226,11 +224,12 @@ export interface CMEDeclaration {
     annee: number;
     ca: number;
     zone: 'A' | 'B' | 'C' | 'D';
+    adhesion_cga: boolean;
     classe: number;
     cme: number;
     cme_net: number;
-    adhesion_cga: boolean;
     statut: string;
+    ref: string | null;
     created_at: string;
 }
 
@@ -241,9 +240,10 @@ export interface PatenteDeclaration {
     ca: number;
     valeur_locative: number;
     droit_fixe: number;
-    droit_proportionnel: number;
+    droit_prop: number;
     total_patente: number;
     statut: string;
+    ref: string | null;
     created_at: string;
 }
 

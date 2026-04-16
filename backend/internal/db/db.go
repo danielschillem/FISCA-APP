@@ -118,6 +118,7 @@ func RunMigrations(pool *pgxpool.Pool) error {
 		iuts_net     NUMERIC(12,2) NOT NULL DEFAULT 0,
 		cot_soc      NUMERIC(12,2) NOT NULL DEFAULT 0,
 		tpa          NUMERIC(12,2) NOT NULL DEFAULT 0,
+		fsp          NUMERIC(12,2) NOT NULL DEFAULT 0,
 		salaire_net  NUMERIC(12,2) NOT NULL DEFAULT 0,
 		created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 		UNIQUE (company_id, employee_id, mois, annee)
@@ -263,9 +264,95 @@ func RunMigrations(pool *pgxpool.Pool) error {
 	CREATE INDEX IF NOT EXISTS idx_simulations_company_id       ON simulations(company_id);
 	CREATE INDEX IF NOT EXISTS idx_wf_etapes_declaration_id     ON workflow_etapes(declaration_id);
 
+	-- Migration idempotente : ajout colonne fsp sur bulletins existants
+	ALTER TABLE bulletins ADD COLUMN IF NOT EXISTS fsp NUMERIC(12,2) NOT NULL DEFAULT 0;
+
 	-- Unicité déclaration IUTS par entreprise/période (évite les doublons)
 	CREATE UNIQUE INDEX IF NOT EXISTS idx_declarations_unique_period
 	    ON declarations(company_id, mois, annee);
+
+	-- ─── Modules fiscaux annuels (Sprint 1) ─────────────────────────────────
+
+	CREATE TABLE IF NOT EXISTS irf_declarations (
+		id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		company_id  UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+		annee       INT  NOT NULL,
+		loyer_brut  NUMERIC(14,2) NOT NULL DEFAULT 0,
+		abattement  NUMERIC(14,2) NOT NULL DEFAULT 0,
+		base_nette  NUMERIC(14,2) NOT NULL DEFAULT 0,
+		irf1        NUMERIC(14,2) NOT NULL DEFAULT 0,
+		irf2        NUMERIC(14,2) NOT NULL DEFAULT 0,
+		irf_total   NUMERIC(14,2) NOT NULL DEFAULT 0,
+		loyer_net   NUMERIC(14,2) NOT NULL DEFAULT 0,
+		statut      TEXT NOT NULL DEFAULT 'brouillon',
+		ref         TEXT,
+		created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+
+	CREATE TABLE IF NOT EXISTS ircm_declarations (
+		id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		company_id   UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+		annee        INT  NOT NULL,
+		montant_brut NUMERIC(14,2) NOT NULL DEFAULT 0,
+		type_revenu  TEXT NOT NULL DEFAULT 'CREANCES',
+		taux         NUMERIC(8,4)  NOT NULL DEFAULT 0,
+		ircm_total   NUMERIC(14,2) NOT NULL DEFAULT 0,
+		montant_net  NUMERIC(14,2) NOT NULL DEFAULT 0,
+		statut       TEXT NOT NULL DEFAULT 'brouillon',
+		ref          TEXT,
+		created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+
+	CREATE TABLE IF NOT EXISTS is_declarations (
+		id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		company_id   UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+		annee        INT  NOT NULL,
+		ca           NUMERIC(14,2) NOT NULL DEFAULT 0,
+		benefice     NUMERIC(14,2) NOT NULL DEFAULT 0,
+		regime       TEXT NOT NULL DEFAULT 'reel',
+		adhesion_cga BOOLEAN NOT NULL DEFAULT false,
+		is_theorique NUMERIC(14,2) NOT NULL DEFAULT 0,
+		mfp_du       NUMERIC(14,2) NOT NULL DEFAULT 0,
+		is_du        NUMERIC(14,2) NOT NULL DEFAULT 0,
+		statut       TEXT NOT NULL DEFAULT 'brouillon',
+		ref          TEXT,
+		created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+
+	CREATE TABLE IF NOT EXISTS cme_declarations (
+		id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		company_id   UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+		annee        INT  NOT NULL,
+		ca           NUMERIC(14,2) NOT NULL DEFAULT 0,
+		zone         TEXT NOT NULL DEFAULT 'A',
+		adhesion_cga BOOLEAN NOT NULL DEFAULT false,
+		classe       INT  NOT NULL DEFAULT 1,
+		cme          NUMERIC(14,2) NOT NULL DEFAULT 0,
+		cme_net      NUMERIC(14,2) NOT NULL DEFAULT 0,
+		statut       TEXT NOT NULL DEFAULT 'brouillon',
+		ref          TEXT,
+		created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+
+	CREATE TABLE IF NOT EXISTS patente_declarations (
+		id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		company_id      UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+		annee           INT  NOT NULL,
+		ca              NUMERIC(14,2) NOT NULL DEFAULT 0,
+		valeur_locative NUMERIC(14,2) NOT NULL DEFAULT 0,
+		droit_fixe      NUMERIC(14,2) NOT NULL DEFAULT 0,
+		droit_prop      NUMERIC(14,2) NOT NULL DEFAULT 0,
+		total_patente   NUMERIC(14,2) NOT NULL DEFAULT 0,
+		statut          TEXT NOT NULL DEFAULT 'brouillon',
+		ref             TEXT,
+		created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_irf_company_id     ON irf_declarations(company_id);
+	CREATE INDEX IF NOT EXISTS idx_ircm_company_id    ON ircm_declarations(company_id);
+	CREATE INDEX IF NOT EXISTS idx_is_company_id      ON is_declarations(company_id);
+	CREATE INDEX IF NOT EXISTS idx_cme_company_id     ON cme_declarations(company_id);
+	CREATE INDEX IF NOT EXISTS idx_patente_company_id ON patente_declarations(company_id);
 	`
 	_, err := pool.Exec(context.Background(), schema)
 	return err

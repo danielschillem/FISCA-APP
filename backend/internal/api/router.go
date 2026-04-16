@@ -68,6 +68,11 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 	cnssH := handlers.NewCNSSHandler(db)
 	histoH := handlers.NewHistoriqueFiscalHandler(db)
 	exerciceH := handlers.NewExerciceHandler(db)
+	irfH := handlers.NewIRFHandler(db)
+	ircmH := handlers.NewIRCMHandler(db)
+	isH := handlers.NewISHandler(db)
+	cmeH := handlers.NewCMEHandler(db)
+	patenteH := handlers.NewPatenteHandler(db)
 
 	// Routes publiques
 	r.Route("/api", func(r chi.Router) {
@@ -209,6 +214,46 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			r.Post("/exercice", exerciceH.Create)
 			r.Put("/exercice/{id}", exerciceH.Update)
 			r.Put("/exercice/{id}/cloturer", exerciceH.Cloturer)
+
+			// IRF — Revenus Fonciers [Plan: Pro+]
+			r.Get("/irf", irfH.List)
+			r.Post("/irf", irfH.Create)
+			r.Get("/irf/{id}", irfH.Get)
+			r.Patch("/irf/{id}/valider", irfH.Valider)
+			r.Delete("/irf/{id}", irfH.Delete)
+			r.Get("/irf/{id}/export", irfH.Export)
+
+			// IRCM — Capitaux Mobiliers [Plan: Pro+]
+			r.Get("/ircm", ircmH.List)
+			r.Post("/ircm", ircmH.Create)
+			r.Get("/ircm/{id}", ircmH.Get)
+			r.Patch("/ircm/{id}/valider", ircmH.Valider)
+			r.Delete("/ircm/{id}", ircmH.Delete)
+			r.Get("/ircm/{id}/export", ircmH.Export)
+
+			// IS / MFP — Impôt Sociétés [Plan: Enterprise]
+			r.Get("/is", isH.List)
+			r.Post("/is", isH.Create)
+			r.Get("/is/{id}", isH.Get)
+			r.Patch("/is/{id}/valider", isH.Valider)
+			r.Delete("/is/{id}", isH.Delete)
+			r.Get("/is/{id}/export", isH.Export)
+
+			// CME — Micro-Entreprises [Plan: Enterprise]
+			r.Get("/cme", cmeH.List)
+			r.Post("/cme", cmeH.Create)
+			r.Get("/cme/{id}", cmeH.Get)
+			r.Patch("/cme/{id}/valider", cmeH.Valider)
+			r.Delete("/cme/{id}", cmeH.Delete)
+			r.Get("/cme/{id}/export", cmeH.Export)
+
+			// Patente Professionnelle [Plan: Enterprise]
+			r.Get("/patente", patenteH.List)
+			r.Post("/patente", patenteH.Create)
+			r.Get("/patente/{id}", patenteH.Get)
+			r.Patch("/patente/{id}/valider", patenteH.Valider)
+			r.Delete("/patente/{id}", patenteH.Delete)
+			r.Get("/patente/{id}/export", patenteH.Export)
 		})
 	})
 

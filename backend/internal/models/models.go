@@ -117,10 +117,11 @@ type CalculResult struct {
 	IUTSNet      float64 `json:"iuts_net"`
 	CotSoc       float64 `json:"cotisation_sociale"`
 	TPA          float64 `json:"tpa"`
+	FSP          float64 `json:"fsp"` // Fonds de Soutien Patriotique 1 %
 	SalaireNet   float64 `json:"salaire_net"`
 	AbattForf    float64 `json:"abattement_forfaitaire"`
 	AbattFam     float64 `json:"abattement_familial"`
-	RetPersonnel float64 `json:"retenue_personnel"`
+	RetPersonnel float64 `json:"retenue_personnel"` // alias FSP — rétro-compat
 }
 
 // ─── BULLETIN DE PAIE ─────────────────────────────────────────
@@ -148,6 +149,7 @@ type Bulletin struct {
 	IUTSNet     float64   `json:"iuts_net"`
 	CotSoc      float64   `json:"cotisation_sociale"`
 	TPA         float64   `json:"tpa"`
+	FSP         float64   `json:"fsp"` // Fonds de Soutien Patriotique 1 %
 	SalaireNet  float64   `json:"salaire_net"`
 	CreatedAt   time.Time `json:"created_at"`
 }
@@ -278,17 +280,15 @@ type HistoriqueFiscalAnnee struct {
 type IRFDeclaration struct {
 	ID         string    `json:"id"`
 	CompanyID  string    `json:"company_id"`
-	Periode    string    `json:"periode"`
-	Mois       int       `json:"mois"`
 	Annee      int       `json:"annee"`
-	Bailleur   string    `json:"bailleur"`
-	Adresse    string    `json:"adresse"`
 	LoyerBrut  float64   `json:"loyer_brut"`
 	Abattement float64   `json:"abattement"`
 	BaseNette  float64   `json:"base_nette"`
+	IRF1       float64   `json:"irf1"` // tranche 18 %
+	IRF2       float64   `json:"irf2"` // tranche 25 %
 	IRFTotal   float64   `json:"irf_total"`
 	LoyerNet   float64   `json:"loyer_net"`
-	Statut     string    `json:"statut"` // "en_cours" | "declare"
+	Statut     string    `json:"statut"`
 	Ref        *string   `json:"ref"`
 	CreatedAt  time.Time `json:"created_at"`
 }
@@ -298,15 +298,14 @@ type IRFDeclaration struct {
 type IRCMDeclaration struct {
 	ID          string    `json:"id"`
 	CompanyID   string    `json:"company_id"`
-	Periode     string    `json:"periode"`
 	Annee       int       `json:"annee"`
-	TypeRevenu  string    `json:"type_revenu"` // "CREANCES"|"OBLIGATIONS"|"DIVIDENDES"
-	Description string    `json:"description"`
 	MontantBrut float64   `json:"montant_brut"`
+	TypeRevenu  string    `json:"type_revenu"` // "CREANCES"|"OBLIGATIONS"|"DIVIDENDES"
 	Taux        float64   `json:"taux"`
-	IRCM        float64   `json:"ircm"`
+	IRCMTotal   float64   `json:"ircm_total"`
 	MontantNet  float64   `json:"montant_net"`
 	Statut      string    `json:"statut"`
+	Ref         *string   `json:"ref"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -316,14 +315,15 @@ type ISDeclaration struct {
 	ID          string    `json:"id"`
 	CompanyID   string    `json:"company_id"`
 	Annee       int       `json:"annee"`
-	Regime      string    `json:"regime"` // "RNI" | "RSI"
-	CAHT        float64   `json:"ca_ht"`
+	CA          float64   `json:"ca"`
 	Benefice    float64   `json:"benefice"`
-	IS          float64   `json:"is"`
-	MFPCalcule  float64   `json:"mfp_calcule"`
-	MFPDu       float64   `json:"mfp_du"`
+	Regime      string    `json:"regime"` // "reel"|"simplifie"
 	AdhesionCGA bool      `json:"adhesion_cga"`
+	ISTheorique float64   `json:"is_theorique"`
+	MFPDu       float64   `json:"mfp_du"`
+	ISDu        float64   `json:"is_du"` // max(ISTheorique, MFPDu)
 	Statut      string    `json:"statut"`
+	Ref         *string   `json:"ref"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -335,11 +335,12 @@ type CMEDeclaration struct {
 	Annee       int       `json:"annee"`
 	CA          float64   `json:"ca"`
 	Zone        string    `json:"zone"` // "A"|"B"|"C"|"D"
+	AdhesionCGA bool      `json:"adhesion_cga"`
 	Classe      int       `json:"classe"`
 	CME         float64   `json:"cme"`
 	CMENet      float64   `json:"cme_net"`
-	AdhesionCGA bool      `json:"adhesion_cga"`
 	Statut      string    `json:"statut"`
+	Ref         *string   `json:"ref"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -352,9 +353,10 @@ type PatenteDeclaration struct {
 	CA             float64   `json:"ca"`
 	ValeurLocative float64   `json:"valeur_locative"`
 	DroitFixe      float64   `json:"droit_fixe"`
-	DroitProp      float64   `json:"droit_proportionnel"`
+	DroitProp      float64   `json:"droit_prop"`
 	TotalPatente   float64   `json:"total_patente"`
 	Statut         string    `json:"statut"`
+	Ref            *string   `json:"ref"`
 	CreatedAt      time.Time `json:"created_at"`
 }
 
