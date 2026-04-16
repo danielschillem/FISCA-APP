@@ -20,7 +20,7 @@ const MOIS_COURT = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'S
 // Liens rapides selon le rôle
 const QUICK_LINKS: Record<string, { to: string; label: string; icon: React.ElementType; color: string }[]> = {
     comptable: [
-        { to: '/saisie', label: 'Saisie mensuelle', icon: PenLine, color: 'text-green-600 bg-green-50' },
+        { to: '/saisie', label: 'Ressources Humaines', icon: PenLine, color: 'text-green-600 bg-green-50' },
         { to: '/tva', label: 'Module TVA', icon: Receipt, color: 'text-blue-600 bg-blue-50' },
         { to: '/irf', label: 'IRF Fonciers', icon: Home, color: 'text-purple-600 bg-purple-50' },
         { to: '/is', label: 'IS / MFP', icon: BookOpen, color: 'text-orange-600 bg-orange-50' },
@@ -28,7 +28,7 @@ const QUICK_LINKS: Record<string, { to: string; label: string; icon: React.Eleme
         { to: '/historique', label: 'Historique', icon: History, color: 'text-gray-600 bg-gray-50' },
     ],
     gestionnaire_rh: [
-        { to: '/saisie', label: 'Saisie mensuelle', icon: PenLine, color: 'text-green-600 bg-green-50' },
+        { to: '/saisie', label: 'Ressources Humaines', icon: PenLine, color: 'text-green-600 bg-green-50' },
         { to: '/bulletins', label: 'Bulletins de paie', icon: FileCheck, color: 'text-blue-600 bg-blue-50' },
         { to: '/cnss-patronal', label: 'CNSS Patronal', icon: Users, color: 'text-purple-600 bg-purple-50' },
         { to: '/simulateur', label: 'Simulateur', icon: BarChart2, color: 'text-orange-600 bg-orange-50' },

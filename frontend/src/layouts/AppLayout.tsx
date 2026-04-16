@@ -8,7 +8,7 @@ import { Eye, X } from 'lucide-react';
 
 const PAGE_META: Record<string, { title: string; subtitle?: string }> = {
     '/dashboard': { title: 'Tableau de bord', subtitle: 'Exercice fiscal en cours' },
-    '/saisie': { title: 'Saisie mensuelle', subtitle: 'Rémunérations et cotisations' },
+    '/saisie': { title: 'Ressources Humaines', subtitle: 'Rémunérations et cotisations' },
     '/calcul': { title: 'Calculateur Fiscal', subtitle: 'CGI 2025 : Burkina Faso' },
     '/rapport': { title: 'Rapport du mois', subtitle: 'Aperçu et génération du document' },
     '/bulletins': { title: 'Bulletins de paie', subtitle: 'Export PDF individuel' },

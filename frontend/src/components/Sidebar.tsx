@@ -41,7 +41,7 @@ const navSections: { label: string; items: NavItem[] }[] = [
             { to: '/dashboard', label: 'Tableau de bord', Icon: LayoutDashboard, feat: null },
             { to: '/calendrier', label: 'Calendrier fiscal', Icon: CalendarDays, feat: null },
             { to: '/checklist', label: 'Checklist mensuelle', Icon: ClipboardList, feat: null },
-            { to: '/saisie', label: 'Saisie mensuelle', Icon: PenLine, feat: 'saisie' },
+            { to: '/saisie', label: 'Ressources Humaines', Icon: PenLine, feat: 'saisie' },
             { to: '/calcul', label: 'Calculateur Fiscal', Icon: Calculator, feat: 'calcul' },
             { to: '/rapport', label: 'Rapport du mois', Icon: FileText, feat: 'rapport' },
             { to: '/declarations', label: 'Mes déclarations', Icon: FileCheck, feat: null },
