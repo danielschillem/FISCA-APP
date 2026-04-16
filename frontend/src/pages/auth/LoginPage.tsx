@@ -11,7 +11,7 @@ import {
 const FEATURES = [
     { Icon: BarChart2, text: 'Tableaux de bord fiscaux en temps réel' },
     { Icon: FileCheck, text: 'Bulletins de paie & déclarations IUTS' },
-    { Icon: Calculator, text: 'Calculateur CGI 2025 — tous les impôts BF' },
+    { Icon: Calculator, text: 'Calculateur CGI 2025 : tous les impôts BF' },
     { Icon: ShieldCheck, text: 'Données sécurisées · Conforme OHADA' },
 ];
 
