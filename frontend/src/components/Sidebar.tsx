@@ -44,6 +44,7 @@ const navSections: { label: string; items: NavItem[] }[] = [
             { to: '/saisie', label: 'Saisie mensuelle', Icon: PenLine, feat: 'saisie' },
             { to: '/calcul', label: 'Calculateur Fiscal', Icon: Calculator, feat: 'calcul' },
             { to: '/rapport', label: 'Rapport du mois', Icon: FileText, feat: 'rapport' },
+            { to: '/declarations', label: 'Mes déclarations', Icon: FileCheck, feat: null },
         ],
     },
     {

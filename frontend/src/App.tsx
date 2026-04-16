@@ -25,6 +25,7 @@ const WorkflowPage = lazy(() => import('./pages/WorkflowPage'));
 const RetenuesPage = lazy(() => import('./pages/RetenuesPage'));
 const CNSSPatronalPage = lazy(() => import('./pages/CNSSPatronalPage'));
 const HistoriquePage = lazy(() => import('./pages/HistoriquePage'));
+const DeclarationsPage = lazy(() => import('./pages/DeclarationsPage'));
 const ParametresPage = lazy(() => import('./pages/ParametresPage'));
 const AbonnementPage = lazy(() => import('./pages/AbonnementPage'));
 const ExercicePage = lazy(() => import('./pages/ExercicePage'));
@@ -90,6 +91,7 @@ function App() {
               <Route path="/is" element={<ISPage />} />
               <Route path="/patente" element={<PatentePage />} />
               <Route path="/historique" element={<HistoriquePage />} />
+              <Route path="/declarations" element={<DeclarationsPage />} />
               <Route path="/exercice" element={<ExercicePage />} />
               <Route path="/parametres" element={<ParametresPage />} />
               <Route path="/abonnement" element={<AbonnementPage />} />

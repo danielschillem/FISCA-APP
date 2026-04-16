@@ -6,7 +6,7 @@ import type { Employee, Bulletin } from '../types';
 import { Card, Btn, Badge, Spinner, useAppStore, PLAN_FEATURES } from '../components/ui';
 import { usePermissions } from '../lib/permissions';
 import { MOIS_FR } from '../types';
-import { FileText, CheckCircle2, AlertCircle, X, Download, Upload, Copy } from 'lucide-react';
+import { FileText, CheckCircle2, AlertCircle, X, Download, Upload, Copy, List, PenLine } from 'lucide-react';
 
 const MOIS_OPTIONS = MOIS_FR.map((m, i) => ({ value: String(i + 1), label: m }));
 
@@ -20,6 +20,7 @@ export default function SaisiePage() {
     const [importMsg, setImportMsg] = useState('');
     const [copyingN1, setCopyingN1] = useState(false);
     const [page, setPage] = useState(1);
+    const [vue, setVue] = useState<'saisie' | 'liste'>('saisie');
     const LIMIT = 50;
     const importRef = useRef<HTMLInputElement>(null);
 
@@ -271,7 +272,92 @@ export default function SaisiePage() {
                 ))}
             </div>
 
-            {/* Employee cards */}
+            {/* Toggle vue */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                    <button
+                        onClick={() => setVue('saisie')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${vue === 'saisie' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        <PenLine className="w-3.5 h-3.5" /> Saisie
+                    </button>
+                    <button
+                        onClick={() => setVue('liste')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${vue === 'liste' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        <List className="w-3.5 h-3.5" /> Liste
+                    </button>
+                </div>
+                <span className="text-xs text-gray-400">{employees.length} employé(s)</span>
+            </div>
+
+            {/* Vue Liste : tableau récapitulatif */}
+            {vue === 'liste' && (
+                <Card>
+                    {employees.length === 0 ? (
+                        <p className="text-center text-gray-400 py-8">Aucun employé enregistré.</p>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="text-xs text-gray-500 border-b border-gray-100">
+                                        <th className="text-left py-2 px-3 font-medium">N°</th>
+                                        <th className="text-left py-2 px-3 font-medium">Nom et Prénom</th>
+                                        <th className="text-left py-2 px-3 font-medium">Catégorie</th>
+                                        <th className="text-right py-2 px-3 font-medium">Salaire brut</th>
+                                        <th className="text-right py-2 px-3 font-medium">IUTS net</th>
+                                        <th className="text-right py-2 px-3 font-medium">CSS</th>
+                                        <th className="text-right py-2 px-3 font-medium">TPA</th>
+                                        <th className="text-right py-2 px-3 font-medium">Net à payer</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {employees.map((emp, idx) => {
+                                        const r = calcEmploye({
+                                            salaire_base: emp.salaire_base,
+                                            anciennete: emp.anciennete,
+                                            heures_sup: emp.heures_sup,
+                                            logement: emp.logement,
+                                            transport: emp.transport,
+                                            fonction: emp.fonction,
+                                            charges: emp.charges,
+                                            categorie: emp.categorie,
+                                            cotisation,
+                                        });
+                                        return (
+                                            <tr key={emp.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                                                <td className="py-2.5 px-3 text-gray-400 text-xs">{(page - 1) * LIMIT + idx + 1}</td>
+                                                <td className="py-2.5 px-3 font-medium text-gray-900">{emp.nom}</td>
+                                                <td className="py-2.5 px-3">
+                                                    <Badge color={emp.categorie === 'Cadre' ? 'green' : 'orange'}>{emp.categorie}</Badge>
+                                                </td>
+                                                <td className="py-2.5 px-3 text-right text-gray-700">{fmtN(r.remBrute)} F</td>
+                                                <td className="py-2.5 px-3 text-right text-green-700 font-medium">{fmtN(r.iutsNet)} F</td>
+                                                <td className="py-2.5 px-3 text-right text-orange-700">{fmtN(r.cotSoc)} F</td>
+                                                <td className="py-2.5 px-3 text-right text-blue-700">{fmtN(r.tpa)} F</td>
+                                                <td className="py-2.5 px-3 text-right font-bold text-gray-900">{fmtN(r.netAPayer)} F</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                                <tfoot>
+                                    <tr className="bg-gray-50 font-bold text-sm border-t-2 border-gray-200">
+                                        <td className="py-3 px-3 text-xs text-gray-500" colSpan={3}>TOTAL</td>
+                                        <td className="py-3 px-3 text-right text-gray-900">{fmtN(totaux.brut)} F</td>
+                                        <td className="py-3 px-3 text-right text-green-700">{fmtN(totaux.iuts)} F</td>
+                                        <td className="py-3 px-3 text-right text-orange-700">{fmtN(totaux.css)} F</td>
+                                        <td className="py-3 px-3 text-right text-blue-700">{fmtN(totaux.tpa)} F</td>
+                                        <td className="py-3 px-3 text-right text-gray-900">{fmtN(totaux.net)} F</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    )}
+                </Card>
+            )}
+
+            {/* Vue Saisie : cartes éditables */}
+            {vue === 'saisie' && (
             <div className="space-y-4">
                 {employees.length === 0 ? (
                     <Card>
@@ -310,6 +396,7 @@ export default function SaisiePage() {
                     </div>
                 )}
             </div>
+            )}
         </div>
     );
 }

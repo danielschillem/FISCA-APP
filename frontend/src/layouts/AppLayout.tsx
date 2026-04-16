@@ -25,6 +25,7 @@ const PAGE_META: Record<string, { title: string; subtitle?: string }> = {
     '/is': { title: 'IS / MFP', subtitle: 'CGI 2025 · Art. 42 · 27,5 %' },
     '/patente': { title: 'Patentes', subtitle: 'CGI 2025 · Art. 237–240' },
     '/historique': { title: 'Historique Fiscal', subtitle: 'Toutes les déclarations' },
+    '/declarations': { title: 'Mes Déclarations', subtitle: 'IUTS · TPA · CSS · téléchargement DIPE' },
     '/bilan': { title: 'Bilan Annuel', subtitle: 'Synthèse de l\'exercice' },
     '/abonnement': { title: 'Mon Abonnement', subtitle: 'Plans & fonctionnalités' },
     '/parametres': { title: 'Paramètres', subtitle: 'Informations de l\'entreprise' },
