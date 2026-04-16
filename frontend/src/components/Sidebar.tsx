@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { getEcheancesAnnee } from '../lib/fiscalCalendar';
 import { useAuthStore, useAppStore } from '../lib/store';
 import { usePermissions } from '../lib/permissions';
+import { useRegime } from '../lib/regime';
 import { PLAN_FEATURES, type Plan } from '../types';
 import { authApi } from '../lib/api';
 import {
@@ -88,6 +89,7 @@ export default function Sidebar() {
     const navigate = useNavigate();
     const planFeatures = PLAN_FEATURES[plan];
     const { isAuditeur, roleLabel, roleBadgeColor } = usePermissions();
+    const { regime, info: regimeInfo, routeApplies } = useRegime();
 
     const handleLogout = async () => {
         try { await authApi.logout(); } catch { /* ignore */ }
@@ -132,7 +134,22 @@ export default function Sidebar() {
                                 {PLAN_LABELS[plan]}
                             </span>
                         </div>
-                        <p className="text-[11px] text-slate-500">Plateforme Fiscale BF</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                            <p className="text-[11px] text-slate-500">Plateforme Fiscale BF</p>
+                            {regime ? (
+                                <span
+                                    className="text-[9px] px-1.5 py-0.5 rounded-full font-bold"
+                                    style={{ background: regimeInfo.color + '22', color: regimeInfo.color, border: `1px solid ${regimeInfo.color}44` }}
+                                    title={regimeInfo.label}
+                                >
+                                    {regimeInfo.shortLabel}
+                                </span>
+                            ) : (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-700 text-slate-400 font-medium" title="Régime non défini">
+                                    Régime ?
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -145,6 +162,7 @@ export default function Sidebar() {
                             </p>
                             {section.items.map(({ to, label, Icon, feat }) => {
                                 const locked = feat ? !planFeatures.has(feat) : false;
+                                const outOfRegime = !locked && regime !== '' && !routeApplies(to);
                                 return (
                                     <NavLink
                                         key={to}
@@ -155,7 +173,9 @@ export default function Sidebar() {
                                                 ? 'bg-green-500/15 text-green-400 font-semibold'
                                                 : locked
                                                     ? 'text-slate-600 cursor-not-allowed'
-                                                    : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                                                    : outOfRegime
+                                                        ? 'text-slate-600 hover:bg-white/5 hover:text-slate-400'
+                                                        : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
                                             }`
                                         }
                                     >
@@ -168,6 +188,15 @@ export default function Sidebar() {
                                         )}
                                         {locked && (
                                             <Lock className="w-3 h-3 text-slate-700 flex-shrink-0" />
+                                        )}
+                                        {outOfRegime && (
+                                            <span
+                                                className="text-[8px] px-1 py-0.5 rounded font-semibold shrink-0"
+                                                style={{ background: regimeInfo.color + '22', color: regimeInfo.color }}
+                                                title={`Non applicable au régime ${regimeInfo.shortLabel}`}
+                                            >
+                                                {regimeInfo.shortLabel}
+                                            </span>
                                         )}
                                     </NavLink>
                                 );

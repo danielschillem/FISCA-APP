@@ -170,6 +170,20 @@ export function getProchaines(annee: number, n = 5, today: Date = new Date()): E
         .slice(0, n);
 }
 
+/**
+ * Filtre les échéances par les types applicables à un régime fiscal.
+ * Si `types` est vide, retourne toutes les échéances (régime non défini).
+ */
+export function getEcheancesParRegime(
+    annee: number,
+    types: EcheanceType[],
+    today: Date = new Date()
+): Echeance[] {
+    const all = getEcheancesAnnee(annee, today);
+    if (types.length === 0) return all;
+    return all.filter(e => types.includes(e.type));
+}
+
 /** Groupe les échéances par mois */
 export function grouperParMois(echeances: Echeance[]): GroupeEcheances[] {
     const map = new Map<string, GroupeEcheances>();

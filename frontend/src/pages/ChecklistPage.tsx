@@ -1,6 +1,7 @@
 ﻿import { useState, useMemo } from 'react';
 import { CheckCircle2, Circle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getEcheancesAnnee, nomMois, TYPE_COLORS, type Echeance } from '../lib/fiscalCalendar';
+import { getEcheancesAnnee, getEcheancesParRegime, nomMois, TYPE_COLORS, type Echeance } from '../lib/fiscalCalendar';
+import { useRegime } from '../lib/regime';
 
 const STORAGE_KEY = 'fisca_checklist_v1';
 
@@ -14,17 +15,18 @@ export default function ChecklistPage() {
     const [annee, setAnnee] = useState(today.getFullYear());
     const [mois, setMois] = useState(today.getMonth()); // 0-based = mois de la date limite
     const [checked, setChecked] = useState<Record<string, boolean>>(loadChecked);
+    const { regime, info: regimeInfo } = useRegime();
 
     const echeances = useMemo(() => {
-        // On génère N-1 et N pour couvrir janvier (obligations déc → jan 15)
-        const all = [
-            ...getEcheancesAnnee(annee - 1, today),
-            ...getEcheancesAnnee(annee, today),
-        ];
+        // Générer N-1 et N pour couvrir janvier (obligations déc → jan 15)
+        const getAll = (a: number) => regime !== ''
+            ? getEcheancesParRegime(a, regimeInfo.echeances, today)
+            : getEcheancesAnnee(a, today);
+        const all = [...getAll(annee - 1), ...getAll(annee)];
         return all
             .filter(e => e.date.getFullYear() === annee && e.date.getMonth() === mois)
             .sort((a, b) => a.date.getTime() - b.date.getTime());
-    }, [annee, mois, today]);
+    }, [annee, mois, today, regime, regimeInfo.echeances]);
 
     const toggle = (id: string) => {
         setChecked(prev => {
@@ -59,7 +61,17 @@ export default function ChecklistPage() {
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
                     <h1 className="text-xl font-bold text-gray-900">Checklist mensuelle</h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Cochez les obligations fiscales accomplies pour ce mois</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-sm text-gray-500">Obligations fiscales accomplies pour ce mois</p>
+                        {regime && (
+                            <span
+                                className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                style={{ background: regimeInfo.color, color: '#fff' }}
+                            >
+                                {regimeInfo.shortLabel}
+                            </span>
+                        )}
+                    </div>
                 </div>
                 <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
                     <button onClick={prevMois} className="p-1 rounded hover:bg-gray-100 text-gray-500">

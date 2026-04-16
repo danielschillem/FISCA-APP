@@ -1,9 +1,11 @@
 ﻿import { useState, useMemo } from 'react';
 import {
-    getEcheancesAnnee, grouperParMois, TYPE_COLORS, nomMois,
+    getEcheancesAnnee, getEcheancesParRegime, grouperParMois, TYPE_COLORS, nomMois,
     type Echeance, type EcheanceType,
 } from '../lib/fiscalCalendar';
-import { CalendarDays, ChevronLeft, ChevronRight, AlertTriangle, Clock, CheckCircle2, Info } from 'lucide-react';
+import { useRegime } from '../lib/regime';
+import { CalendarDays, ChevronLeft, ChevronRight, AlertTriangle, Clock, CheckCircle2, Info, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 // ─── Types filter ─────────────────────────────────────────────────────────────
 const ALL_TYPES: EcheanceType[] = ['IUTS', 'CNSS', 'TVA', 'IS_acompte', 'IS_solde', 'Patente', 'IRF', 'IRCM', 'RAS', 'CME', 'TP'];
@@ -82,7 +84,7 @@ function EcheanceCard({ e, today }: { e: Echeance; today: Date }) {
                         <div className="flex justify-between text-xs">
                             <span className="text-gray-400">Accès plan</span>
                             <span className={`font-semibold capitalize ${e.plan === 'all' ? 'text-green-600' :
-                                    e.plan === 'pro' ? 'text-blue-600' : 'text-orange-600'
+                                e.plan === 'pro' ? 'text-blue-600' : 'text-orange-600'
                                 }`}>
                                 {e.plan === 'all' ? 'Tous plans' : e.plan}
                             </span>
@@ -91,7 +93,7 @@ function EcheanceCard({ e, today }: { e: Echeance; today: Date }) {
                             <div className="flex justify-between text-xs">
                                 <span className="text-gray-400">Jours restants</span>
                                 <span className={`font-bold ${e.urgence === 'critique' ? 'text-red-600' :
-                                        e.urgence === 'proche' ? 'text-amber-600' : 'text-gray-700'
+                                    e.urgence === 'proche' ? 'text-amber-600' : 'text-gray-700'
                                     }`}>
                                     {e.joursRestants === 0 ? "Aujourd'hui !" :
                                         e.joursRestants === 1 ? 'Demain' :
@@ -139,8 +141,17 @@ export default function CalendrierFiscalPage() {
     const [annee, setAnnee] = useState(today.getFullYear());
     const [filtreTypes, setFiltreTypes] = useState<Set<EcheanceType>>(new Set());
     const [filtreMois, setFiltreMois] = useState<number | null>(null);
+    const [filtreRegime, setFiltreRegime] = useState(true); // ON par défaut
+    const navigate = useNavigate();
 
-    const toutes = useMemo(() => getEcheancesAnnee(annee, today), [annee, today]);
+    const { regime, info: regimeInfo } = useRegime();
+
+    const toutes = useMemo(() => {
+        if (filtreRegime && regime !== '') {
+            return getEcheancesParRegime(annee, regimeInfo.echeances, today);
+        }
+        return getEcheancesAnnee(annee, today);
+    }, [annee, today, filtreRegime, regime, regimeInfo.echeances]);
 
     const filtrees = useMemo(() => toutes.filter(e => {
         if (filtreTypes.size > 0 && !filtreTypes.has(e.type)) return false;
@@ -179,6 +190,53 @@ export default function CalendrierFiscalPage() {
                     </button>
                 </div>
             </div>
+
+            {/* Bandeau régime */}
+            {regime === '' ? (
+                <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                    <div className="flex items-center gap-2">
+                        <Filter className="w-4 h-4 text-amber-600" />
+                        <p className="text-sm text-amber-700 font-medium">
+                            Régime fiscal non défini — toutes les échéances sont affichées.
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => navigate('/parametres')}
+                        className="text-xs font-semibold text-amber-700 border border-amber-300 rounded-lg px-3 py-1 hover:bg-amber-100 transition-colors shrink-0"
+                    >
+                        Définir mon régime
+                    </button>
+                </div>
+            ) : (
+                <div
+                    className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 border"
+                    style={{ background: regimeInfo.bgColor, borderColor: regimeInfo.color + '44' }}
+                >
+                    <div className="flex items-center gap-3 min-w-0">
+                        <span
+                            className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
+                            style={{ background: regimeInfo.color, color: '#fff' }}
+                        >
+                            {regimeInfo.shortLabel}
+                        </span>
+                        <div className="min-w-0">
+                            <p className="text-sm font-semibold" style={{ color: regimeInfo.color }}>{regimeInfo.label}</p>
+                            <p className="text-xs text-gray-500 truncate">{regimeInfo.description}</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setFiltreRegime(f => !f)}
+                        className={`text-xs font-semibold rounded-lg px-3 py-1.5 border transition-colors shrink-0 ${
+                            filtreRegime
+                                ? 'text-white border-transparent'
+                                : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                        }`}
+                        style={filtreRegime ? { background: regimeInfo.color } : {}}
+                    >
+                        {filtreRegime ? `Filtré – ${regimeInfo.shortLabel}` : 'Tout afficher'}
+                    </button>
+                </div>
+            )}
 
             {/* Stats */}
             <StatsBar echeances={filtrees} today={today} />

@@ -13,7 +13,8 @@ import {
     Clock, Minus, CalendarDays, ArrowRight, Eye, FileText, Receipt,
     Home, BookOpen, PenLine, FileCheck, GitBranch, History,
 } from 'lucide-react';
-import { getProchaines, TYPE_COLORS, type Echeance } from '../lib/fiscalCalendar';
+import { getProchaines, getEcheancesParRegime, TYPE_COLORS, type Echeance } from '../lib/fiscalCalendar';
+import { useRegime } from '../lib/regime';
 
 const MOIS_COURT = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 
@@ -44,6 +45,7 @@ const QUICK_LINKS: Record<string, { to: string; label: string; icon: React.Eleme
 export default function DashboardPage() {
     const { user } = useAuthStore();
     const { isAuditeur, isComptable, isGestionnaireRH, roleLabel, roleBadgeColor } = usePermissions();
+    const { regime, info: regimeInfo } = useRegime();
 
     const { data: kpi, isLoading: kpiLoading } = useQuery<DashboardKPI>({
         queryKey: ['dashboard'],
@@ -58,7 +60,11 @@ export default function DashboardPage() {
     const now = new Date();
     const moisActuel = now.getMonth(); // 0-based
     const anneeActuelle = now.getFullYear();
-    const prochaines = getProchaines(anneeActuelle, 5, now);
+    const prochaines = regime !== ''
+        ? getEcheancesParRegime(anneeActuelle, regimeInfo.echeances, now)
+            .filter(e => e.joursRestants >= 0)
+            .slice(0, 5)
+        : getProchaines(anneeActuelle, 5, now);
     const navigate = useNavigate();
 
     const retards = declarations.filter((d: { statut: string }) => d.statut === 'retard');
@@ -74,6 +80,49 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-6">
+            {/* Bannière régime fiscal non défini */}
+            {regime === '' && (
+                <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                    <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                        <p className="text-sm text-amber-700 font-medium">
+                            Votre régime fiscal n'est pas défini. Complétez votre fiche contribuable pour personnaliser le calendrier et la checklist.
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => navigate('/parametres')}
+                        className="text-xs font-semibold text-amber-700 border border-amber-300 rounded-lg px-3 py-1 hover:bg-amber-100 transition-colors shrink-0"
+                    >
+                        Compléter →
+                    </button>
+                </div>
+            )}
+
+            {/* Bannière régime actif */}
+            {regime !== '' && (
+                <div
+                    className="flex items-center gap-3 rounded-xl border px-4 py-2.5"
+                    style={{ background: regimeInfo.bgColor, borderColor: regimeInfo.color + '33' }}
+                >
+                    <span
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
+                        style={{ background: regimeInfo.color, color: '#fff' }}
+                    >
+                        {regimeInfo.shortLabel}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                        <span className="text-xs font-semibold" style={{ color: regimeInfo.color }}>{regimeInfo.label}</span>
+                        <span className="text-xs text-gray-500 ml-2">— {regimeInfo.obligations.slice(0, 3).join(' · ')}</span>
+                    </div>
+                    <button
+                        onClick={() => navigate('/parametres')}
+                        className="text-xs text-gray-400 hover:text-gray-600 transition-colors shrink-0"
+                    >
+                        Modifier
+                    </button>
+                </div>
+            )}
+
             {/* Bannière de rôle org (membres d'une organisation) */}
             {roleLabel && (
                 <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${isAuditeur ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'}`}>
