@@ -1,26 +1,19 @@
 ﻿import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { declarationApi, companyApi, bulletinApi } from '../lib/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { declarationApi, companyApi, bulletinApi, tvaApi, irfApi, ircmApi, isApi, cmeApi, patenteApi, retenueApi, cnssApi } from '../lib/api';
 import { fmtN } from '../lib/fiscalCalc';
-import { Card, Btn, Badge, Spinner } from '../components/ui';
+import { Card } from '../components/ui';
 import { usePaymentGate } from '../components/PaymentModal';
-import type { Declaration, Company, Bulletin } from '../types';
-import { MOIS_FR } from '../types';
-import { FileDown, FileText, Trash2, CheckCircle2, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import type { Declaration, Company, Bulletin, TVADeclaration, IRFDeclaration, IRCMDeclaration, ISDeclaration, CMEDeclaration, PatenteDeclaration, RetenueSource, CNSSPatronal } from '../types';
+import { FileText, Trash2, CheckCircle2, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { generateTVAForm, generateIRFForm, generateIRCMForm, generateISForm, generateCMEForm, generatePatenteForm, generateRetenuesForm } from '../lib/pdfDGI';
 
 const MOIS_NOMS_FR = [
     'Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
     'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'
 ];
-
-function statutBadge(statut: string) {
-    if (statut === 'ok' || statut === 'approuve') return <Badge color="green"><CheckCircle2 className="w-3 h-3 inline mr-1" />Validee</Badge>;
-    if (statut === 'retard') return <Badge color="red"><AlertCircle className="w-3 h-3 inline mr-1" />En retard</Badge>;
-    if (statut === 'soumis') return <Badge color="blue"><Clock className="w-3 h-3 inline mr-1" />Soumise</Badge>;
-    return <Badge color="orange"><Clock className="w-3 h-3 inline mr-1" />En cours</Badge>;
-}
 
 // Reproduit fidelement le formulaire officiel DGI Burkina Faso
 // DECLARATION DE VERSEMENT DE L'IUTS ET TPA (ref. IUTS 1)
@@ -349,9 +342,54 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
     doc.save('DGI-IUTS-TPA-' + d.annee + '-' + String(d.mois).padStart(2, '0') + '-' + (company?.nom ?? 'declaration').replace(/\s+/g, '_') + '.pdf');
 }
 
+// ── Types unifiés ─────────────────────────────────────────────
+type TaxType = 'IUTS/TPA' | 'TVA' | 'IRF' | 'IRCM' | 'IS/MFP' | 'CME' | 'Patente' | 'RAS' | 'CNSS';
+
+interface UnifiedDecl {
+    id: string;
+    type: TaxType;
+    annee: number;
+    mois?: number;
+    montant: number;
+    statut: string;
+    ref: string | null;
+    created_at: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    raw: any;
+}
+
+const TYPE_CFG: Record<TaxType, { label: string; color: string; bg: string }> = {
+    'IUTS/TPA': { label: 'IUTS / TPA',  color: 'text-green-700',  bg: 'bg-green-100'  },
+    'TVA':      { label: 'TVA',          color: 'text-blue-700',   bg: 'bg-blue-100'   },
+    'IRF':      { label: 'IRF',          color: 'text-orange-700', bg: 'bg-orange-100' },
+    'IRCM':     { label: 'IRCM',         color: 'text-purple-700', bg: 'bg-purple-100' },
+    'IS/MFP':   { label: 'IS / MFP',    color: 'text-indigo-700', bg: 'bg-indigo-100' },
+    'CME':      { label: 'CME',          color: 'text-teal-700',   bg: 'bg-teal-100'   },
+    'Patente':  { label: 'Patente',      color: 'text-amber-700',  bg: 'bg-amber-100'  },
+    'RAS':      { label: 'Retenues',     color: 'text-cyan-700',   bg: 'bg-cyan-100'   },
+    'CNSS':     { label: 'CNSS',         color: 'text-pink-700',   bg: 'bg-pink-100'   },
+};
+
+const MOIS_COURTS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+
+function periodeLabel(annee: number, mois?: number) {
+    return mois ? `${MOIS_COURTS[mois - 1]} ${annee}` : String(annee);
+}
+
+function statutBadge(statut: string) {
+    if (['ok','declare','approuve','valide'].includes(statut))
+        return <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700"><CheckCircle2 className="w-3 h-3" />Déclaré</span>;
+    if (statut === 'retard')
+        return <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-700"><AlertCircle className="w-3 h-3" />En retard</span>;
+    if (statut === 'soumis')
+        return <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700"><Clock className="w-3 h-3" />Soumis</span>;
+    return <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-yellow-100 text-yellow-700"><Clock className="w-3 h-3" />Brouillon</span>;
+}
+
 export default function DeclarationsPage() {
     const [annee, setAnnee] = useState(new Date().getFullYear());
     const [deleting, setDeleting] = useState<string | null>(null);
+    const [filterType, setFilterType] = useState<TaxType | 'Tous'>('Tous');
     const [downloadingPDF, setDownloadingPDF] = useState<string | null>(null);
     const { requestPayment, PaymentModalComponent } = usePaymentGate();
     const qc = useQueryClient();
@@ -362,190 +400,246 @@ export default function DeclarationsPage() {
         staleTime: Infinity,
     });
 
-    const { data: declarations = [], isLoading } = useQuery<Declaration[]>({
+    // ── Fetch all declaration types ──────────────────────────────────
+    const { data: iutsDecls  = [] } = useQuery<Declaration[]>({
         queryKey: ['declarations', annee],
         queryFn: () => declarationApi.list(annee).then((r) => r.data ?? []),
     });
-
-    const deleteMut = useMutation({
-        mutationFn: (id: string) => declarationApi.delete(id),
-        onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['declarations'] });
-            setDeleting(null);
-        },
+    const { data: tvaDecls   = [] } = useQuery<TVADeclaration[]>({
+        queryKey: ['tva'],
+        queryFn: () => tvaApi.list().then((r) => r.data?.data ?? r.data ?? []),
+    });
+    const { data: irfDecls   = [] } = useQuery<IRFDeclaration[]>({
+        queryKey: ['irf', annee],
+        queryFn: () => irfApi.list(annee).then((r) => r.data),
+    });
+    const { data: ircmDecls  = [] } = useQuery<IRCMDeclaration[]>({
+        queryKey: ['ircm', annee],
+        queryFn: () => ircmApi.list(annee).then((r) => r.data),
+    });
+    const { data: isDecls    = [] } = useQuery<ISDeclaration[]>({
+        queryKey: ['is', annee],
+        queryFn: () => isApi.list(annee).then((r) => r.data),
+    });
+    const { data: cmeDecls   = [] } = useQuery<CMEDeclaration[]>({
+        queryKey: ['cme', annee],
+        queryFn: () => cmeApi.list(annee).then((r) => r.data),
+    });
+    const { data: patenteDecls = [] } = useQuery<PatenteDeclaration[]>({
+        queryKey: ['patente', annee],
+        queryFn: () => patenteApi.list(annee).then((r) => r.data),
+    });
+    const { data: rasDecls   = [] } = useQuery<RetenueSource[]>({
+        queryKey: ['retenues', annee],
+        queryFn: () => retenueApi.list(undefined, annee).then((r) => r.data ?? []),
+    });
+    const { data: cnssDecls  = [] } = useQuery<CNSSPatronal[]>({
+        queryKey: ['cnss', annee],
+        queryFn: () => cnssApi.list(undefined, annee).then((r) => r.data ?? []),
     });
 
-    const handleDownloadCSV = async (id: string, mois: number, anneeDecl: number) => {
-        const res = await declarationApi.exportDecl(id);
-        const url = URL.createObjectURL(res.data);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `DIPE-IUTS-TPA-${anneeDecl}${String(mois).padStart(2, '0')}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
+    // ── Helper to build normalized rows ─────────────────────────────
+    const buildRows = (): UnifiedDecl[] => [
+        ...iutsDecls.map(d   => ({ id: d.id, type: 'IUTS/TPA' as TaxType, annee: d.annee, mois: d.mois,  montant: d.total,                  statut: d.statut, ref: d.ref,  created_at: d.created_at, raw: d })),
+        ...tvaDecls.filter(d => d.annee === annee)
+                   .map(d   => ({ id: d.id, type: 'TVA'      as TaxType, annee: d.annee, mois: d.mois,  montant: Math.max(0, d.tva_nette), statut: d.statut, ref: d.ref,  created_at: d.created_at, raw: d })),
+        ...irfDecls.map(d    => ({ id: d.id, type: 'IRF'      as TaxType, annee: d.annee,                montant: d.irf_total,               statut: d.statut, ref: d.ref,  created_at: d.created_at, raw: d })),
+        ...ircmDecls.map(d   => ({ id: d.id, type: 'IRCM'     as TaxType, annee: d.annee,                montant: d.ircm_total,              statut: d.statut, ref: d.ref,  created_at: d.created_at, raw: d })),
+        ...isDecls.map(d     => ({ id: d.id, type: 'IS/MFP'   as TaxType, annee: d.annee,                montant: d.is_du,                   statut: d.statut, ref: d.ref,  created_at: d.created_at, raw: d })),
+        ...cmeDecls.map(d    => ({ id: d.id, type: 'CME'      as TaxType, annee: d.annee,                montant: d.cme_net,                 statut: d.statut, ref: d.ref,  created_at: d.created_at, raw: d })),
+        ...patenteDecls.map(d=> ({ id: d.id, type: 'Patente'  as TaxType, annee: d.annee,                montant: d.total_patente,           statut: d.statut, ref: d.ref,  created_at: d.created_at, raw: d })),
+        ...rasDecls.map(d    => ({ id: d.id, type: 'RAS'      as TaxType, annee: d.annee, mois: d.mois,  montant: d.montant_retenue,         statut: d.statut, ref: d.ref,  created_at: d.created_at, raw: d })),
+        ...cnssDecls.map(d   => ({ id: d.id, type: 'CNSS'     as TaxType, annee: d.annee, mois: d.mois,  montant: d.total_general,           statut: d.statut, ref: null,   created_at: d.created_at, raw: d })),
+    ];
+
+    const allDecls = buildRows();
+    const all = allDecls
+        .filter(d => filterType === 'Tous' || d.type === filterType)
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    const totalMontant = all.reduce((s, d) => s + d.montant, 0);
+    const typesPresents = (Object.keys(TYPE_CFG) as TaxType[]).filter(t => allDecls.some(d => d.type === t));
+
+    // ── Delete handler ───────────────────────────────────────────────
+    const handleDelete = async (d: UnifiedDecl) => {
+        const apiMap: Record<TaxType, (id: string) => Promise<unknown>> = {
+            'IUTS/TPA': declarationApi.delete,
+            'TVA':      tvaApi.delete,
+            'IRF':      irfApi.delete,
+            'IRCM':     ircmApi.delete,
+            'IS/MFP':   isApi.delete,
+            'CME':      cmeApi.delete,
+            'Patente':  patenteApi.delete,
+            'RAS':      retenueApi.delete,
+            'CNSS':     cnssApi.delete,
+        };
+        await apiMap[d.type](d.id);
+        ['declarations','tva','irf','ircm','is','cme','patente','retenues','cnss'].forEach(
+            k => qc.invalidateQueries({ queryKey: [k] }),
+        );
+        setDeleting(null);
     };
 
-    const handleDownloadPDF = async (d: Declaration) => {
-        // Récupérer les bulletins pour les avoir prêts au paiement
-        setDownloadingPDF(d.id);
-        let bulletins: Bulletin[] = [];
-        try {
-            const res = await bulletinApi.list(d.mois, d.annee);
-            bulletins = res.data ?? [];
-        } finally {
-            setDownloadingPDF(null);
+    // ── PDF handler ──────────────────────────────────────────────────
+    const handlePDF = async (d: UnifiedDecl) => {
+        if (d.type === 'IUTS/TPA') {
+            setDownloadingPDF(d.id);
+            let bulletins: Bulletin[] = [];
+            try { bulletins = (await bulletinApi.list(d.mois, d.annee)).data ?? []; }
+            finally { setDownloadingPDF(null); }
+            requestPayment('iuts', d.id, () => generateOfficialDGIPDF(d.raw as Declaration, company, bulletins));
+            return;
         }
-        // Demander le paiement avant de générer
-        requestPayment('iuts', d.id, () => generateOfficialDGIPDF(d, company, bulletins));
+        if (d.type === 'TVA')     { generateTVAForm(d.raw as TVADeclaration, company);         return; }
+        if (d.type === 'IRF')     { generateIRFForm(d.raw as IRFDeclaration, company);         return; }
+        if (d.type === 'IRCM')    { generateIRCMForm(d.raw as IRCMDeclaration, company);       return; }
+        if (d.type === 'IS/MFP')  { generateISForm(d.raw as ISDeclaration, company);           return; }
+        if (d.type === 'CME')     { generateCMEForm(d.raw as CMEDeclaration, company);         return; }
+        if (d.type === 'Patente') { generatePatenteForm(d.raw as PatenteDeclaration, company); return; }
+        if (d.type === 'RAS') {
+            const grouped = rasDecls.filter(r => r.mois === d.mois && r.annee === d.annee);
+            generateRetenuesForm(grouped, company, d.mois, d.annee);
+        }
     };
 
     return (
         <div className="space-y-6">
             {PaymentModalComponent}
-            {/* Filtre annee */}
+
+            {/* Filtres */}
             <Card>
-                <div className="flex items-center gap-4">
-                    <label className="text-sm font-medium text-gray-700">Exercice fiscal</label>
-                    <select
-                        value={annee}
-                        onChange={(e) => setAnnee(+e.target.value)}
-                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-green-500 focus:outline-none"
-                    >
-                        {[2026, 2025, 2024, 2023].map((a) => (
-                            <option key={a} value={a}>{a}</option>
-                        ))}
-                    </select>
-                    <span className="text-sm text-gray-500">{declarations.length} declaration(s)</span>
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700">Exercice</label>
+                        <select value={annee} onChange={(e) => setAnnee(+e.target.value)}
+                            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-green-500 focus:outline-none">
+                            {[2026, 2025, 2024, 2023].map(a => <option key={a} value={a}>{a}</option>)}
+                        </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700">Impôt</label>
+                        <select value={filterType} onChange={(e) => setFilterType(e.target.value as TaxType | 'Tous')}
+                            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-green-500 focus:outline-none">
+                            <option value="Tous">Tous les impôts</option>
+                            {(Object.keys(TYPE_CFG) as TaxType[]).map(t => (
+                                <option key={t} value={t}>{TYPE_CFG[t].label}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <span className="text-sm text-gray-500 ml-auto">{all.length} déclaration(s)</span>
                 </div>
             </Card>
 
-            {/* Liste */}
-            {isLoading ? (
-                <Spinner />
-            ) : declarations.length === 0 ? (
-                <Card>
-                    <div className="text-center py-12">
-                        <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-500 font-medium">Aucune declaration pour {annee}</p>
-                        <p className="text-gray-400 text-sm mt-1">Allez dans la saisie mensuelle et cliquez sur "Generer declaration"</p>
-                    </div>
-                </Card>
-            ) : (
-                <div className="space-y-3">
-                    {declarations.map((d) => (
-                        <Card key={d.id}>
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                {/* Info principale */}
-                                <div className="flex items-start gap-4">
-                                    <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                        <FileText className="w-5 h-5 text-green-700" />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="font-semibold text-gray-900 text-sm">
-                                                {MOIS_FR[d.mois - 1]} {d.annee}
-                                            </span>
-                                            {statutBadge(d.statut)}
-                                        </div>
-                                        <p className="text-xs text-gray-500">
-                                            {d.nb_salaries} salarie(s) - Cree le {new Date(d.created_at).toLocaleDateString('fr-FR')}
-                                            {d.ref && <span className="ml-2 font-mono bg-gray-100 px-1 rounded">{d.ref}</span>}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Totaux */}
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                                    <div>
-                                        <p className="text-xs text-gray-400">Brut</p>
-                                        <p className="text-sm font-semibold text-gray-700">{fmtN(d.brut_total)} F</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-400">IUTS net</p>
-                                        <p className="text-sm font-semibold text-green-700">{fmtN(d.iuts_total)} F</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-400">TPA</p>
-                                        <p className="text-sm font-semibold text-blue-700">{fmtN(d.tpa_total)} F</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-400">Total</p>
-                                        <p className="text-sm font-bold text-gray-900">{fmtN(d.total)} F</p>
-                                    </div>
-                                </div>
-
-                                {/* Actions */}
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                    <Btn
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleDownloadCSV(d.id, d.mois, d.annee)}
-                                        title="Telecharger DIPE (CSV pour DGI)"
-                                    >
-                                        <FileDown className="w-4 h-4" /> DIPE CSV
-                                    </Btn>
-                                    <Btn
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleDownloadPDF(d)}
-                                        disabled={downloadingPDF === d.id}
-                                        title="Formulaire officiel DGI IUTS/TPA"
-                                    >
-                                        {downloadingPDF === d.id
-                                            ? <Loader2 className="w-4 h-4 animate-spin" />
-                                            : <FileDown className="w-4 h-4" />}
-                                        {' '}Formulaire DGI
-                                    </Btn>
-                                    {deleting === d.id ? (
-                                        <div className="flex items-center gap-1">
-                                            <button
-                                                onClick={() => deleteMut.mutate(d.id)}
-                                                className="px-2 py-1 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700"
-                                            >
-                                                Confirmer
-                                            </button>
-                                            <button
-                                                onClick={() => setDeleting(null)}
-                                                className="px-2 py-1 text-xs border border-gray-200 rounded-lg hover:bg-gray-50"
-                                            >
-                                                Annuler
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <button
-                                            onClick={() => setDeleting(d.id)}
-                                            className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-                                            title="Supprimer"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </Card>
-                    ))}
+            {/* KPI cliquables par type d'impôt */}
+            {typesPresents.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {typesPresents.map(type => {
+                        const items = allDecls.filter(d => d.type === type);
+                        const cfg = TYPE_CFG[type];
+                        const active = filterType === type;
+                        return (
+                            <button key={type}
+                                onClick={() => setFilterType(active ? 'Tous' : type)}
+                                className={`rounded-xl border-2 p-3 text-left transition-all ${
+                                    active
+                                        ? `${cfg.bg} border-current ${cfg.color}`
+                                        : 'bg-white border-gray-100 hover:border-gray-200'
+                                }`}>
+                                <p className={`text-xs font-semibold ${cfg.color}`}>{cfg.label}</p>
+                                <p className="text-base font-bold text-gray-900 mt-0.5">{fmtN(items.reduce((s, d) => s + d.montant, 0))} F</p>
+                                <p className="text-[11px] text-gray-500">{items.length} décl.</p>
+                            </button>
+                        );
+                    })}
                 </div>
             )}
 
-            {/* Resume annuel */}
-            {declarations.length > 0 && (
+            {/* Liste unifiée */}
+            {all.length === 0 ? (
                 <Card>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Cumul {annee}</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        {[
-                            { label: 'Brut total', value: declarations.reduce((s, d) => s + Number(d.brut_total), 0), color: 'text-gray-900' },
-                            { label: 'IUTS total (DGI)', value: declarations.reduce((s, d) => s + Number(d.iuts_total), 0), color: 'text-green-700' },
-                            { label: 'TPA total', value: declarations.reduce((s, d) => s + Number(d.tpa_total), 0), color: 'text-blue-700' },
-                            { label: 'Total declare', value: declarations.reduce((s, d) => s + Number(d.total), 0), color: 'text-gray-900 font-bold' },
-                        ].map((s) => (
-                            <div key={s.label} className="bg-gray-50 rounded-xl p-3 text-center">
-                                <p className="text-xs text-gray-400 mb-1">{s.label}</p>
-                                <p className={`text-base font-bold ${s.color}`}>{fmtN(s.value)} F</p>
-                            </div>
-                        ))}
+                    <div className="text-center py-12">
+                        <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-500 font-medium">Aucune déclaration pour {annee}</p>
+                        <p className="text-gray-400 text-sm mt-1">
+                            Les déclarations enregistrées dans chaque module fiscal (IUTS, TVA, IRF, IRCM, IS, CME, Patente…) apparaîtront ici.
+                        </p>
                     </div>
                 </Card>
+            ) : (
+                <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
+                    <table className="w-full text-sm">
+                        <thead className="bg-gray-50 border-b border-gray-100">
+                            <tr>
+                                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Type d'impôt</th>
+                                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Période</th>
+                                <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Montant dû (FCFA)</th>
+                                <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Statut</th>
+                                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Réf.</th>
+                                <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {all.map((d) => {
+                                const cfg = TYPE_CFG[d.type];
+                                const deleteKey = `${d.type}-${d.id}`;
+                                return (
+                                    <tr key={deleteKey} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-4 py-3">
+                                            <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-semibold ${cfg.bg} ${cfg.color}`}>
+                                                {cfg.label}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-gray-700 font-medium">
+                                            {periodeLabel(d.annee, d.mois)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right font-bold text-gray-900">{fmtN(d.montant)}</td>
+                                        <td className="px-4 py-3 text-center">{statutBadge(d.statut)}</td>
+                                        <td className="px-4 py-3 font-mono text-xs text-gray-400">{d.ref ?? '—'}</td>
+                                        <td className="px-4 py-3 text-right">
+                                            <div className="flex justify-end gap-1 items-center">
+                                                {d.type !== 'CNSS' && (
+                                                    <button onClick={() => handlePDF(d)} title="Formulaire DGI PDF"
+                                                        disabled={downloadingPDF === d.id}
+                                                        className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
+                                                        {downloadingPDF === d.id
+                                                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                                                            : <FileText className="w-4 h-4" />}
+                                                    </button>
+                                                )}
+                                                {deleting === deleteKey ? (
+                                                    <>
+                                                        <button onClick={() => handleDelete(d)}
+                                                            className="px-2 py-0.5 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700">
+                                                            Confirmer
+                                                        </button>
+                                                        <button onClick={() => setDeleting(null)}
+                                                            className="px-2 py-0.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50">
+                                                            Annuler
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <button onClick={() => setDeleting(deleteKey)} title="Supprimer"
+                                                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                        <tfoot className="bg-gray-50 border-t border-gray-200">
+                            <tr>
+                                <td colSpan={2} className="px-4 py-3 text-sm font-bold text-gray-700">Total {annee}</td>
+                                <td className="px-4 py-3 text-right font-bold text-gray-900">{fmtN(totalMontant)} F</td>
+                                <td colSpan={3} />
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             )}
         </div>
     );
 }
+
