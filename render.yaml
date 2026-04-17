@@ -70,9 +70,6 @@ services:
     autoDeploy: true
     branch: main
     healthCheckPath: /
-    dockerBuildArgs:
-      - key: VITE_API_URL
-        value: "https://fisca-backend.onrender.com/api"
     envVars:
       - key: VITE_API_URL
         value: "https://fisca-backend.onrender.com/api"
