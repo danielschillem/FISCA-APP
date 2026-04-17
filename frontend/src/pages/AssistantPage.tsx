@@ -4,6 +4,61 @@ import { Btn } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Bot } from 'lucide-react';
 
+// ── Markdown renderer (sans dépendance externe) ──────────────────────────────
+function renderInline(text: string): React.ReactNode[] {
+    const parts: React.ReactNode[] = [];
+    const re = /\*\*(.+?)\*\*|\*(.+?)\*/g;
+    let last = 0, m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+        if (m.index > last) parts.push(text.slice(last, m.index));
+        if (m[1] !== undefined) parts.push(<strong key={m.index} className="font-semibold text-gray-900">{m[1]}</strong>);
+        else if (m[2] !== undefined) parts.push(<em key={m.index} className="italic">{m[2]}</em>);
+        last = m.index + m[0].length;
+    }
+    if (last < text.length) parts.push(text.slice(last));
+    return parts;
+}
+
+function MarkdownMsg({ content }: { content: string }) {
+    const lines = content.split('\n');
+    const nodes: React.ReactNode[] = [];
+    let listItems: string[] = [];
+
+    const flushList = (key: string) => {
+        if (listItems.length === 0) return;
+        nodes.push(
+            <ul key={key} className="my-1.5 space-y-0.5 pl-1">
+                {listItems.map((item, i) => (
+                    <li key={i} className="flex gap-2">
+                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                        <span>{renderInline(item)}</span>
+                    </li>
+                ))}
+            </ul>
+        );
+        listItems = [];
+    };
+
+    lines.forEach((raw, idx) => {
+        const line = raw.trimEnd();
+        if (/^[-•]\s+/.test(line)) {
+            listItems.push(line.replace(/^[-•]\s+/, ''));
+            return;
+        }
+        flushList(`list-${idx}`);
+        if (line === '') {
+            nodes.push(<div key={`br-${idx}`} className="h-2" />);
+        } else {
+            nodes.push(
+                <p key={idx} className="leading-relaxed">{renderInline(line)}</p>
+            );
+        }
+    });
+    flushList('list-end');
+
+    return <div className="space-y-0.5 text-sm text-gray-800">{nodes}</div>;
+}
+
 type Msg = { role: 'user' | 'assistant'; content: string };
 
 const SUGGESTIONS = [
@@ -62,12 +117,12 @@ function AssistantContent() {
                             </div>
                         )}
                         <div
-                            className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${m.role === 'user'
-                                ? 'bg-green-600 text-white rounded-br-sm'
-                                : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm shadow-sm'
+                            className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${m.role === 'user'
+                                ? 'bg-green-600 text-white rounded-br-sm whitespace-pre-wrap'
+                                : 'bg-white border border-gray-200 rounded-bl-sm shadow-sm'
                                 }`}
                         >
-                            {m.content}
+                            {m.role === 'user' ? m.content : <MarkdownMsg content={m.content} />}
                         </div>
                     </div>
                 ))}
