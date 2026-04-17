@@ -27,7 +27,7 @@ services:
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
-        sync: false        # → coller l'URL Neon manuellement
+        value: "postgresql://neondb_owner:npg_RgjhPUx4ra3u@ep-curly-feather-alu1ikkd-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
       - key: JWT_SECRET
         generateValue: true
       - key: PORT
