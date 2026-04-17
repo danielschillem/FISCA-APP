@@ -52,18 +52,25 @@ func (h *DeclarationHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 	offset := (page - 1) * limit
 
+	annee := time.Now().Year()
+	if a := r.URL.Query().Get("annee"); a != "" {
+		if v, e := strconv.Atoi(a); e == nil && v > 2000 {
+			annee = v
+		}
+	}
+
 	// Total pour pagination
 	var total int
 	h.DB.QueryRow(r.Context(),
-		`SELECT COUNT(*) FROM declarations WHERE company_id=$1`, companyID).Scan(&total)
+		`SELECT COUNT(*) FROM declarations WHERE company_id=$1 AND annee=$2`, companyID, annee).Scan(&total)
 
 	rows, err := h.DB.Query(r.Context(),
 		`SELECT id, company_id, periode, mois, annee, nb_salaries,
 		        brut_total, iuts_total, tpa_total, css_total, total,
 		        statut, ref, date_depot, created_at
-		 FROM declarations WHERE company_id=$1 ORDER BY annee DESC, mois DESC
-		 LIMIT $2 OFFSET $3`,
-		companyID, limit, offset,
+		 FROM declarations WHERE company_id=$1 AND annee=$2 ORDER BY mois DESC
+		 LIMIT $3 OFFSET $4`,
+		companyID, annee, limit, offset,
 	)
 	if err != nil {
 		jsonError(w, "Erreur DB", http.StatusInternalServerError)
