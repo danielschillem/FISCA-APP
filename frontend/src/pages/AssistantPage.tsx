@@ -23,6 +23,7 @@ function MarkdownMsg({ content }: { content: string }) {
     const lines = content.split('\n');
     const nodes: React.ReactNode[] = [];
     let listItems: string[] = [];
+    let tableLines: string[] = [];
 
     const flushList = (key: string) => {
         if (listItems.length === 0) return;
@@ -39,22 +40,80 @@ function MarkdownMsg({ content }: { content: string }) {
         listItems = [];
     };
 
+    const flushTable = (key: string) => {
+        if (tableLines.length === 0) return;
+        const rows = tableLines.filter(l => !/^[\s|:-]+$/.test(l.replace(/\|/g, '')));
+        if (rows.length === 0) { tableLines = []; return; }
+        const parseRow = (row: string) =>
+            row.split('|').map(c => c.trim()).filter((_, i, a) => i > 0 && i < a.length - 1);
+        const [header, ...body] = rows;
+        const headers = parseRow(header);
+        nodes.push(
+            <div key={key} className="my-2 overflow-x-auto rounded-lg border border-gray-200">
+                <table className="w-full text-xs">
+                    <thead className="bg-gray-50">
+                        <tr>{headers.map((h, i) => (
+                            <th key={i} className="px-3 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">
+                                {renderInline(h)}
+                            </th>
+                        ))}</tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {body.map((row, ri) => (
+                            <tr key={ri} className={ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                {parseRow(row).map((cell, ci) => (
+                                    <td key={ci} className="px-3 py-1.5 text-gray-700">{renderInline(cell)}</td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        );
+        tableLines = [];
+    };
+
     lines.forEach((raw, idx) => {
         const line = raw.trimEnd();
+
+        // Tableaux : lignes commençant et finissant par |
+        if (/^\|.+\|/.test(line)) {
+            flushList(`list-${idx}`);
+            tableLines.push(line);
+            return;
+        }
+        flushTable(`table-${idx}`);
+
+        // Listes
         if (/^[-•]\s+/.test(line)) {
             listItems.push(line.replace(/^[-•]\s+/, ''));
             return;
         }
         flushList(`list-${idx}`);
+
+        // Titres ### ## #
+        const heading = line.match(/^(#{1,3})\s+(.*)/);
+        if (heading) {
+            const level = heading[1].length;
+            const text = heading[2];
+            const cls = level === 1
+                ? 'text-base font-bold text-gray-900 mt-3 mb-1'
+                : level === 2
+                ? 'text-sm font-bold text-gray-800 mt-2 mb-0.5'
+                : 'text-sm font-semibold text-gray-700 mt-2 mb-0.5';
+            nodes.push(<p key={idx} className={cls}>{renderInline(text)}</p>);
+            return;
+        }
+
+        // Ligne vide
         if (line === '') {
-            nodes.push(<div key={`br-${idx}`} className="h-2" />);
+            nodes.push(<div key={`br-${idx}`} className="h-1.5" />);
         } else {
-            nodes.push(
-                <p key={idx} className="leading-relaxed">{renderInline(line)}</p>
-            );
+            nodes.push(<p key={idx} className="leading-relaxed">{renderInline(line)}</p>);
         }
     });
     flushList('list-end');
+    flushTable('table-end');
 
     return <div className="space-y-0.5 text-sm text-gray-800">{nodes}</div>;
 }
