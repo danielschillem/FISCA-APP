@@ -59,72 +59,24 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Update Render services to image mode & deploy
+      - name: Trigger Render deploys
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
         run: |
           set -e
-          OWNER_ID="tea-d78s1h5actks73cq3e00"
-          BACKEND_SVC="srv-d7gvhmbeo5us739lgi7g"
-          FRONTEND_SVC="srv-d7gvhqrbc2fs738mnuc0"
+          BACKEND_SVC="srv-d7h04rl7vvec73akmqe0"
+          FRONTEND_SVC="srv-d7h05bt7vvec73akmvrg"
 
-          # Delete existing services (built from source, can't switch type via PATCH)
-          echo "Deleting old services..."
-          curl -s -X DELETE "https://api.render.com/v1/services/$BACKEND_SVC" \
-            -H "Authorization: Bearer $RENDER_API_KEY" | cat
-          curl -s -X DELETE "https://api.render.com/v1/services/$FRONTEND_SVC" \
-            -H "Authorization: Bearer $RENDER_API_KEY" | cat
-
-          sleep 5
-
-          # Create backend as image-based service
-          echo "Creating fisca-backend (image mode)..."
-          curl -s -X POST "https://api.render.com/v1/services" \
+          echo "Triggering backend deploy..."
+          curl -sf -X POST "https://api.render.com/v1/services/$BACKEND_SVC/deploys" \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
-            -d '{
-              "autoDeploy": "yes",
-              "branch": "main",
-              "name": "fisca-backend",
-              "ownerId": "'"$OWNER_ID"'",
-              "type": "web_service",
-              "serviceDetails": {
-                "env": "image",
-                "imageUrl": "ghcr.io/danielschillem/fisca-app-backend:latest",
-                "healthCheckPath": "/api/health",
-                "plan": "free",
-                "region": "oregon"
-              },
-              "envVars": [
-                {"key":"DATABASE_URL","value":"postgresql://neondb_owner:npg_RgjhPUx4ra3u@ep-curly-feather-alu1ikkd-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require"},
-                {"key":"JWT_SECRET","generateValue":true},
-                {"key":"PORT","value":"8080"},
-                {"key":"ALLOWED_ORIGIN","value":"https://fisca-frontend.onrender.com"},
-                {"key":"ADMIN_SECRET","generateValue":true},
-                {"key":"MISTRAL_API_KEY","value":"1jDYA7oooMGxqUOSspxRo1RmCgRjLHkO"},
-                {"key":"SMTP_PORT","value":"587"}
-              ]
-            }' | python3 -c "import sys,json; d=json.load(sys.stdin); print('backend:', d.get('service',{}).get('id','error'), d.get('message','ok'))"
+            -d '{"clearCache":"do_not_clear"}' \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print('backend deploy:', d.get('id','?'), d.get('status','?'))"
 
-          # Create frontend as image-based service
-          echo "Creating fisca-frontend (image mode)..."
-          curl -s -X POST "https://api.render.com/v1/services" \
+          echo "Triggering frontend deploy..."
+          curl -sf -X POST "https://api.render.com/v1/services/$FRONTEND_SVC/deploys" \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
-            -d '{
-              "autoDeploy": "yes",
-              "branch": "main",
-              "name": "fisca-frontend",
-              "ownerId": "'"$OWNER_ID"'",
-              "type": "web_service",
-              "serviceDetails": {
-                "env": "image",
-                "imageUrl": "ghcr.io/danielschillem/fisca-app-frontend:latest",
-                "healthCheckPath": "/",
-                "plan": "free",
-                "region": "oregon"
-              },
-              "envVars": [
-                {"key":"VITE_API_URL","value":"https://fisca-backend.onrender.com/api"}
-              ]
-            }' | python3 -c "import sys,json; d=json.load(sys.stdin); print('frontend:', d.get('service',{}).get('id','error'), d.get('message','ok'))"
+            -d '{"clearCache":"do_not_clear"}' \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print('frontend deploy:', d.get('id','?'), d.get('status','?'))"
