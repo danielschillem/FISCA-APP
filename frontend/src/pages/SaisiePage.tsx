@@ -1,7 +1,7 @@
 ﻿import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { employeeApi, declarationApi, bulletinApi } from '../lib/api';
-import { calcEmploye, fmt, fmtN } from '../lib/fiscalCalc';
+import { calcEmploye, fmtN } from '../lib/fiscalCalc';
 import type { Employee, Bulletin } from '../types';
 import { Card, Btn, Badge, Spinner, useAppStore, PLAN_FEATURES } from '../components/ui';
 import { usePermissions } from '../lib/permissions';

@@ -121,7 +121,6 @@ export default function AbonnementPage() {
     const { isAuditeur, roleLabel } = usePermissions();
 
     const currentPlan = user?.plan ?? plan;
-    const userType = user?.user_type ?? 'physique';
     const nextPlan = UPGRADE_ORDER[currentPlan];
 
     const allPlans: PlanDef[] = [...PHYSIQUE_PLANS, ...MORAL_PLANS];

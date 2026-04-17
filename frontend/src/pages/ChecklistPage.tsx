@@ -27,6 +27,7 @@ export default function ChecklistPage() {
     });
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (backendChecked) setLocalChecked(backendChecked);
     }, [backendChecked]);
 

@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { assistantApi } from '../lib/api';
-import { Card, Btn, Spinner } from '../components/ui';
+import { Btn } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
-import { Bot, Lock } from 'lucide-react';
+import { Bot } from 'lucide-react';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 

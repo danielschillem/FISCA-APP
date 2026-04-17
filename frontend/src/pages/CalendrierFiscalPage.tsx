@@ -37,7 +37,7 @@ function UrgenceBadge({ e }: { e: Echeance }) {
 }
 
 // ─── Single échéance card ─────────────────────────────────────────────────────
-function EcheanceCard({ e, today }: { e: Echeance; today: Date }) {
+function EcheanceCard({ e, today: _today }: { e: Echeance; today: Date }) {
     const [open, setOpen] = useState(false);
     const dot = TYPE_COLORS[e.type];
     const isPast = e.urgence === 'passe';
@@ -109,7 +109,7 @@ function EcheanceCard({ e, today }: { e: Echeance; today: Date }) {
 }
 
 // ─── Stats bar ────────────────────────────────────────────────────────────────
-function StatsBar({ echeances, today }: { echeances: Echeance[]; today: Date }) {
+function StatsBar({ echeances, today: _today }: { echeances: Echeance[]; today: Date }) {
     const critiques = echeances.filter(e => e.urgence === 'critique').length;
     const proches = echeances.filter(e => e.urgence === 'proche').length;
     const aVenir = echeances.filter(e => e.urgence === 'normal').length;
@@ -164,7 +164,7 @@ export default function CalendrierFiscalPage() {
     const toggleType = (t: EcheanceType) => {
         setFiltreTypes(prev => {
             const next = new Set(prev);
-            next.has(t) ? next.delete(t) : next.add(t);
+            if (next.has(t)) { next.delete(t); } else { next.add(t); }
             return next;
         });
     };
@@ -227,8 +227,8 @@ export default function CalendrierFiscalPage() {
                     <button
                         onClick={() => setFiltreRegime(f => !f)}
                         className={`text-xs font-semibold rounded-lg px-3 py-1.5 border transition-colors shrink-0 ${filtreRegime
-                                ? 'text-white border-transparent'
-                                : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                            ? 'text-white border-transparent'
+                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
                             }`}
                         style={filtreRegime ? { background: regimeInfo.color } : {}}
                     >

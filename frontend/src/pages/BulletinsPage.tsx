@@ -6,7 +6,7 @@ import { fmt, calcEmploye } from '../lib/fiscalCalc';
 import type { Bulletin, Employee, Company } from '../types';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { MOIS_FR } from '../types';
-import { Zap, Download, Lock, FileSpreadsheet, FileText } from 'lucide-react';
+import { Zap, Lock, FileSpreadsheet, FileText } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { exportBulletinPDF, exportAllBulletinsPDF } from '../lib/pdfBulletin';
 

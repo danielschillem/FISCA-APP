@@ -13,7 +13,6 @@ const BLACK: RGB = [0, 0, 0];
 const WHITE: RGB = [255, 255, 255];
 const DARK: RGB = [50, 50, 50];
 const MID: RGB = [110, 110, 110];
-const LGRAY: RGB = [190, 190, 190];
 const TH_BG: RGB = [220, 220, 220];   // gris en-tete colonnes
 
 const pad = (n: number) => n.toString().padStart(2, '0');

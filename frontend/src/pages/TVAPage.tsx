@@ -206,7 +206,7 @@ function LignesPanel({
         <Card title={title}>
             <div className="space-y-2 mb-4">
                 {lignes.map((l, i) => {
-                    const { tva, ttc } = calcTVA(l.ht, l.taux);
+                    const { tva } = calcTVA(l.ht, l.taux);
                     return (
                         <div key={i} className="grid grid-cols-5 gap-2 items-center text-sm">
                             <input

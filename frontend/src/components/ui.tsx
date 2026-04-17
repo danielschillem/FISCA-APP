@@ -203,5 +203,6 @@ export function PlanGate({ feature, requiredPlan, children }: GateProps) {
 }
 
 // Re-export useAppStore and PLAN_FEATURES for convenience
+// eslint-disable-next-line react-refresh/only-export-components
 export { useAppStore } from '../lib/store';
 export { PLAN_FEATURES, PLAN_LIMITS } from '../types';

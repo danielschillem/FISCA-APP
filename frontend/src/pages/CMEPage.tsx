@@ -223,9 +223,9 @@ function CMEContent() {
 
             <Card title="Base légale">
                 <ul className="text-xs text-gray-500 space-y-1">
-                    <li>• Art. 533 CGI 2025 : CME applicable aux micro-entreprises (CA ≤ 150 M)</li>
+                    <li>• Art. 533 CGI 2025 : CME applicable aux micro-entreprises (CA ≤ 150 M)</li>
                     <li>• 8 classes tarifaires selon CA et zone géographique (A, B, C, D)</li>
-                    <li>• Art. 537 : Réduction de 25 % pour les adhérents d'un CGA agréé</li>
+                    <li>• Art. 537 : Réduction de 25 % pour les adhérents d'un CGA agréé</li>
                     <li>• Paiement annuel avant le 30 avril</li>
                 </ul>
             </Card>

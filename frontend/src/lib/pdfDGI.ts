@@ -1,28 +1,29 @@
-/**
- * pdfDGI.ts – Générateurs de formulaires officiels DGI Burkina Faso
- * Formulaires reproduits fidèlement selon les modèles de la Direction Générale des Impôts.
+﻿/**
+ * pdfDGI.ts â€“ GÃ©nÃ©rateurs de formulaires officiels DGI Burkina Faso
+ * Formulaires reproduits fidÃ¨lement selon les modÃ¨les de la Direction GÃ©nÃ©rale des ImpÃ´ts.
  *
  * Exports :
- *   generateTVAForm     – Déclaration TVA mensuelle
- *   generateRetenuesForm – Déclaration RAS mensuelle
- *   generateISForm      – Déclaration IS/MFP annuelle
- *   generateIRCMForm    – Déclaration IRCM annuelle
- *   generateCMEForm     – Déclaration CME annuelle
+ *   generateTVAForm     â€“ DÃ©claration TVA mensuelle
+ *   generateRetenuesForm â€“ DÃ©claration RAS mensuelle
+ *   generateISForm      â€“ DÃ©claration IS/MFP annuelle
+ *   generateIRCMForm    â€“ DÃ©claration IRCM annuelle
+ *   generateCMEForm     â€“ DÃ©claration CME annuelle
  */
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { TVADeclaration, RetenueSource, ISDeclaration, IRCMDeclaration, CMEDeclaration, Company } from '../types';
 import { fmtN } from './fiscalCalc';
 
-// ── Constantes ────────────────────────────────────────────────
+// â”€â”€ Constantes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MOIS_DGI = [
     'Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
     'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre',
 ];
 type RGB = [number, number, number];
+type DocWithTable = jsPDF & { lastAutoTable: { finalY: number } };
 const BLACK: RGB = [0, 0, 0];
 
-// ── Helpers partagés ──────────────────────────────────────────
+// â”€â”€ Helpers partagÃ©s â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function makeDoc() {
     return new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 }
@@ -170,11 +171,11 @@ function dgiFooter(doc: jsPDF) {
     doc.setFontSize(6.5);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(120, 120, 120);
-    doc.text(`Genere par FISCA – ${new Date().toLocaleDateString('fr-FR')}`, 14, pageH - 8);
-    doc.text('Direction Generale des Impots – Burkina Faso', 200, pageH - 8, { align: 'right' });
+    doc.text(`Genere par FISCA â€“ ${new Date().toLocaleDateString('fr-FR')}`, 14, pageH - 8);
+    doc.text('Direction Generale des Impots â€“ Burkina Faso', 200, pageH - 8, { align: 'right' });
 }
 
-// ── 1. TVA ────────────────────────────────────────────────────
+// â”€â”€ 1. TVA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function generateTVAForm(decl: TVADeclaration, company?: Company) {
     const doc = makeDoc();
     const ML = 10;
@@ -184,7 +185,7 @@ export function generateTVAForm(decl: TVADeclaration, company?: Company) {
     let y = dgiHeader(doc, ML, CW, 10,
         'DECLARATION DE LA TAXE', 'SUR LA VALEUR AJOUTEE (TVA)');
 
-    // Section I : Période
+    // Section I : PÃ©riode
     secBar(doc, ML, y, CW, secH, 'I. PERIODE');
     y += secH;
     const pw = CW / 3;
@@ -201,7 +202,7 @@ export function generateTVAForm(decl: TVADeclaration, company?: Company) {
 
     y = dgiIdentification(doc, ML, CW, y, company);
 
-    // Section III : TVA Collectée
+    // Section III : TVA CollectÃ©e
     y += 2;
     secBar(doc, ML, y, CW, secH, 'III. TVA COLLECTEE SUR VENTES ET PRESTATIONS');
     y += secH;
@@ -223,9 +224,9 @@ export function generateTVAForm(decl: TVADeclaration, company?: Company) {
         },
         margin: { left: ML },
     });
-    y = (doc as any).lastAutoTable.finalY + 3;
+    y = (doc as DocWithTable).lastAutoTable.finalY + 3;
 
-    // Section IV : TVA Déductible
+    // Section IV : TVA DÃ©ductible
     secBar(doc, ML, y, CW, secH, 'IV. TVA DEDUCTIBLE SUR ACHATS ET CHARGES');
     y += secH;
     const lignesA = (decl.lignes ?? []).filter(l => l.type_op === 'achat');
@@ -245,7 +246,7 @@ export function generateTVAForm(decl: TVADeclaration, company?: Company) {
         },
         margin: { left: ML },
     });
-    y = (doc as any).lastAutoTable.finalY + 3;
+    y = (doc as DocWithTable).lastAutoTable.finalY + 3;
 
     // Section V : TVA nette
     secBar(doc, ML, y, CW, secH, 'V. RESULTAT : TVA NETTE DUE OU CREDIT DE TVA');
@@ -266,7 +267,7 @@ export function generateTVAForm(decl: TVADeclaration, company?: Company) {
         theme: 'plain',
         margin: { left: ML },
     });
-    y = (doc as any).lastAutoTable.finalY + 3;
+    y = (doc as DocWithTable).lastAutoTable.finalY + 3;
 
     y = dgiReglement(doc, ML, CW, y, Math.max(0, decl.tva_nette));
     dgiSignatures(doc, ML, CW, y);
@@ -274,7 +275,7 @@ export function generateTVAForm(decl: TVADeclaration, company?: Company) {
     doc.save(`DGI-TVA-${String(decl.mois).padStart(2, '0')}-${decl.annee}.pdf`);
 }
 
-// ── 2. Retenues à la source ───────────────────────────────────
+// â”€â”€ 2. Retenues Ã  la source â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function generateRetenuesForm(
     retenues: RetenueSource[],
     company?: Company,
@@ -310,7 +311,7 @@ export function generateRetenuesForm(
 
     y = dgiIdentification(doc, ML, CW, y, company);
 
-    // Section III : État nominatif
+    // Section III : Ã‰tat nominatif
     y += 2;
     secBar(doc, ML, y, CW, secH, 'III. ETAT NOMINATIF DES BENEFICIAIRES');
     y += secH;
@@ -341,7 +342,7 @@ export function generateRetenuesForm(
         },
         margin: { left: ML },
     });
-    y = (doc as any).lastAutoTable.finalY + 3;
+    y = (doc as DocWithTable).lastAutoTable.finalY + 3;
 
     y = dgiReglement(doc, ML, CW, y, totRas);
     dgiSignatures(doc, ML, CW, y);
@@ -349,7 +350,7 @@ export function generateRetenuesForm(
     doc.save(`DGI-Retenues-${String(m).padStart(2, '0')}-${a}.pdf`);
 }
 
-// ── 3. IS / MFP ───────────────────────────────────────────────
+// â”€â”€ 3. IS / MFP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function generateISForm(decl: ISDeclaration, company?: Company) {
     const doc = makeDoc();
     const ML = 10;
@@ -391,7 +392,7 @@ export function generateISForm(decl: ISDeclaration, company?: Company) {
             ['Benefice imposable (FCFA)', fmtN(decl.benefice)],
             ['IS theorique : 27,5 % du benefice (A)', fmtN(decl.is_theorique)],
             ['MFP : 0,5 % du CA (B)', fmtN(decl.mfp_du)],
-            ['Adhesion CGA (reduction 50 %)', decl.adhesion_cga ? 'Oui – reduction appliquee' : 'Non'],
+            ['Adhesion CGA (reduction 50 %)', decl.adhesion_cga ? 'Oui â€“ reduction appliquee' : 'Non'],
             ['IS DU = max(A, B) (FCFA)', fmtN(decl.is_du)],
         ],
         styles: { fontSize: 8.5, textColor: BLACK, cellPadding: 3 },
@@ -402,7 +403,7 @@ export function generateISForm(decl: ISDeclaration, company?: Company) {
         theme: 'plain',
         margin: { left: ML },
     });
-    y = (doc as any).lastAutoTable.finalY + 3;
+    y = (doc as DocWithTable).lastAutoTable.finalY + 3;
 
     y = dgiReglement(doc, ML, CW, y, decl.is_du);
     dgiSignatures(doc, ML, CW, y);
@@ -410,7 +411,7 @@ export function generateISForm(decl: ISDeclaration, company?: Company) {
     doc.save(`DGI-IS-${decl.annee}.pdf`);
 }
 
-// ── 4. IRCM ──────────────────────────────────────────────────
+// â”€â”€ 4. IRCM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const TYPE_IRCM_LABEL: Record<string, string> = {
     CREANCES: 'Interets de creances, depots et cautionnements (25 %)',
     OBLIGATIONS: "Interets d'obligations et bons du tresor (6 %)",
@@ -425,7 +426,7 @@ export function generateIRCMForm(decl: IRCMDeclaration, company?: Company) {
 
     let y = dgiHeader(doc, ML, CW, 10,
         "DECLARATION DE L'IMPOT SUR LE REVENU",
-        'DES CAPITAUX MOBILIERS (IRCM) – CGI Art. 140');
+        'DES CAPITAUX MOBILIERS (IRCM) â€“ CGI Art. 140');
 
     // Section I : Exercice
     secBar(doc, ML, y, CW, secH, 'I. EXERCICE FISCAL');
@@ -460,7 +461,7 @@ export function generateIRCMForm(decl: IRCMDeclaration, company?: Company) {
         theme: 'plain',
         margin: { left: ML },
     });
-    y = (doc as any).lastAutoTable.finalY + 3;
+    y = (doc as DocWithTable).lastAutoTable.finalY + 3;
 
     y = dgiReglement(doc, ML, CW, y, decl.ircm_total);
     dgiSignatures(doc, ML, CW, y);
@@ -468,12 +469,12 @@ export function generateIRCMForm(decl: IRCMDeclaration, company?: Company) {
     doc.save(`DGI-IRCM-${decl.annee}.pdf`);
 }
 
-// ── 5. CME ───────────────────────────────────────────────────
+// â”€â”€ 5. CME â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const ZONE_DESC: Record<string, string> = {
-    A: 'Zone A – Ouagadougou, Bobo-Dioulasso',
-    B: 'Zone B – Villes secondaires (Koudougou, Ouahigouya...)',
-    C: 'Zone C – Autres centres urbains',
-    D: 'Zone D – Zones rurales et periurbaines',
+    A: 'Zone A â€“ Ouagadougou, Bobo-Dioulasso',
+    B: 'Zone B â€“ Villes secondaires (Koudougou, Ouahigouya...)',
+    C: 'Zone C â€“ Autres centres urbains',
+    D: 'Zone D â€“ Zones rurales et periurbaines',
 };
 
 export function generateCMEForm(decl: CMEDeclaration, company?: Company) {
@@ -484,9 +485,9 @@ export function generateCMEForm(decl: CMEDeclaration, company?: Company) {
 
     let y = dgiHeader(doc, ML, CW, 10,
         'DECLARATION DE LA CONTRIBUTION',
-        'DES MICRO-ENTREPRISES (CME) – CGI Art. 533');
+        'DES MICRO-ENTREPRISES (CME) â€“ CGI Art. 533');
 
-    // Section I : Période
+    // Section I : PÃ©riode
     secBar(doc, ML, y, CW, secH, 'I. PERIODE');
     y += secH;
     const rowH = 9;
@@ -511,7 +512,7 @@ export function generateCMEForm(decl: CMEDeclaration, company?: Company) {
             ["Chiffre d'affaires annuel (FCFA)", fmtN(decl.ca)],
             ['Zone geographique', ZONE_DESC[decl.zone] ?? decl.zone],
             ['Classe de contribution', `Classe ${decl.classe}`],
-            ['Adhesion CGA (reduction 50 %)', decl.adhesion_cga ? 'Oui – reduction appliquee' : 'Non'],
+            ['Adhesion CGA (reduction 50 %)', decl.adhesion_cga ? 'Oui â€“ reduction appliquee' : 'Non'],
             ['CME annuelle brute (FCFA)', fmtN(decl.cme)],
             ['CME NETTE DUE (FCFA)', fmtN(decl.cme_net)],
         ],
@@ -523,7 +524,7 @@ export function generateCMEForm(decl: CMEDeclaration, company?: Company) {
         theme: 'plain',
         margin: { left: ML },
     });
-    y = (doc as any).lastAutoTable.finalY + 3;
+    y = (doc as DocWithTable).lastAutoTable.finalY + 3;
 
     y = dgiReglement(doc, ML, CW, y, decl.cme_net);
     dgiSignatures(doc, ML, CW, y);

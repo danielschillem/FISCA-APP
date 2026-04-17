@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react';
-import { calcEmploye, calcIRF, calcIRCM, calcCME, calcPatente, calcMFP, calcIS, fmt, fmtN, pct } from '../lib/fiscalCalc';
-import { Card, Input, Select, Btn } from '../components/ui';
+import { calcEmploye, calcIRF, calcIRCM, calcCME, calcPatente, calcMFP, calcIS, fmt } from '../lib/fiscalCalc';
+import { Card, Input, Select } from '../components/ui';
 import { Briefcase, Home, TrendingUp, Store, Scroll, BookOpen, type LucideIcon } from 'lucide-react';
 
 type Module = 'iuts' | 'irf' | 'ircm' | 'cme' | 'patente' | 'is';
@@ -47,6 +47,18 @@ export default function CalculPage() {
 }
 
 // ─── IUTS Calculator ─────────────────────────────────────────
+function ResultRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
+    return (
+        <div className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+            <div>
+                <p className="text-sm text-gray-700">{label}</p>
+                {sub && <p className="text-[11px] text-gray-400">{sub}</p>}
+            </div>
+            <p className="text-sm font-semibold text-gray-900">{value}</p>
+        </div>
+    );
+}
+
 function IUTSCalc() {
     const [formStr, setFormStr] = useState<Record<string, string>>({
         salaire_base: '200000', anciennete: '10000', heures_sup: '0',
@@ -77,16 +89,6 @@ function IUTSCalc() {
             onChange={(e) => setFormStr((p) => ({ ...p, [key]: e.target.value }))}
             suffix="FCFA"
         />
-    );
-
-    const ResultRow = ({ label, value, sub }: { label: string; value: string; sub?: string }) => (
-        <div className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-            <div>
-                <p className="text-sm text-gray-700">{label}</p>
-                {sub && <p className="text-[11px] text-gray-400">{sub}</p>}
-            </div>
-            <p className="text-sm font-semibold text-gray-900">{value}</p>
-        </div>
     );
 
     return (

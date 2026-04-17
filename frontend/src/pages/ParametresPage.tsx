@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, type ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { companyApi, authApi } from '../lib/api';
 import { Card, Btn, Input, Select, Spinner } from '../components/ui';
@@ -29,6 +29,15 @@ const REGIMES = [
     { value: 'BNC', label: 'BNC – Bénéfices Non Commerciaux' },
 ];
 
+function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
+    return (
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
+            <span className="text-green-600">{icon}</span>
+            <span className="text-sm font-semibold text-gray-700">{title}</span>
+        </div>
+    );
+}
+
 export default function ParametresPage() {
     const qc = useQueryClient();
     const { user, setAuth } = useAuthStore();
@@ -42,6 +51,7 @@ export default function ParametresPage() {
     const [form, setForm] = useState<Partial<Company>>({});
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (company) setForm(company);
     }, [company]);
 
@@ -105,13 +115,6 @@ export default function ParametresPage() {
             onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
             placeholder={placeholder}
         />
-    );
-
-    const SectionTitle = ({ icon, title }: { icon: React.ReactNode; title: string }) => (
-        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
-            <span className="text-green-600">{icon}</span>
-            <span className="text-sm font-semibold text-gray-700">{title}</span>
-        </div>
     );
 
     return (

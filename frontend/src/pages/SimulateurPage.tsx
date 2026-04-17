@@ -1,6 +1,6 @@
 ﻿import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { calcEmploye, calcIRF, calcIRCM, calcCME, calcPatente, calcMFP, calcIS, fmt, fmtN } from '../lib/fiscalCalc';
+import { calcEmploye, fmt, fmtN } from '../lib/fiscalCalc';
 import { simulationApi } from '../lib/api';
 import { Card, Input, Select, Btn } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';

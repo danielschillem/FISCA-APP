@@ -1,7 +1,7 @@
 ﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { isApi, companyApi } from '../lib/api';
-import { calcIS, calcMFP, fmt, fmtN } from '../lib/fiscalCalc';
+import { calcIS, calcMFP, fmt } from '../lib/fiscalCalc';
 import { Card, Btn, Spinner } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
@@ -218,11 +218,11 @@ function ISContent() {
 
             <Card title="Base légale">
                 <ul className="text-xs text-gray-500 space-y-1">
-                    <li>• Art. 42 CGI 2025 : IS au taux de 27,5 % du bénéfice net imposable</li>
-                    <li>• Art. 40 : MFP = 0,5 % du chiffre d'affaires (minimum garanti)</li>
+                    <li>• Art. 42 CGI 2025 : IS au taux de 27,5 % du bénéfice net imposable</li>
+                    <li>• Art. 40 : MFP = 0,5 % du chiffre d'affaires (minimum garanti)</li>
                     <li>• L'impôt dû est le maximum entre IS théorique et MFP</li>
-                    <li>• Déclaration et paiement : avant le 30 avril de l'année suivante</li>
-                    <li>• Acomptes trimestriels de 25 % du dernier IS payé</li>
+                    <li>• Déclaration et paiement : avant le 30 avril de l'année suivante</li>
+                    <li>• Acomptes trimestriels de 25 % du dernier IS payé</li>
                 </ul>
             </Card>
         </div>

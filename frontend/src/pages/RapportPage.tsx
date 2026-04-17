@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+type DocWithTable = jsPDF & { lastAutoTable?: { finalY: number } };
 import * as XLSX from 'xlsx';
 import { declarationApi, dashboardApi, companyApi } from '../lib/api';
 import { fmt, fmtN } from '../lib/fiscalCalc';
@@ -74,7 +75,7 @@ export default function RapportPage() {
             theme: 'plain',
         });
         if (decl) {
-            const tableY = ((doc as any).lastAutoTable?.finalY ?? (y + 30)) + 8;
+            const tableY = ((doc as DocWithTable).lastAutoTable?.finalY ?? (y + 30)) + 8;
             doc.setFontSize(8); doc.setTextColor(...GRAY); doc.setFont('Helvetica', 'bold');
             doc.text(`DECLARATION – ${MOIS_FR[(decl.mois ?? 1) - 1].toUpperCase()} ${decl.annee}`, 14, tableY - 3);
             autoTable(doc, {
