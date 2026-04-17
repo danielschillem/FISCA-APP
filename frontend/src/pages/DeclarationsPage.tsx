@@ -5,7 +5,7 @@ import { fmtN } from '../lib/fiscalCalc';
 import { Card } from '../components/ui';
 import { usePaymentGate } from '../components/PaymentModal';
 import type { Declaration, Company, Bulletin, TVADeclaration, IRFDeclaration, IRCMDeclaration, ISDeclaration, CMEDeclaration, PatenteDeclaration, RetenueSource, CNSSPatronal } from '../types';
-import { FileText, Trash2, CheckCircle2, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { FileText, Trash2, CheckCircle2, Clock, AlertCircle, Loader2, TrendingUp, BarChart3 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { generateTVAForm, generateIRFForm, generateIRCMForm, generateISForm, generateCMEForm, generatePatenteForm, generateRetenuesForm } from '../lib/pdfDGI';
@@ -460,6 +460,13 @@ export default function DeclarationsPage() {
     const totalMontant = all.reduce((s, d) => s + d.montant, 0);
     const typesPresents = (Object.keys(TYPE_CFG) as TaxType[]).filter(t => allDecls.some(d => d.type === t));
 
+    // ── Métriques récap ──────────────────────────────────────────────
+    const totalVerse   = allDecls.reduce((s, d) => s + d.montant, 0);
+    const nbDeclare    = allDecls.filter(d => ['ok','declare','approuve','valide'].includes(d.statut)).length;
+    const nbRetard     = allDecls.filter(d => d.statut === 'retard').length;
+    const nbBrouillon  = allDecls.filter(d => !['ok','declare','approuve','valide','retard','soumis'].includes(d.statut)).length;
+    const tauxConf     = allDecls.length > 0 ? Math.round((nbDeclare / allDecls.length) * 100) : 0;
+
     // ── Delete handler ───────────────────────────────────────────────
     const handleDelete = async (d: UnifiedDecl) => {
         const apiMap: Record<TaxType, (id: string) => Promise<unknown>> = {
@@ -506,7 +513,53 @@ export default function DeclarationsPage() {
         <div className="space-y-6">
             {PaymentModalComponent}
 
-            {/* Filtres */}
+            {/* Récap métriques */}
+            {allDecls.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center">
+                                <TrendingUp className="w-4 h-4 text-green-700" />
+                            </div>
+                            <span className="text-xs text-gray-500 font-medium">Total versé {annee}</span>
+                        </div>
+                        <p className="text-xl font-bold text-gray-900">{fmtN(totalVerse)}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">FCFA toutes taxes</p>
+                    </div>
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
+                                <BarChart3 className="w-4 h-4 text-blue-700" />
+                            </div>
+                            <span className="text-xs text-gray-500 font-medium">Déclarations</span>
+                        </div>
+                        <p className="text-xl font-bold text-gray-900">{allDecls.length}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">{typesPresents.length} type(s) d'impôt</p>
+                    </div>
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="w-8 h-8 bg-emerald-100 rounded-xl flex items-center justify-center">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+                            </div>
+                            <span className="text-xs text-gray-500 font-medium">Conformité</span>
+                        </div>
+                        <p className="text-xl font-bold text-gray-900">{tauxConf} %</p>
+                        <div className="mt-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${tauxConf}%` }} />
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="w-8 h-8 bg-orange-100 rounded-xl flex items-center justify-center">
+                                <AlertCircle className="w-4 h-4 text-orange-700" />
+                            </div>
+                            <span className="text-xs text-gray-500 font-medium">À régulariser</span>
+                        </div>
+                        <p className="text-xl font-bold text-gray-900">{nbRetard + nbBrouillon}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">{nbRetard} retard · {nbBrouillon} brouillon</p>
+                    </div>
+                </div>
+            )}
             <Card>
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-2">

@@ -95,8 +95,8 @@ func (h *ISHandler) Create(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "Entreprise introuvable", http.StatusNotFound)
 		return
 	}
-	if !h.checkPlan(r, "enterprise", "moral_enterprise") {
-		jsonError(w, "Le module IS nécessite le plan Enterprise.", http.StatusPaymentRequired)
+	if !h.checkPlan(r, "moral_team", "enterprise", "moral_enterprise") {
+		jsonError(w, "Le module IS/MFP nécessite le plan Équipe ou Enterprise.", http.StatusPaymentRequired)
 		return
 	}
 
