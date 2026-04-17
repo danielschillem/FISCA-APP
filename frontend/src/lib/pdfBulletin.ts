@@ -9,17 +9,17 @@ import { MOIS_FR } from '../types';
 import { fmtN } from './fiscalCalc';
 
 type RGB = [number, number, number];
-const BLACK: RGB = [0,   0,   0  ];
+const BLACK: RGB = [0, 0, 0];
 const WHITE: RGB = [255, 255, 255];
-const DARK:  RGB = [50,  50,  50 ];
-const MID:   RGB = [110, 110, 110];
+const DARK: RGB = [50, 50, 50];
+const MID: RGB = [110, 110, 110];
 const LGRAY: RGB = [190, 190, 190];
 const TH_BG: RGB = [220, 220, 220];   // gris en-tete colonnes
 
-const pad     = (n: number) => n.toString().padStart(2, '0');
-const n2      = (n: number) => n.toFixed(2).replace('.', ',');
-const p3      = (n: number) => n > 0 ? n.toFixed(3).replace('.', ',') : '';
-const amt     = (n: number) => n !== 0 ? fmtN(Math.round(n)) : '';
+const pad = (n: number) => n.toString().padStart(2, '0');
+const n2 = (n: number) => n.toFixed(2).replace('.', ',');
+const p3 = (n: number) => n > 0 ? n.toFixed(3).replace('.', ',') : '';
+const amt = (n: number) => n !== 0 ? fmtN(Math.round(n)) : '';
 const lastDay = (m: number, y: number) => new Date(y, m, 0).getDate();
 
 type CS = Record<string, unknown>;
@@ -45,8 +45,8 @@ function totRow(label: string, gain: string, ret: string): Row {
     const s: CS = { fontStyle: 'bold', fillColor: WHITE, textColor: BLACK };
     return [
         c(label, { ...s, colSpan: 4 }),
-        c(gain,  { ...s, halign: 'right' }),
-        c(ret,   { ...s, halign: 'right' }),
+        c(gain, { ...s, halign: 'right' }),
+        c(ret, { ...s, halign: 'right' }),
     ];
 }
 
@@ -60,23 +60,23 @@ function dataRow(
 
 // ============================================================================
 function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string) {
-    const W  = doc.internal.pageSize.getWidth();   // 210 mm
-    const H  = doc.internal.pageSize.getHeight();  // 297 mm
+    const W = doc.internal.pageSize.getWidth();   // 210 mm
+    const H = doc.internal.pageSize.getHeight();  // 297 mm
     const ML = 13;
     const MR = W - 13;
     const CW = MR - ML;   // 184 mm
 
     // Calculs
-    const fsp      = b.fsp ?? 0;
+    const fsp = b.fsp ?? 0;
     const totalRet = b.iuts_net + b.cotisation_sociale + fsp;
-    const cotTaux  = b.cotisation === 'CARFO' ? '6,000' : '5,500';
-    const tauxH    = b.salaire_base > 0 ? b.salaire_base / 173.33 : 0;
+    const cotTaux = b.cotisation === 'CARFO' ? '6,000' : '5,500';
+    const tauxH = b.salaire_base > 0 ? b.salaire_base / 173.33 : 0;
     const baseCNSS = Math.min(b.brut_total, 600_000);
-    const baseFSP  = Math.max(0, b.brut_total - b.iuts_net - b.cotisation_sociale);
-    const iutsEff  = b.base_imposable > 0 ? (b.iuts_net / b.base_imposable * 100) : 0;
-    const ld       = lastDay(b.mois, b.annee);
-    const dateS    = `01/${pad(b.mois)}/${String(b.annee).slice(-2)}`;
-    const dateE    = `${ld}/${pad(b.mois)}/${String(b.annee).slice(-2)}`;
+    const baseFSP = Math.max(0, b.brut_total - b.iuts_net - b.cotisation_sociale);
+    const iutsEff = b.base_imposable > 0 ? (b.iuts_net / b.base_imposable * 100) : 0;
+    const ld = lastDay(b.mois, b.annee);
+    const dateS = `01/${pad(b.mois)}/${String(b.annee).slice(-2)}`;
+    const dateE = `${ld}/${pad(b.mois)}/${String(b.annee).slice(-2)}`;
 
     // == EN-TETE ==============================================================
     doc.setFont('helvetica', 'bold');
@@ -93,7 +93,7 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
         [company?.bp ? 'BP ' + company.bp : '', company?.ville ?? ''].filter(Boolean).join('  '),
         [
             company?.ifu ? 'IFU : ' + company.ifu : '',
-            company?.rc  ? 'RC : '  + company.rc  : '',
+            company?.rc ? 'RC : ' + company.rc : '',
         ].filter(Boolean).join('   '),
     ].filter(Boolean);
     addrLines.forEach((line, i) => doc.text(line, ML, 17 + i * 4));
@@ -107,19 +107,19 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
     doc.setFontSize(8);
     doc.setTextColor(...DARK);
     doc.text(`Periode du  ${dateS}  au  ${dateE}`, MR, 19.5, { align: 'right' });
-    doc.text(`Paiement le  ${dateE}   par Virement`,  MR, 24.5, { align: 'right' });
+    doc.text(`Paiement le  ${dateE}   par Virement`, MR, 24.5, { align: 'right' });
     if (pageInfo) doc.text(pageInfo, MR, 29, { align: 'right' });
 
     // Separateur
-    doc.setDrawColor(...LGRAY);
-    doc.setLineWidth(0.4);
+    doc.setDrawColor(...BLACK);
+    doc.setLineWidth(0.5);
     doc.line(ML, 33, MR, 33);
 
     // == BLOC SALARIE =========================================================
     const INFO: [string, string][] = [
         ['Regime social :', b.cotisation],
-        ['Categorie :',     b.categorie],
-        ['Charges :',       `${b.charges} personne(s) a charge`],
+        ['Categorie :', b.categorie],
+        ['Charges :', `${b.charges} personne(s) a charge`],
     ];
     INFO.forEach(([label, val], i) => {
         doc.setFont('helvetica', 'bold');
@@ -135,28 +135,28 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
     doc.setFontSize(8);
     doc.setTextColor(...DARK);
     doc.text(`Categorie  ${b.categorie}`, ML, 58);
-    doc.text('Coef.  --',                ML + 60, 58);
-    doc.text(`Horaire  ${n2(173.33)}`,   ML + 90, 58);
+    doc.text('Coef.  --', ML + 60, 58);
+    doc.text(`Horaire  ${n2(173.33)}`, ML + 90, 58);
 
     // Boite salarié (droite)
     const boxX = ML + CW * 0.43;
     const boxW = CW - CW * 0.43;
-    doc.setDrawColor(...LGRAY);
-    doc.setLineWidth(0.4);
+    doc.setDrawColor(...BLACK);
+    doc.setLineWidth(0.5);
     doc.rect(boxX, 34, boxW, 28);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10.5);
     doc.setTextColor(...BLACK);
     doc.text(b.nom_employe, boxX + 5, 44);
 
-    doc.setDrawColor(...LGRAY);
-    doc.setLineWidth(0.4);
+    doc.setDrawColor(...BLACK);
+    doc.setLineWidth(0.5);
     doc.line(ML, 63, MR, 63);
 
     // == TABLEAU PRINCIPAL ====================================================
     const body: Row[] = [];
     const sectionSet = new Set<number>();  // indices des lignes "rubrique"
-    const totalSet   = new Set<number>();  // indices des lignes "total"
+    const totalSet = new Set<number>();  // indices des lignes "total"
 
     const addSec = (label: string) => { sectionSet.add(body.length); body.push(secRow(label)); };
     const addTot = (label: string, g: string, r: string) => {
@@ -166,15 +166,15 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
     // Remuneration
     body.push(dataRow('Salaire de base', n2(173.33), n2(tauxH), '', amt(b.salaire_base), ''));
     if (b.anciennete > 0)
-        body.push(dataRow("Prime d'anciennete",     '', '', '', amt(b.anciennete),        ''));
+        body.push(dataRow("Prime d'anciennete", '', '', '', amt(b.anciennete), ''));
     if (b.heures_sup > 0)
-        body.push(dataRow('Heures supplementaires', '', '', '', amt(b.heures_sup),        ''));
+        body.push(dataRow('Heures supplementaires', '', '', '', amt(b.heures_sup), ''));
     if (b.logement > 0)
-        body.push(dataRow('Indemnite de logement',  '', '', '', amt(b.logement),          ''));
+        body.push(dataRow('Indemnite de logement', '', '', '', amt(b.logement), ''));
     if (b.transport > 0)
-        body.push(dataRow('Indemnite de transport', '', '', '', amt(b.transport),          ''));
+        body.push(dataRow('Indemnite de transport', '', '', '', amt(b.transport), ''));
     if (b.fonction > 0)
-        body.push(dataRow('Indemnite de fonction',  '', '', '', amt(b.fonction),           ''));
+        body.push(dataRow('Indemnite de fonction', '', '', '', amt(b.fonction), ''));
     addTot('TOTAL BRUT', amt(b.brut_total), '');
 
     // Cotisations salariales
@@ -198,15 +198,15 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
     // En-tete 2 niveaux
     const HEAD = [
         [
-            c('Designation',    { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
-            c('Nombre',         { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
-            c('Base',           { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
-            c('Taux\nsalarial', { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
-            c('Part salarie',   { colSpan: 2,  halign: 'center',                  fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
+            c('Designation', { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
+            c('Nombre',      { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
+            c('Base',        { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
+            c('Taux\nsalarial', { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
+            c('Part salarie',   { colSpan: 2,  halign: 'center',                 fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
         ],
         [
-            c('Gain',    { halign: 'center', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
-            c('Retenue', { halign: 'center', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
+            c('Gain',    { halign: 'center', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
+            c('Retenue', { halign: 'center', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
         ],
     ];
 
@@ -218,8 +218,8 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
         head: HEAD as never,
         body: body as never,
         margin: { left: ML, right: W - MR },
-        tableLineColor: LGRAY,
-        tableLineWidth: 0.3,
+        tableLineColor: BLACK,
+        tableLineWidth: 0.5,
         // Corps : AUCUNE bordure de ligne (fond blanc pur)
         styles: {
             fontSize: 7.5,
@@ -235,8 +235,8 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
             textColor: BLACK,
             fontStyle: 'bold',
             fontSize: 7,
-            lineColor: WHITE,      // traits blancs = invisibles dans en-tete
-            lineWidth: 0.4,        // mais le gris ressort sur fond gris
+            lineColor: BLACK,
+            lineWidth: 0.4,
         },
         columnStyles: {
             0: { cellWidth: 80 },
@@ -253,32 +253,31 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
             const ri = data.row.index;
             const ci = column.index;
 
-            // --- trait horizontal AVANT chaque rubrique (entre sections) ---
+            // --- trait plein AVANT chaque rubrique ---
             if (sectionSet.has(ri) && ci === 0) {
-                doc.setDrawColor(140, 140, 140);
-                doc.setLineWidth(0.4);
+                doc.setDrawColor(...BLACK);
+                doc.setLineWidth(0.5);
                 doc.line(ML, cell.y, MR, cell.y);
             }
 
-            // --- trait horizontal AVANT chaque TOTAL ---
+            // --- trait plein AVANT chaque TOTAL ---
             if (totalSet.has(ri) && ci === 0) {
-                doc.setDrawColor(170, 170, 170);
-                doc.setLineWidth(0.3);
+                doc.setDrawColor(...BLACK);
+                doc.setLineWidth(0.5);
                 doc.line(ML, cell.y, MR, cell.y);
             }
 
-            // --- trait horizontal APRES le dernier TOTAL (fond de tableau) ---
+            // --- trait plein APRES le dernier TOTAL ---
             if (ri === body.length - 1 && ci === 0) {
-                doc.setDrawColor(...LGRAY);
-                doc.setLineWidth(0.3);
+                doc.setDrawColor(...BLACK);
+                doc.setLineWidth(0.5);
                 doc.line(ML, cell.y + cell.height, MR, cell.y + cell.height);
             }
 
-            // --- separateurs de colonnes VERTICAUX (tres legers) dans le corps ---
-            // uniquement pour les lignes de donnees et totaux (pas les rubriques fusionnees)
+            // --- separateurs de colonnes verticaux noirs fins ---
             if (!sectionSet.has(ri) && ci < NCOLS - 1) {
-                doc.setDrawColor(210, 210, 210);
-                doc.setLineWidth(0.1);
+                doc.setDrawColor(...BLACK);
+                doc.setLineWidth(0.15);
                 doc.line(cell.x + cell.width, cell.y, cell.x + cell.width, cell.y + cell.height);
             }
         },
@@ -287,8 +286,8 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
     // == NET A PAYER ==========================================================
     const netY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
 
-    doc.setDrawColor(...LGRAY);
-    doc.setLineWidth(0.25);
+    doc.setDrawColor(...BLACK);
+    doc.setLineWidth(0.5);
     doc.line(ML, netY + 2, MR, netY + 2);
 
     doc.setFont('helvetica', 'bold');
@@ -298,8 +297,8 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
     doc.setFontSize(13);
     doc.text(`${amt(b.salaire_net)} FCFA`, MR, netY + 11, { align: 'right' });
 
-    doc.setDrawColor(...LGRAY);
-    doc.setLineWidth(0.25);
+    doc.setDrawColor(...BLACK);
+    doc.setLineWidth(0.5);
     doc.line(ML, netY + 14, MR, netY + 14);
 
     // Ligne "dont..." comme dans le modele francais
@@ -318,25 +317,25 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
         head: [['Cumuls', 'Salaire brut', 'Ch. salariales', 'Ch. patronales', 'Hres travaillees', 'Hres suppl.', 'Cout employeur']],
         body: [[
             c('Periode', { fontStyle: 'bold' }),
-            c(amt(b.brut_total)                     + ' FCFA', R),
-            c(amt(totalRet)                         + ' FCFA', R),
-            c(amt(b.tpa ?? 0)                      + ' FCFA', R),
-            c(n2(173.33)                            + ' h',    R),
-            c(b.heures_sup > 0 ? n2(b.heures_sup) : '0,00',   R),
-            c(amt(b.brut_total + (b.tpa ?? 0))     + ' FCFA',  { ...R, fontStyle: 'bold' }),
+            c(amt(b.brut_total) + ' FCFA', R),
+            c(amt(totalRet) + ' FCFA', R),
+            c(amt(b.tpa ?? 0) + ' FCFA', R),
+            c(n2(173.33) + ' h', R),
+            c(b.heures_sup > 0 ? n2(b.heures_sup) : '0,00', R),
+            c(amt(b.brut_total + (b.tpa ?? 0)) + ' FCFA', { ...R, fontStyle: 'bold' }),
         ]] as never,
         margin: { left: ML, right: W - MR },
-        tableLineColor: LGRAY,
-        tableLineWidth: 0.25,
+        tableLineColor: BLACK,
+        tableLineWidth: 0.4,
         styles: {
             fontSize: 7,
             cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 },
             textColor: DARK, fillColor: WHITE,
-            lineColor: LGRAY, lineWidth: 0.15,
+            lineColor: BLACK, lineWidth: 0.3,
         },
         headStyles: {
             fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold',
-            fontSize: 7, halign: 'center', lineColor: WHITE, lineWidth: 0.3,
+            fontSize: 7, halign: 'center', lineColor: BLACK, lineWidth: 0.4,
         },
         columnStyles: {
             0: { cellWidth: 20, fontStyle: 'bold' },
@@ -356,16 +355,16 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
         doc.setFontSize(7);
         doc.setTextColor(...DARK);
         doc.text('Date et signature du salarie (bon pour accord)', ML, sigY);
-        doc.setDrawColor(...LGRAY);
-        doc.setLineWidth(0.25);
+        doc.setDrawColor(...BLACK);
+        doc.setLineWidth(0.4);
         doc.rect(ML, sigY + 2, 84, 15);
         doc.text("Cachet et signature de l'employeur", MR - 84, sigY);
         doc.rect(MR - 84, sigY + 2, 84, 15);
     }
 
     // == PIED DE PAGE =========================================================
-    doc.setDrawColor(...LGRAY);
-    doc.setLineWidth(0.25);
+    doc.setDrawColor(...BLACK);
+    doc.setLineWidth(0.4);
     doc.line(ML, H - 10, MR, H - 10);
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(5.5);
