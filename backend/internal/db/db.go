@@ -22,19 +22,29 @@ func Connect() (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("parsing config DB: %w", err)
 	}
 
-	// Pool tuning — adapté à un backend web API
-	config.MaxConns = 20
-	config.MinConns = 2
+	// Timeout par connexion (critique pour Neon free tier qui peut dormir)
+	config.ConnConfig.ConnectTimeout = 15 * time.Second
+
+	// Pool tuning — réduit pour Neon free tier (max 20 connexions au total)
+	config.MaxConns = 5
+	config.MinConns = 1
 	config.MaxConnLifetime = 30 * time.Minute
-	config.MaxConnIdleTime = 10 * time.Minute
+	config.MaxConnIdleTime = 5 * time.Minute
 	config.HealthCheckPeriod = 1 * time.Minute
 
-	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	// Timeout de 15s pour le ping initial
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		return nil, fmt.Errorf("connexion DB: %w", err)
 	}
 
-	if err := pool.Ping(context.Background()); err != nil {
+	pingCtx, pingCancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer pingCancel()
+	if err := pool.Ping(pingCtx); err != nil {
+		pool.Close()
 		return nil, fmt.Errorf("ping DB: %w", err)
 	}
 	return pool, nil
