@@ -1,30 +1,104 @@
 # FISCA-APP
 
-Plateforme de gestion fiscale pour entreprises au **Burkina Faso** — calcul IUTS, TPA et cotisations sociales (CNSS/CARFO) conformément à la Loi de Finances 2020.
+Plateforme de gestion fiscale SaaS pour entreprises au **Burkina Faso** — calcul IUTS, TVA, TPA, cotisations sociales (CNSS/CARFO), IS, IRF, IRCM, CME, Patente, conformément au CGI 2025 et à la Loi de Finances.
 
 | Composant | Technologie | Port |
 |-----------|------------|------|
-| Backend API | Go 1.22 + Chi + PostgreSQL | `8080` |
-| Dashboard | Next.js 14 + TypeScript + Tailwind | `3000` |
-| Base de données | PostgreSQL 16 | `5432` |
+| Backend API | Go 1.24 + Chi v5 + pgx/v5 | `8080` |
+| Frontend | React 19 + Vite 8 + TypeScript | `5173` (dev) / `80` (prod) |
+| Base de données | Neon PostgreSQL (production) | `5432` |
 
 ---
 
-## Démarrage rapide (Docker)
+## URLs de production
 
-> Prérequis : [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+| Service | URL | Statut |
+|---------|-----|--------|
+| Frontend | https://fisca-frontend.onrender.com | Live ✅ |
+| Backend API | https://fisca-backend.onrender.com/api | Live ✅ |
+| Health check | https://fisca-backend.onrender.com/api/health | `{"db":"ok","status":"ok"}` |
 
-```bash
-# Cloner le repo
-git clone https://github.com/<org>/fisca-app.git
-cd fisca-app
+---
 
-# Démarrer toute la stack
-docker compose up --build
+## Architecture de déploiement
 
-# L'application est accessible sur :
-#   Dashboard → http://localhost:3000
-#   API       → http://localhost:8080/api/health
+```
+GitHub (danielschillem/FISCA-APP) — branche main
+         │
+         │ git push → déclenche GitHub Actions
+         ▼
+┌─────────────────────────────────────────────────────────┐
+│             GitHub Actions CI/CD                        │
+│   .github/workflows/docker-publish.yml                  │
+│                                                         │
+│   1. Build backend  (linux/amd64, multi-stage Go)       │
+│   2. Build frontend (linux/amd64, VITE_API_URL baked)   │
+│   3. Push → ghcr.io (packages publics)                  │
+│   4. POST /v1/services/{id}/deploys → Render API        │
+└─────────────────────────────────────────────────────────┘
+         │ docker pull :latest
+         ▼
+┌──────────────────────────────────────────────────────────────┐
+│                  RENDER.COM (free tier, Oregon)               │
+│                                                              │
+│  ┌──────────────────────────┐   ┌───────────────────────┐   │
+│  │     fisca-backend         │   │    fisca-frontend      │   │
+│  │  ID: srv-d7h04rl7vvec73  │   │  ID: srv-d7h05bt7vvec │   │
+│  │  env: image               │   │  env: image (nginx)    │   │
+│  │  port: 8080               │   │  port: 80              │   │
+│  │  /api/health ✅            │   │  HTTP 200 ✅            │   │
+│  └────────────┬─────────────┘   └───────────────────────┘   │
+└───────────────┼──────────────────────────────────────────────┘
+                │ sslmode=require (TLS)
+                ▼
+┌──────────────────────────────────────────────────┐
+│        Neon PostgreSQL (free tier)               │
+│  Région : eu-central-1 (AWS Frankfurt)           │
+│  Endpoint : ep-curly-feather-alu1ikkd-pooler     │
+│  Base : neondb                                   │
+│  Pool : MaxConns=5, idle timeout=5min            │
+└──────────────────────────────────────────────────┘
+```
+
+### Images Docker (ghcr.io — publiques)
+
+| Image | Base | Taille approx. |
+|-------|------|----------------|
+| `ghcr.io/danielschillem/fisca-app-backend:latest` | golang:1.24-alpine → alpine:3.20 | ~15 MB |
+| `ghcr.io/danielschillem/fisca-app-frontend:latest` | node:20-alpine → nginx:alpine | ~25 MB |
+
+---
+
+## Structure du projet
+
+```
+fisca-app/
+├── .github/
+│   └── workflows/
+│       └── docker-publish.yml   # CI/CD : build → push ghcr.io → deploy Render
+├── backend/                     # API Go
+│   ├── cmd/server/main.go       # Point d'entrée, migrations auto, health check
+│   ├── internal/
+│   │   ├── api/
+│   │   │   ├── router.go        # Routes + CORS
+│   │   │   └── handlers/        # auth, companies, employees, declarations,
+│   │   │                        # bulletins, tva, retenues, cnss, irf, ircm,
+│   │   │                        # is, cme, patente, bilan, assistant, admin
+│   │   ├── calc/                # Moteur fiscal (IUTS, CGI2025, tests)
+│   │   ├── db/                  # Pool pgx + migrations SQL idempotentes
+│   │   ├── mailer/              # Envoi d'emails SMTP
+│   │   └── models/              # Types Go partagés
+│   └── Dockerfile               # Multi-stage, binaire statique, user nobody
+├── frontend/                    # SPA React
+│   ├── src/
+│   │   ├── pages/               # 25+ pages fiscales
+│   │   ├── components/          # Sidebar, Topbar, NotifPanel
+│   │   ├── lib/                 # api.ts, store.ts, fiscalCalc, pdfDGI, pdfBulletin
+│   │   └── types/               # Types TypeScript
+│   ├── Dockerfile               # Multi-stage node → nginx
+│   └── nginx.conf
+├── docker-compose.yml           # Stack locale (backend + frontend + postgres)
+└── render.yaml                  # Blueprint Render (référence)
 ```
 
 ---
@@ -33,127 +107,248 @@ docker compose up --build
 
 ### Prérequis
 
-- Go 1.22+
+- Go 1.24+
 - Node.js 20+
-- PostgreSQL 16 (ou `docker compose up db` pour la DB seule)
+- Docker Desktop (pour la stack complète)
 
-### Backend
+### Avec Docker (recommandé)
 
 ```bash
-# 1. Démarrer uniquement la base de données
-docker compose up db -d
+git clone https://github.com/danielschillem/FISCA-APP.git
+cd FISCA-APP
 
-# 2. Variables d'environnement (déjà présent : backend/.env)
+# Stack complète (backend + frontend + postgres locale)
+docker compose up --build
+
+# Frontend → http://localhost:5173
+# API      → http://localhost:8080/api/health
+```
+
+### Backend seul
+
+```bash
+# Copier les variables d'environnement
+cp .env.example backend/.env
+# Éditer backend/.env avec vos valeurs
+
 cd backend
-cat .env
-# DATABASE_URL=postgres://fisca:password@localhost:5432/fisca_dev?sslmode=disable
-# JWT_SECRET=dev_secret_do_not_use_in_production
-# PORT=8080
-
-# 3. Lancer le serveur (migrations automatiques au démarrage)
 go run ./cmd/server/
 
-# 4. Tests
+# Tests
 go test ./...
 ```
 
-### Dashboard
+### Frontend seul
 
 ```bash
-cd dashboard
-
-# 1. Variables d'environnement (déjà présent : dashboard/.env.local)
-cat .env.local
-# NEXT_PUBLIC_API_URL=http://localhost:8080
-
-# 2. Installer les dépendances
+cd frontend
 npm install
 
-# 3. Lancer en développement
+# Créer frontend/.env.local
+echo "VITE_API_URL=http://localhost:8080/api" > .env.local
+
 npm run dev
-# → http://localhost:3000
-```
-
----
-
-## Commandes utiles
-
-```bash
-# Backend — build de production
-cd backend && go build -o fisca-server ./cmd/server/
-
-# Backend — linter
-cd backend && go vet ./...
-
-# Dashboard — build de production
-cd dashboard && npm run build
-
-# Dashboard — vérification TypeScript
-cd dashboard && npx tsc --noEmit
-```
-
----
-
-## Structure du projet
-
-```
-fisca-app/
-├── backend/              # API Go
-│   ├── cmd/server/       # Point d'entrée
-│   ├── internal/
-│   │   ├── api/          # Routeur + handlers HTTP
-│   │   ├── calc/         # Moteur fiscal IUTS/TPA (+ tests)
-│   │   ├── db/           # Connexion PostgreSQL + migrations
-│   │   └── models/       # Types partagés
-│   └── Dockerfile
-├── dashboard/            # Frontend Next.js 14
-│   ├── app/              # Pages (App Router)
-│   ├── components/       # Sidebar, Topbar, StatCard
-│   ├── lib/              # API client, Zustand store, utils
-│   └── Dockerfile
-├── docker-compose.yml    # Stack complète locale
-└── render.yaml           # Configuration déploiement Render
+# → http://localhost:5173
 ```
 
 ---
 
 ## Variables d'environnement
 
-### Backend (`backend/.env`)
+### Backend
 
-| Variable | Description | Exemple |
-|----------|-------------|---------|
-| `DATABASE_URL` | URL de connexion PostgreSQL | `postgres://fisca:password@localhost:5432/fisca_dev?sslmode=disable` |
-| `JWT_SECRET` | Clé de signature JWT (min. 32 caractères en prod) | `change_this_in_production` |
-| `PORT` | Port d'écoute du serveur | `8080` |
+| Variable | Description | Production |
+|----------|-------------|------------|
+| `DATABASE_URL` | URL connexion PostgreSQL (sslmode=require en prod) | Neon connection string |
+| `JWT_SECRET` | Clé de signature JWT (min. 32 chars) | Généré par Render |
+| `ADMIN_SECRET` | Clé création compte super_admin | Généré par Render |
+| `ALLOWED_ORIGIN` | CORS — origines autorisées (virgule-séparé) | `https://fisca-frontend.onrender.com` |
+| `MISTRAL_API_KEY` | Clé API Mistral AI (assistant fiscal) | `1jDYA7ooo...` |
+| `PORT` | Port d'écoute | `8080` |
+| `SMTP_HOST` | Serveur SMTP pour emails | — |
+| `SMTP_PORT` | Port SMTP | `587` |
+| `SMTP_USER` | Identifiant SMTP | — |
+| `SMTP_PASS` | Mot de passe SMTP | — |
 
-### Dashboard (`dashboard/.env.local`)
+### Frontend
 
-| Variable | Description | Exemple |
-|----------|-------------|---------|
-| `NEXT_PUBLIC_API_URL` | URL de l'API backend | `http://localhost:8080` |
+| Variable | Description | Production |
+|----------|-------------|------------|
+| `VITE_API_URL` | URL base de l'API backend | `https://fisca-backend.onrender.com/api` *(baked à build time)* |
 
 ---
 
-## Déploiement (Render)
+## Comptes administrateurs (production)
 
-Le fichier `render.yaml` définit trois services :
-- `fisca-backend` — Web Service Docker (Go)
-- `fisca-dashboard` — Web Service Docker (Next.js)
-- `fisca-db` — PostgreSQL managé
+| Email | Rôle | Plan |
+|-------|------|------|
+| `admin@fisca.app` | `user` (admin) | enterprise |
+| `super-admin@fisca.app` | `super_admin` | enterprise |
 
-```bash
-# Après le premier déploiement, définir dans le dashboard Render :
-# fisca-dashboard → Environment → NEXT_PUBLIC_API_URL = https://fisca-backend.onrender.com
+> Mot de passe par défaut défini lors de la configuration initiale.
+> À changer via `PUT /api/auth/change-password` après la première connexion.
+
+---
+
+## Schéma base de données (tables principales)
+
+```
+users ──────────────────────────────────────────────────────┐
+  id, email, password_hash, plan, role, user_type,          │
+  is_active, org_id, org_role, created_at                   │
+                                                            │
+organizations ────────────────────────────────────── (FK ←─┘
+  id, nom, owner_id, plan, created_at
+
+companies ─────────────────────────────── user_id → users
+  id, nom, ifu, rc, secteur, adresse, tel,
+  forme_juridique, regime, centre_impots,
+  ville, quartier, bp, fax, is_active
+
+  └─── employees        (company_id → companies, CASCADE)
+  └─── declarations     (IUTS mensuel)
+  └─── bulletins        (bulletins de paie)
+  └─── tva_declarations + tva_lignes
+  └─── retenues_source  (RAS)
+  └─── cnss_patronal
+  └─── irf_declarations (IRF annuel)
+  └─── ircm_declarations
+  └─── is_declarations  (IS annuel)
+  └─── cme_declarations
+  └─── patente_declarations
+  └─── exercices_fiscaux
+  └─── simulations
+
+refresh_tokens        → users
+password_reset_tokens → users
+workflow_etapes       → declarations + users
 ```
 
 ---
 
-## Calcul fiscal
+## CI/CD — Flux de déploiement
 
-Le moteur `backend/internal/calc/iuts.go` implémente :
+```
+git push origin main
+    │
+    ├─ [GitHub Actions]
+    │   ├─ docker buildx build --platform linux/amd64 ./backend
+    │   │    └─ CGO_ENABLED=0, GOOS=linux, -ldflags="-s -w"
+    │   ├─ docker buildx build --platform linux/amd64 ./frontend
+    │   │    └─ --build-arg VITE_API_URL=https://fisca-backend.onrender.com/api
+    │   ├─ docker push ghcr.io/danielschillem/fisca-app-backend:latest
+    │   ├─ docker push ghcr.io/danielschillem/fisca-app-frontend:latest
+    │   │
+    │   └─ Render API :
+    │       POST /v1/services/srv-d7h04rl7vvec73akmqe0/deploys  (backend)
+    │       POST /v1/services/srv-d7h05bt7vvec73akmvrg/deploys  (frontend)
+    │
+    └─ [Render] pull :latest → redémarre les conteneurs
+```
 
-1. **IUTS** — 9 tranches progressives (0 % → 30 %) selon le barème LF 2020
-2. **CSS** — CNSS 5,5 % ou CARFO 6 % (plafonné à 600 000 FCFA)
-3. **TPA** — 3 % (patronale)
-4. **Abattements** — forfait 20 %, exonérations logement/transport/fonction, abattement familial (1 000 FCFA × charges, plafonné à 40 % IUTS brut)
+### Secrets GitHub requis
+
+| Secret | Usage |
+|--------|-------|
+| `GITHUB_TOKEN` | Automatique — push vers ghcr.io |
+| `RENDER_API_KEY` | Déclencher les redéploiements Render |
+
+---
+
+## Capacité et projections de lancement
+
+### Limites stack actuelle (free tier)
+
+| Ressource | Limite | Impact |
+|-----------|--------|--------|
+| Render CPU | 0.1 vCPU partagé | ~20–50 req/s |
+| Render RAM | 512 MB | Suffisant Go + nginx |
+| DB connexions | MaxConns=5 | 5 requêtes DB simultanées |
+| Neon compute | 0.25 vCPU, suspendu après 5 min | Cold start DB ~2s |
+| Render spin-down | Après 15 min d'inactivité | Cold start service ~45s |
+
+### Capacité réelle
+
+| Métrique | Free tier actuel |
+|----------|-----------------|
+| Utilisateurs inscrits | Illimité (10 GB stockage) |
+| Sessions actives simultanées | **10–20** confortablement |
+| Requêtes API simultanées | **5–10** sans latence |
+| Pics acceptables | ~30–50 (avec dégradation) |
+
+### Projections de croissance
+
+| Phase | Durée | Users inscrits | Simultanés | Stack recommandée | Coût/mois |
+|-------|-------|----------------|------------|-------------------|-----------|
+| Beta fermée | M1–M2 | 0–50 | 2–5 | Free tier actuel | **0 FCFA** |
+| Lancement public | M3–M4 | 50–200 | 10–20 | Render Starter ($7 × 2) | **~8 500 FCFA** |
+| Croissance | M5–M12 | 200–1 000 | 30–80 | Render Standard + Neon Launch | **~31 000 FCFA** |
+| Scale | M12+ | 1 000–5 000 | 100–300 | Render Standard + Neon Scale | **~75 000 FCFA** |
+
+### Upgrade prioritaire pour le lancement (M3)
+
+```
+Render backend : Free → Starter ($7/mois)
+  ✅ Élimine le cold start (service toujours actif)
+  ✅ 512 MB RAM dédiée
+  ✅ Uptime garanti 24/7
+  → Coût : ~4 300 FCFA/mois
+```
+
+### Monitoring recommandé (gratuit)
+
+- **UptimeRobot** — ping `GET /api/health` toutes les 5 min, alerte email si down
+- **Render Dashboard** — logs en temps réel
+- **Neon Dashboard** — métriques DB (connexions, stockage)
+
+---
+
+## Calcul fiscal — Moteur
+
+Le moteur `backend/internal/calc/` implémente :
+
+| Impôt | Fichier | Barème |
+|-------|---------|--------|
+| IUTS | `iuts.go` | 9 tranches progressives 0%→30% (LF 2020) |
+| TPA | `iuts.go` | 3% patronale sur brut |
+| CSS CNSS | `iuts.go` | 5,5% salarié / 16% patronal, plafond 600 000 FCFA |
+| CSS CARFO | `iuts.go` | 6% salarié / 13% patronal |
+| FSP | `iuts.go` | 1% sur salaire net |
+| IS | `cgi2025.go` | Régime réel 27,5% / MFP 0,5% CA (CGI 2025) |
+| TVA | handlers | 18% taux normal |
+| IRF | handlers | 15% sur loyers (abattement 30%) |
+| IRCM | handlers | Créances 20%, dividendes 12,5%, obligations 6% |
+| CME | handlers | Forfait selon CA et zone |
+| Patente | handlers | Barème DGI (droit fixe + proportionnel) |
+
+---
+
+## Commandes utiles
+
+```bash
+# Vérifier que la production est live
+curl https://fisca-backend.onrender.com/api/health
+
+# Lancer les tests backend
+cd backend && go test ./... -v
+
+# Lancer les tests frontend
+cd frontend && npm test
+
+# Build manuel des images Docker
+docker build --platform linux/amd64 -t ghcr.io/danielschillem/fisca-app-backend:latest ./backend
+docker build --platform linux/amd64 \
+  --build-arg VITE_API_URL=https://fisca-backend.onrender.com/api \
+  -t ghcr.io/danielschillem/fisca-app-frontend:latest ./frontend
+
+# Pousser sur ghcr.io (nécessite: docker login ghcr.io)
+docker push ghcr.io/danielschillem/fisca-app-backend:latest
+docker push ghcr.io/danielschillem/fisca-app-frontend:latest
+
+# Déclencher un redéploiement Render manuellement
+curl -X POST https://api.render.com/v1/services/srv-d7h04rl7vvec73akmqe0/deploys \
+  -H "Authorization: Bearer $RENDER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"clearCache":"do_not_clear"}'
+```
+
