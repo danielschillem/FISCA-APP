@@ -11,7 +11,7 @@
  */
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { TVADeclaration, RetenueSource, ISDeclaration, IRCMDeclaration, CMEDeclaration, Company } from '../types';
+import type { TVADeclaration, RetenueSource, ISDeclaration, IRCMDeclaration, CMEDeclaration, IRFDeclaration, PatenteDeclaration, Company } from '../types';
 import { fmtN } from './fiscalCalc';
 
 // â”€â”€ Constantes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -530,4 +530,106 @@ export function generateCMEForm(decl: CMEDeclaration, company?: Company) {
     dgiSignatures(doc, ML, CW, y);
     dgiFooter(doc);
     doc.save(`DGI-CME-${decl.annee}.pdf`);
+}
+
+// -- 6. IRF -----------------------------------------------------------
+export function generateIRFForm(decl: IRFDeclaration, company?: Company) {
+    const doc = makeDoc();
+    const ML = 10;
+    const CW = 190;
+    const secH = 7;
+
+    let y = dgiHeader(doc, ML, CW, 10,
+        "DECLARATION DE L'IMPOT SUR LES",
+        'REVENUS FONCIERS (IRF) - CGI Art. 121-126');
+
+    secBar(doc, ML, y, CW, secH, 'I. EXERCICE FISCAL');
+    y += secH;
+    const rowH = 9;
+    box(doc, ML, y, CW, rowH);
+    t(doc, 'Annee fiscale :', ML + 2, y + 3.5, 5.5);
+    t(doc, String(decl.annee), ML + 40, y + rowH - 1.5, 10, true, 'left', BLACK);
+    y += rowH;
+
+    y = dgiIdentification(doc, ML, CW, y, company);
+
+    y += 2;
+    secBar(doc, ML, y, CW, secH, "III. CALCUL DE L'IMPOT SUR LES REVENUS FONCIERS");
+    y += secH;
+
+    autoTable(doc, {
+        startY: y,
+        body: [
+            ['Loyer brut annuel (FCFA)', fmtN(decl.loyer_brut)],
+            ['Abattement forfaitaire 50 % (Art. 122)', fmtN(decl.abattement)],
+            ['Base nette imposable (FCFA)', fmtN(decl.base_nette)],
+            ['IRF tranche 18 % (base <= 100 000 FCFA)', fmtN(decl.irf1)],
+            ['IRF tranche 25 % (base > 100 000 FCFA)', fmtN(decl.irf2)],
+            ['IRF TOTAL DU (FCFA)', fmtN(decl.irf_total)],
+            ['Loyer net apres impot (FCFA)', fmtN(decl.loyer_net)],
+        ],
+        styles: { fontSize: 8.5, textColor: BLACK, cellPadding: 3 },
+        columnStyles: {
+            0: { cellWidth: 120, fillColor: [245, 245, 245] as RGB },
+            1: { halign: 'right', fontStyle: 'bold' },
+        },
+        theme: 'plain',
+        margin: { left: ML },
+    });
+    y = (doc as DocWithTable).lastAutoTable.finalY + 3;
+
+    y = dgiReglement(doc, ML, CW, y, decl.irf_total);
+    dgiSignatures(doc, ML, CW, y);
+    dgiFooter(doc);
+    doc.save(`DGI-IRF-${decl.annee}.pdf`);
+}
+
+// -- 7. Patente -------------------------------------------------------
+export function generatePatenteForm(decl: PatenteDeclaration, company?: Company) {
+    const doc = makeDoc();
+    const ML = 10;
+    const CW = 190;
+    const secH = 7;
+
+    let y = dgiHeader(doc, ML, CW, 10,
+        'DECLARATION DE LA PATENTE',
+        'PROFESSIONNELLE - CGI Art. 237-240');
+
+    secBar(doc, ML, y, CW, secH, 'I. EXERCICE FISCAL');
+    y += secH;
+    const rowH = 9;
+    box(doc, ML, y, CW, rowH);
+    t(doc, 'Annee fiscale :', ML + 2, y + 3.5, 5.5);
+    t(doc, String(decl.annee), ML + 40, y + rowH - 1.5, 10, true, 'left', BLACK);
+    y += rowH;
+
+    y = dgiIdentification(doc, ML, CW, y, company);
+
+    y += 2;
+    secBar(doc, ML, y, CW, secH, 'III. CALCUL DE LA PATENTE PROFESSIONNELLE');
+    y += secH;
+
+    autoTable(doc, {
+        startY: y,
+        body: [
+            ["Chiffre d'affaires annuel HT (FCFA)", fmtN(decl.ca)],
+            ['Valeur locative annuelle des locaux (FCFA)', fmtN(decl.valeur_locative)],
+            ['Droit fixe (tableau A - Art. 238)', fmtN(decl.droit_fixe)],
+            ['Droit proportionnel (1 % valeur locative)', fmtN(decl.droit_prop)],
+            ['PATENTE TOTALE DUE (FCFA)', fmtN(decl.total_patente)],
+        ],
+        styles: { fontSize: 8.5, textColor: BLACK, cellPadding: 3 },
+        columnStyles: {
+            0: { cellWidth: 120, fillColor: [245, 245, 245] as RGB },
+            1: { halign: 'right', fontStyle: 'bold' },
+        },
+        theme: 'plain',
+        margin: { left: ML },
+    });
+    y = (doc as DocWithTable).lastAutoTable.finalY + 3;
+
+    y = dgiReglement(doc, ML, CW, y, decl.total_patente);
+    dgiSignatures(doc, ML, CW, y);
+    dgiFooter(doc);
+    doc.save(`DGI-Patente-${decl.annee}.pdf`);
 }

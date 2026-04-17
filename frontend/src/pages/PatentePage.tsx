@@ -1,11 +1,12 @@
 ﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { patenteApi } from '../lib/api';
+import { patenteApi, companyApi } from '../lib/api';
 import { calcPatente, fmt, fmtN } from '../lib/fiscalCalc';
 import { Card, Btn, Spinner } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
-import { Save, Trash2, Download, Lock, CheckCircle } from 'lucide-react';
-import type { PatenteDeclaration } from '../types';
+import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
+import type { PatenteDeclaration, Company } from '../types';
+import { generatePatenteForm } from '../lib/pdfDGI';
 
 export default function PatentePage() {
     const { plan } = useAppStore();
@@ -23,6 +24,11 @@ function PatenteContent() {
     const { data: history = [], isLoading } = useQuery<PatenteDeclaration[]>({
         queryKey: ['patente', annee],
         queryFn: () => patenteApi.list(annee).then((r) => r.data),
+    });
+
+    const { data: company } = useQuery<Company>({
+        queryKey: ['company'],
+        queryFn: () => companyApi.get().then((r) => r.data),
     });
 
     const createMut = useMutation({
@@ -187,6 +193,10 @@ function PatenteContent() {
                                                 <button onClick={() => exportCSV(d.id, d.annee)} title="Exporter CSV"
                                                     className="p-1 text-blue-600 hover:bg-blue-50 rounded">
                                                     <Download className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button onClick={() => generatePatenteForm(d, company)} title="Formulaire DGI"
+                                                    className="p-1 text-purple-600 hover:bg-purple-50 rounded">
+                                                    <FileText className="w-3.5 h-3.5" />
                                                 </button>
                                                 <button onClick={() => deleteMut.mutate(d.id)} title="Supprimer"
                                                     className="p-1 text-red-500 hover:bg-red-50 rounded">
