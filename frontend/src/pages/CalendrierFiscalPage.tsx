@@ -226,11 +226,10 @@ export default function CalendrierFiscalPage() {
                     </div>
                     <button
                         onClick={() => setFiltreRegime(f => !f)}
-                        className={`text-xs font-semibold rounded-lg px-3 py-1.5 border transition-colors shrink-0 ${
-                            filtreRegime
+                        className={`text-xs font-semibold rounded-lg px-3 py-1.5 border transition-colors shrink-0 ${filtreRegime
                                 ? 'text-white border-transparent'
                                 : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-                        }`}
+                            }`}
                         style={filtreRegime ? { background: regimeInfo.color } : {}}
                     >
                         {filtreRegime ? `Filtré – ${regimeInfo.shortLabel}` : 'Tout afficher'}
@@ -255,8 +254,8 @@ export default function CalendrierFiscalPage() {
                                     key={t}
                                     onClick={() => toggleType(t)}
                                     className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-all ${active
-                                            ? 'text-white border-transparent shadow-sm'
-                                            : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-300'
+                                        ? 'text-white border-transparent shadow-sm'
+                                        : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-300'
                                         }`}
                                     style={active ? { background: color, borderColor: color } : {}}
                                 >
@@ -281,8 +280,8 @@ export default function CalendrierFiscalPage() {
                                 key={i}
                                 onClick={() => setFiltreMois(filtreMois === i ? null : i)}
                                 className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-all ${filtreMois === i
-                                        ? 'bg-green-600 text-white border-green-600'
-                                        : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-300'
+                                    ? 'bg-green-600 text-white border-green-600'
+                                    : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-300'
                                     }`}
                             >
                                 {nomMois(i).slice(0, 3)}
@@ -313,8 +312,8 @@ export default function CalendrierFiscalPage() {
                             {/* Month header */}
                             <div className={`flex items-center gap-3 mb-3`}>
                                 <div className={`px-3 py-1 rounded-lg text-sm font-bold ${isCurrentMonth
-                                        ? 'bg-green-600 text-white'
-                                        : 'bg-gray-100 text-gray-600'
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-gray-100 text-gray-600'
                                     }`}>
                                     {nomMois(groupe.mois)} {groupe.annee}
                                 </div>
