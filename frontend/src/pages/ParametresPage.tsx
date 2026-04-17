@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { companyApi, authApi } from '../lib/api';
 import { Card, Btn, Input, Select, Spinner } from '../components/ui';
 import { useAuthStore } from '../lib/store';
+import { REGIMES_INFO } from '../lib/regime';
 import type { Company } from '../types';
-import { CheckCircle2, AlertCircle, Building2, MapPin, FileText, UserCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Building2, MapPin, FileText, UserCircle, Info } from 'lucide-react';
 
 const FORMES_JURIDIQUES = [
     { value: '', label: '— Sélectionner —' },
@@ -26,7 +27,6 @@ const REGIMES = [
     { value: 'RSI', label: 'RSI – Régime du Réel Simplifié d\'Imposition' },
     { value: 'CME', label: 'CME – Contribution des Micro-Entreprises' },
     { value: 'BNC', label: 'BNC – Bénéfices Non Commerciaux' },
-    { value: 'TVA', label: 'Assujetti TVA' },
 ];
 
 export default function ParametresPage() {
@@ -155,6 +155,33 @@ export default function ParametresPage() {
                         {f('centre_impots', 'Centre des impôts de rattachement', 'ex : CDI Ouaga I')}
                         {f('date_debut_activite', 'Date de début d\'activité', '', 'date')}
                     </div>
+                    {/* Info box : obligations du régime sélectionné */}
+                    {(() => {
+                        const r = (form.regime ?? '') as keyof typeof REGIMES_INFO;
+                        const info = REGIMES_INFO[r];
+                        if (!info || !r) return (
+                            <div className="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-lg px-4 py-3 text-xs text-amber-700">
+                                <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                <span>Sélectionnez votre régime fiscal pour personnaliser votre calendrier fiscal et filtrer les modules applicables.</span>
+                            </div>
+                        );
+                        return (
+                            <div className="mt-3 rounded-lg px-4 py-3 text-xs" style={{ background: info.color + '11', border: `1px solid ${info.color}33` }}>
+                                <p className="font-semibold mb-1" style={{ color: info.color }}>{info.label}</p>
+                                <p className="text-gray-600 mb-2">{info.description}</p>
+                                {info.obligations.length > 0 && (
+                                    <ul className="space-y-0.5">
+                                        {info.obligations.map((o) => (
+                                            <li key={o} className="flex items-center gap-1.5 text-gray-700">
+                                                <CheckCircle2 className="w-3 h-3 flex-shrink-0" style={{ color: info.color }} />
+                                                {o}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 {/* Section 3 : Coordonnées */}

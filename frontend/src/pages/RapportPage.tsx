@@ -1,10 +1,13 @@
 ﻿import { useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { declarationApi, dashboardApi } from '../lib/api';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { declarationApi, dashboardApi, companyApi } from '../lib/api';
 import { fmt, fmtN } from '../lib/fiscalCalc';
 import { Card, Spinner, Btn } from '../components/ui';
 import { MOIS_FR } from '../types';
-import { Printer } from 'lucide-react';
+import type { Company } from '../types';
+import { Printer, FileDown } from 'lucide-react';
 
 export default function RapportPage() {
     const now = new Date();
@@ -20,6 +23,11 @@ export default function RapportPage() {
     const { data: kpis, isLoading: l2 } = useQuery<any>({
         queryKey: ['dashboard'],
         queryFn: () => dashboardApi.get().then((r) => r.data),
+    });
+
+    const { data: company } = useQuery<Company>({
+        queryKey: ['company'],
+        queryFn: () => companyApi.get().then((r) => r.data),
     });
 
     if (l1 || l2) return <Spinner />;
@@ -39,9 +47,130 @@ export default function RapportPage() {
         win.print();
     };
 
+    const exportPDF = () => {
+        const BLACK: [number, number, number] = [0, 0, 0];
+        const GRAY: [number, number, number] = [120, 120, 120];
+        const LIGHT: [number, number, number] = [245, 245, 245];
+
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+        // ── En-tête ───────────────────────────────────────────
+        doc.setFont('Helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(...BLACK);
+        doc.text('RAPPORT FISCAL MENSUEL', 105, 18, { align: 'center' });
+
+        doc.setFont('Helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(...GRAY);
+        doc.text(`${MOIS_FR[mois - 1]} ${annee}`, 105, 24, { align: 'center' });
+
+        // Infos entreprise
+        let y = 32;
+        doc.setFontSize(9);
+        doc.setTextColor(...BLACK);
+        if (company?.nom) { doc.text(`Entreprise : ${company.nom}`, 14, y); y += 5; }
+        if (company?.ifu) { doc.text(`IFU : ${company.ifu}`, 14, y); y += 5; }
+        if (company?.adresse) { doc.text(`Adresse : ${company.adresse}`, 14, y); y += 5; }
+
+        // Ligne séparatrice
+        y += 2;
+        doc.setDrawColor(...GRAY);
+        doc.line(14, y, 196, y);
+        y += 6;
+
+        // ── KPIs ─────────────────────────────────────────────
+        doc.setFontSize(8);
+        doc.setTextColor(...GRAY);
+        doc.setFont('Helvetica', 'bold');
+        doc.text('RÉSUMÉ DES OBLIGATIONS', 14, y);
+        y += 4;
+
+        const iutsTotal = (kpis?.iuts_total ?? 0) + (kpis?.tpa_total ?? 0);
+        const cnssTotal = kpis?.cnss_total ?? 0;
+        const grandTotal = iutsTotal + cnssTotal;
+
+        autoTable(doc, {
+            startY: y,
+            head: [],
+            body: [
+                ['IUTS + TPA', fmtN(iutsTotal) + ' FCFA'],
+                ['CSS salariés', fmtN(cnssTotal) + ' FCFA'],
+                ['Nombre de salariés', String(kpis?.nb_salaries ?? 0)],
+                ['Total obligations', fmtN(grandTotal) + ' FCFA'],
+            ],
+            styles: { fontSize: 8, textColor: BLACK, cellPadding: 2 },
+            columnStyles: {
+                0: { cellWidth: 60, fontStyle: 'bold', fillColor: LIGHT },
+                1: { cellWidth: 55, halign: 'right' },
+            },
+            theme: 'plain',
+        });
+
+        // ── Tableau déclaration ───────────────────────────────
+        if (lastDecl) {
+            const finalY: number = (doc as any).lastAutoTable?.finalY ?? (y + 30);
+            const tableY = finalY + 8;
+
+            doc.setFontSize(8);
+            doc.setTextColor(...GRAY);
+            doc.setFont('Helvetica', 'bold');
+            doc.text(
+                `DÉCLARATION – ${MOIS_FR[(lastDecl.mois ?? 1) - 1].toUpperCase()} ${lastDecl.annee}`,
+                14, tableY - 3,
+            );
+
+            autoTable(doc, {
+                startY: tableY,
+                head: [['Employé', 'Brut', 'IUTS', 'TPA', 'CSS', 'Net à payer']],
+                body: (lastDecl.lignes ?? []).map((l: any) => [
+                    l.nom,
+                    fmtN(l.brut_total),
+                    fmtN(l.iuts_net),
+                    fmtN(l.tpa),
+                    fmtN(l.cotisation_sociale),
+                    fmtN(l.salaire_net),
+                ]),
+                styles: { fontSize: 7, textColor: BLACK, cellPadding: 2 },
+                headStyles: { fillColor: LIGHT, textColor: BLACK, fontStyle: 'bold' },
+                columnStyles: {
+                    0: { cellWidth: 55 },
+                    1: { halign: 'right', cellWidth: 28 },
+                    2: { halign: 'right', cellWidth: 22 },
+                    3: { halign: 'right', cellWidth: 20 },
+                    4: { halign: 'right', cellWidth: 22 },
+                    5: { halign: 'right', cellWidth: 28, fontStyle: 'bold' },
+                },
+                foot: [[
+                    'TOTAL',
+                    fmtN(lastDecl.brut_total ?? 0),
+                    fmtN(lastDecl.iuts_total ?? 0),
+                    fmtN(lastDecl.tpa_total ?? 0),
+                    fmtN(lastDecl.css_total ?? 0),
+                    fmtN(lastDecl.total ?? 0),
+                ]],
+                footStyles: { fillColor: LIGHT, fontStyle: 'bold', textColor: BLACK, halign: 'right' },
+            });
+        }
+
+        // ── Pied de page ─────────────────────────────────────
+        const pageH = doc.internal.pageSize.getHeight();
+        doc.setFontSize(7);
+        doc.setTextColor(...GRAY);
+        doc.setFont('Helvetica', 'normal');
+        doc.text(
+            `Généré par FISCA – ${new Date().toLocaleDateString('fr-FR')}`,
+            14, pageH - 10,
+        );
+        doc.text(`Page 1/1`, 196, pageH - 10, { align: 'right' });
+
+        doc.save(`rapport-fiscal-${String(mois).padStart(2, '0')}-${annee}.pdf`);
+    };
+
     return (
         <div className="space-y-6">
-            <div className="flex justify-end print:hidden">
+            <div className="flex justify-end gap-2 print:hidden">
+                <Btn variant="outline" onClick={exportPDF}><FileDown className="w-4 h-4" /> Télécharger PDF</Btn>
                 <Btn variant="outline" onClick={print}><Printer className="w-4 h-4" /> Imprimer</Btn>
             </div>
 

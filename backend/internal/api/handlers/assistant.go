@@ -41,16 +41,24 @@ func (h *AssistantHandler) Chat(w http.ResponseWriter, r *http.Request) {
 	// Construire le contexte fiscal de l'utilisateur
 	context := h.buildContext(r, userID)
 
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		// Pas d'IA configurée — réponse de secours
+	openaiKey := os.Getenv("OPENAI_API_KEY")
+	mistralKey := os.Getenv("MISTRAL_API_KEY")
+
+	if openaiKey == "" && mistralKey == "" {
+		// Aucune IA configurée — réponse de secours
 		jsonOK(w, map[string]string{
-			"reply": "L'assistant IA n'est pas encore configuré. Contactez votre administrateur pour activer la clé API OpenAI (variable d'environnement OPENAI_API_KEY).",
+			"reply": "L'assistant IA n'est pas encore configuré. Activez OPENAI_API_KEY (OpenAI) ou MISTRAL_API_KEY (Mistral, gratuit) dans les variables d'environnement.",
 		})
 		return
 	}
 
-	reply, err := callOpenAI(apiKey, context, req.Message)
+	var reply string
+	var err error
+	if openaiKey != "" {
+		reply, err = callOpenAI(openaiKey, context, req.Message)
+	} else {
+		reply, err = callMistral(mistralKey, context, req.Message)
+	}
 	if err != nil {
 		jsonError(w, "Erreur assistant IA : "+err.Error(), http.StatusBadGateway)
 		return
@@ -94,6 +102,51 @@ Tu es un assistant fiscal spécialisé dans la fiscalité des entreprises au Bur
 Réponds en français, de manière concise et précise. 
 Ne fournis pas de conseils juridiques définitifs — recommande de consulter un expert-comptable pour les cas complexes.`,
 		nomEntreprise, ifu, nbEmployes, now.Year(), nbDecl, brutTotal, iutsTotal, tpaTotal)
+}
+
+// callMistral appelle l'API Mistral AI (compatible OpenAI) — modèle gratuit mistral-small-latest.
+func callMistral(apiKey, systemContext, userMessage string) (string, error) {
+	payload := map[string]any{
+		"model": "mistral-small-latest",
+		"messages": []map[string]string{
+			{"role": "system", "content": systemContext},
+			{"role": "user", "content": userMessage},
+		},
+		"max_tokens":  800,
+		"temperature": 0.4,
+	}
+	body, _ := json.Marshal(payload)
+
+	req, err := http.NewRequest("POST", "https://api.mistral.ai/v1/chat/completions", bytes.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("Mistral HTTP %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	var result struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+	}
+	if err := json.Unmarshal(respBody, &result); err != nil || len(result.Choices) == 0 {
+		return "", fmt.Errorf("réponse Mistral invalide")
+	}
+	return result.Choices[0].Message.Content, nil
 }
 
 // callOpenAI appelle l'API OpenAI Chat Completions.
