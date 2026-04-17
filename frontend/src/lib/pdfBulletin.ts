@@ -31,7 +31,7 @@ const R: CS = { halign: 'right' };
 // Ligne rubrique (fond BLANC, texte gras, trait trace manuellement avant)
 function secRow(label: string): Row {
     return [c(label, {
-        colSpan: 7,
+        colSpan: 6,
         fontStyle: 'bold',
         fillColor: WHITE,
         textColor: DARK,
@@ -41,22 +41,21 @@ function secRow(label: string): Row {
 }
 
 // Ligne TOTAL (fond BLANC, texte gras)
-function totRow(label: string, gain: string, ret: string, pat: string): Row {
+function totRow(label: string, gain: string, ret: string): Row {
     const s: CS = { fontStyle: 'bold', fillColor: WHITE, textColor: BLACK };
     return [
         c(label, { ...s, colSpan: 4 }),
         c(gain,  { ...s, halign: 'right' }),
         c(ret,   { ...s, halign: 'right' }),
-        c(pat,   { ...s, halign: 'right' }),
     ];
 }
 
 // Ligne de donnees (fond BLANC, aucune bordure)
 function dataRow(
     label: string, nb: string, base: string, taux: string,
-    gain: string, ret: string, pat: string,
+    gain: string, ret: string,
 ): Row {
-    return [label, c(nb, R), c(base, R), c(taux, R), c(gain, R), c(ret, R), c(pat, R)];
+    return [label, c(nb, R), c(base, R), c(taux, R), c(gain, R), c(ret, R)];
 }
 
 // ============================================================================
@@ -160,51 +159,50 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
     const totalSet   = new Set<number>();  // indices des lignes "total"
 
     const addSec = (label: string) => { sectionSet.add(body.length); body.push(secRow(label)); };
-    const addTot = (label: string, g: string, r: string, p: string) => {
-        totalSet.add(body.length); body.push(totRow(label, g, r, p));
+    const addTot = (label: string, g: string, r: string) => {
+        totalSet.add(body.length); body.push(totRow(label, g, r));
     };
 
     // Remuneration
-    body.push(dataRow('Salaire de base', n2(173.33), n2(tauxH), '', amt(b.salaire_base), '', ''));
+    body.push(dataRow('Salaire de base', n2(173.33), n2(tauxH), '', amt(b.salaire_base), ''));
     if (b.anciennete > 0)
-        body.push(dataRow("Prime d'anciennete",     '', '', '', amt(b.anciennete),         '', ''));
+        body.push(dataRow("Prime d'anciennete",     '', '', '', amt(b.anciennete),        ''));
     if (b.heures_sup > 0)
-        body.push(dataRow('Heures supplementaires', '', '', '', amt(b.heures_sup),         '', ''));
+        body.push(dataRow('Heures supplementaires', '', '', '', amt(b.heures_sup),        ''));
     if (b.logement > 0)
-        body.push(dataRow('Indemnite de logement',  '', '', '', amt(b.logement),           '', ''));
+        body.push(dataRow('Indemnite de logement',  '', '', '', amt(b.logement),          ''));
     if (b.transport > 0)
-        body.push(dataRow('Indemnite de transport', '', '', '', amt(b.transport),           '', ''));
+        body.push(dataRow('Indemnite de transport', '', '', '', amt(b.transport),          ''));
     if (b.fonction > 0)
-        body.push(dataRow('Indemnite de fonction',  '', '', '', amt(b.fonction),            '', ''));
-    addTot('TOTAL BRUT', amt(b.brut_total), '', '');
+        body.push(dataRow('Indemnite de fonction',  '', '', '', amt(b.fonction),           ''));
+    addTot('TOTAL BRUT', amt(b.brut_total), '');
 
     // Cotisations salariales
     addSec('COTISATIONS ET RETENUES SALARIALES');
     body.push(dataRow(
         'IUTS - Impot Unique sur Traitements et Salaires',
-        '', amt(b.base_imposable), p3(iutsEff), '', amt(b.iuts_net), '',
+        '', amt(b.base_imposable), p3(iutsEff), '', amt(b.iuts_net),
     ));
     body.push(dataRow(
         `Cotisation ${b.cotisation} (part salariale)`,
-        '', amt(baseCNSS), cotTaux, '', amt(b.cotisation_sociale), '',
+        '', amt(baseCNSS), cotTaux, '', amt(b.cotisation_sociale),
     ));
     if (fsp > 0)
-        body.push(dataRow('FSP - Fonds de Soutien Patriotique', '', amt(baseFSP), '1,000', '', amt(fsp), ''));
+        body.push(dataRow('FSP - Fonds de Soutien Patriotique', '', amt(baseFSP), '1,000', '', amt(fsp)));
 
     // Charges patronales
     addSec('CHARGES PATRONALES (a titre indicatif)');
-    body.push(dataRow('TPA - Taxe Patronale et Apprentissage', '', amt(b.brut_total), '3,000', '', '', amt(b.tpa ?? 0)));
-    addTot('TOTAL DES COTISATIONS ET CONTRIBUTIONS', '', amt(totalRet), amt(b.tpa ?? 0));
+    body.push(dataRow('TPA - Taxe Patronale et Apprentissage', '', amt(b.brut_total), '3,000', '', amt(b.tpa ?? 0)));
+    addTot('TOTAL DES COTISATIONS ET CONTRIBUTIONS', '', amt(totalRet));
 
-    // En-tete 2 niveaux (correspondance exacte modele francais)
+    // En-tete 2 niveaux
     const HEAD = [
         [
-            c('Designation',     { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
-            c('Nombre',          { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
-            c('Base',            { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
-            c('Taux\nsalarial',  { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
-            c('Part salarie',    { colSpan: 2,  halign: 'center',                  fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
-            c('Part\nemployeur', { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
+            c('Designation',    { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
+            c('Nombre',         { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
+            c('Base',           { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
+            c('Taux\nsalarial', { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
+            c('Part salarie',   { colSpan: 2,  halign: 'center',                  fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
         ],
         [
             c('Gain',    { halign: 'center', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: WHITE, lineWidth: 0.3 }),
@@ -212,7 +210,7 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
         ],
     ];
 
-    const NCOLS = 7;
+    const NCOLS = 6;
     const startY = 65;
 
     autoTable(doc, {
@@ -241,13 +239,12 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
             lineWidth: 0.4,        // mais le gris ressort sur fond gris
         },
         columnStyles: {
-            0: { cellWidth: 72 },
-            1: { cellWidth: 16, halign: 'right' },
-            2: { cellWidth: 22, halign: 'right' },
-            3: { cellWidth: 16, halign: 'right' },
-            4: { cellWidth: 19, halign: 'right' },
-            5: { cellWidth: 19, halign: 'right' },
-            6: { cellWidth: 20, halign: 'right' },
+            0: { cellWidth: 80 },
+            1: { cellWidth: 18, halign: 'right' },
+            2: { cellWidth: 26, halign: 'right' },
+            3: { cellWidth: 20, halign: 'right' },
+            4: { cellWidth: 20, halign: 'right' },
+            5: { cellWidth: 20, halign: 'right' },
         },
 
         didDrawCell: (data) => {
