@@ -1,11 +1,12 @@
 ﻿import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { bilanApi } from '../lib/api';
+import { bilanApi, companyApi } from '../lib/api';
 import { fmt } from '../lib/fiscalCalc';
 import { Card, Spinner } from '../components/ui';
 import { useAppStore, PLAN_FEATURES, Btn } from '../components/ui';
-import { Printer, Lock } from 'lucide-react';
-import type { BilanData } from '../types';
+import { Printer, Lock, FileDown, FileSpreadsheet, FileText } from 'lucide-react';
+import type { BilanData, Company } from '../types';
+import { exportBilanPDF, exportBilanXLSX, exportBilanDOCX } from '../lib/exportBilan';
 
 export default function BilanPage() {
     const { plan } = useAppStore();
@@ -29,6 +30,13 @@ const LIGNES: { label: string; key: keyof Omit<BilanData, 'annee' | 'total'>; co
 
 function BilanContent() {
     const [annee, setAnnee] = useState(new Date().getFullYear());
+    const [exportingDocx, setExportingDocx] = useState(false);
+
+    const { data: company } = useQuery<Company>({
+        queryKey: ['company'],
+        queryFn: () => companyApi.get().then((r) => r.data),
+        staleTime: Infinity,
+    });
 
     const { data: bilan, isLoading } = useQuery<BilanData>({
         queryKey: ['bilan', annee],
@@ -56,9 +64,38 @@ function BilanContent() {
                         <option key={y} value={y}>{y}</option>
                     ))}
                 </select>
-                <Btn variant="outline" onClick={() => window.print()}>
-                    <Printer className="w-4 h-4" /> Imprimer
-                </Btn>
+                <div className="flex items-center gap-2 flex-wrap">
+                    <Btn variant="outline" onClick={() => window.print()} title="Imprimer">
+                        <Printer className="w-4 h-4" /> Imprimer
+                    </Btn>
+                    <Btn
+                        variant="outline"
+                        onClick={() => exportBilanPDF(b, company)}
+                        title="Télécharger PDF"
+                    >
+                        <FileDown className="w-4 h-4" /> PDF
+                    </Btn>
+                    <Btn
+                        variant="outline"
+                        onClick={() => exportBilanXLSX(b, company)}
+                        title="Télécharger Excel"
+                    >
+                        <FileSpreadsheet className="w-4 h-4" /> Excel
+                    </Btn>
+                    <Btn
+                        variant="outline"
+                        onClick={async () => {
+                            setExportingDocx(true);
+                            try { await exportBilanDOCX(b, company); }
+                            finally { setExportingDocx(false); }
+                        }}
+                        disabled={exportingDocx}
+                        title="Télécharger Word (.docx)"
+                    >
+                        <FileText className="w-4 h-4" />
+                        {exportingDocx ? 'Génération…' : 'Word'}
+                    </Btn>
+                </div>
             </div>
 
             {/* KPI summary cards */}
