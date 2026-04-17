@@ -24,6 +24,11 @@ backend/err.txt
 .DS_Store
 Thumbs.db
 
+# PDFs et fichiers locaux non versionnés
+*.pdf
+"imprimer declaration DGI"/
+read_pdf.py
+
 # Playwright
 dashboard/playwright-report/
 dashboard/test-results/
