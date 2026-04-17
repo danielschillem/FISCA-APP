@@ -65,9 +65,15 @@ jobs:
 
     steps:
       - name: Trigger Render deploy webhook
+        env:
+          RENDER_DEPLOY_HOOK_BACKEND: ${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}
         run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_BACKEND" ]; then
+            echo "RENDER_DEPLOY_HOOK_BACKEND not set — skipping (deploy handled by docker-publish.yml)"
+            exit 0
+          fi
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}")
+            -X POST "$RENDER_DEPLOY_HOOK_BACKEND")
           echo "Render webhook status: $HTTP_STATUS"
           if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
             echo "Render deploy webhook failed with status $HTTP_STATUS"
