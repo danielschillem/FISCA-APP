@@ -42,6 +42,8 @@ services:
         sync: false        # → mot de passe du super administrateur
       - key: OPENAI_API_KEY
         sync: false        # → clé API OpenAI pour l'assistant IA (optionnel)
+      - key: MISTRAL_API_KEY
+        sync: false        # → clé API Mistral pour l'assistant IA (fallback OpenAI)
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
