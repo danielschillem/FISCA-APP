@@ -11,7 +11,7 @@
  *   </button>
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { api } from '../lib/api';
 import { X, Smartphone, CheckCircle2, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 
@@ -53,7 +53,7 @@ interface PaymentModalProps {
 export function PaymentModal({ documentType, documentId, onSuccess, onClose }: PaymentModalProps) {
   const [phone, setPhone] = useState('');
   const [step, setStep] = useState<PaymentStep>('form');
-  const [paymentId, setPaymentId] = useState<string | null>(null);
+  const [_paymentId, setPaymentId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [elapsed, setElapsed] = useState(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -127,10 +127,9 @@ export function PaymentModal({ documentType, documentId, onSuccess, onClose }: P
 
       setPaymentId(data.id);
       startPolling(data.id);
-    } catch (err: any) {
-      setErrorMsg(
-        err?.response?.data?.error || 'Erreur initialisation du paiement. Réessayez.'
-      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur initialisation du paiement. Réessayez.';
+      setErrorMsg(msg);
       setStep('form');
     }
   };
@@ -315,7 +314,7 @@ export function PaymentModal({ documentType, documentId, onSuccess, onClose }: P
   );
 }
 
-// ─── Hook usePaymentGate ──────────────────────────────────────────────────────
+// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 interface PaymentGateState {
   documentType: DocumentType;
@@ -323,20 +322,11 @@ interface PaymentGateState {
   onSuccess: () => void;
 }
 
-/**
- * Hook pour déclencher le modal de paiement depuis n'importe quelle page.
- *
- * @example
- * const { requestPayment, PaymentModalComponent } = usePaymentGate();
- *
- * // Intercepter le clic "Générer PDF"
- * <button onClick={() => requestPayment('iuts', decl.id, () => generateOfficialDGIPDF(decl, company, bulletins))}>
- *   Formulaire DGI
- * </button>
- *
- * {PaymentModalComponent}
- */
-export function usePaymentGate() {
+// eslint-disable-next-line react-refresh/only-export-components
+export function usePaymentGate(): {
+  requestPayment: (docType: DocumentType, docId: string, onSuccess: () => void) => void;
+  PaymentModalComponent: ReactNode;
+} {
   const [gate, setGate] = useState<PaymentGateState | null>(null);
 
   const requestPayment = useCallback(
@@ -348,7 +338,7 @@ export function usePaymentGate() {
 
   const closeModal = useCallback(() => setGate(null), []);
 
-  const PaymentModalComponent = gate ? (
+  const PaymentModalComponent: ReactNode = gate ? (
     <PaymentModal
       documentType={gate.documentType}
       documentId={gate.documentId}
