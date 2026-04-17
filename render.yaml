@@ -67,9 +67,5 @@ services:
     branch: main
     envVars:
       - key: VITE_API_URL
-        fromService:
-          name: fisca-backend
-          type: web
-          property: host
-          transform: "https://{value}/api"
+        sync: false        # → coller manuellement : https://fisca-backend.onrender.com/api
 

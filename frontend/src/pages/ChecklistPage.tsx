@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from 'react';
+﻿import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, Circle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getEcheancesAnnee, getEcheancesParRegime, nomMois, TYPE_COLORS, type Echeance } from '../lib/fiscalCalendar';
@@ -24,8 +24,11 @@ export default function ChecklistPage() {
     const { data: backendChecked } = useQuery<Record<string, boolean>>({
         queryKey: ['checklist'],
         queryFn: () => checklistApi.list().then((r) => r.data),
-        onSuccess: (data) => setLocalChecked(data),
-    } as Parameters<typeof useQuery>[0]);
+    });
+
+    useEffect(() => {
+        if (backendChecked) setLocalChecked(backendChecked);
+    }, [backendChecked]);
 
     const checked = backendChecked ?? localChecked;
 
