@@ -450,6 +450,16 @@ func RunMigrations(pool *pgxpool.Pool) error {
 	CREATE INDEX IF NOT EXISTS idx_companies_org_id  ON companies(org_id);
 	CREATE INDEX IF NOT EXISTS idx_oca_user          ON org_company_access(user_id);
 	CREATE INDEX IF NOT EXISTS idx_oca_company       ON org_company_access(company_id);
+
+	-- ─── Checklist fiscale (état coché par utilisateur) ──────────────────────
+
+	CREATE TABLE IF NOT EXISTS checklist_state (
+		user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		item_id    TEXT NOT NULL,
+		checked    BOOLEAN NOT NULL DEFAULT TRUE,
+		updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		PRIMARY KEY (user_id, item_id)
+	);
 	`
 	_, err := pool.Exec(context.Background(), schema)
 	if err != nil {

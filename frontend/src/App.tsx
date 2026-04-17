@@ -36,6 +36,7 @@ const ISPage = lazy(() => import('./pages/ISPage'));
 const PatentePage = lazy(() => import('./pages/PatentePage'));
 const CalendrierFiscalPage = lazy(() => import('./pages/CalendrierFiscalPage'));
 const ChecklistPage = lazy(() => import('./pages/ChecklistPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Admin pages : lazy loaded
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
@@ -110,7 +111,7 @@ function App() {
               <Route path="/admin/audit" element={<AdminAuditPage />} />
             </Route>
 
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
       </BrowserRouter>

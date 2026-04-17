@@ -1,7 +1,9 @@
 ﻿import { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, Circle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getEcheancesAnnee, getEcheancesParRegime, nomMois, TYPE_COLORS, type Echeance } from '../lib/fiscalCalendar';
 import { useRegime } from '../lib/regime';
+import { checklistApi } from '../lib/api';
 
 const STORAGE_KEY = 'fisca_checklist_v1';
 
@@ -14,8 +16,23 @@ export default function ChecklistPage() {
     const today = useMemo(() => new Date(), []);
     const [annee, setAnnee] = useState(today.getFullYear());
     const [mois, setMois] = useState(today.getMonth()); // 0-based = mois de la date limite
-    const [checked, setChecked] = useState<Record<string, boolean>>(loadChecked);
+    const [localChecked, setLocalChecked] = useState<Record<string, boolean>>(loadChecked);
     const { regime, info: regimeInfo } = useRegime();
+    const qc = useQueryClient();
+
+    // Fetch from backend; fallback to localStorage while loading
+    const { data: backendChecked } = useQuery<Record<string, boolean>>({
+        queryKey: ['checklist'],
+        queryFn: () => checklistApi.list().then((r) => r.data),
+        onSuccess: (data) => setLocalChecked(data),
+    } as Parameters<typeof useQuery>[0]);
+
+    const checked = backendChecked ?? localChecked;
+
+    const toggleMut = useMutation({
+        mutationFn: ({ id, val }: { id: string; val: boolean }) => checklistApi.toggle(id, val),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['checklist'] }),
+    });
 
     const echeances = useMemo(() => {
         // Générer N-1 et N pour couvrir janvier (obligations déc → jan 15)
@@ -29,11 +46,12 @@ export default function ChecklistPage() {
     }, [annee, mois, today, regime, regimeInfo.echeances]);
 
     const toggle = (id: string) => {
-        setChecked(prev => {
-            const next = { ...prev, [id]: !prev[id] };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-            return next;
-        });
+        const newVal = !checked[id];
+        // Optimistic local update + localStorage fallback
+        const next = { ...localChecked, [id]: newVal };
+        setLocalChecked(next);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        toggleMut.mutate({ id, val: newVal });
     };
 
     const doneCount = echeances.filter(e => checked[e.id]).length;

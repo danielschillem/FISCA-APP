@@ -1,6 +1,7 @@
 ﻿import { useAppStore, useAuthStore } from '../lib/store';
 import { Bell, Menu } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import { notificationApi } from '../lib/api';
 import type { Notification } from '../types';
 
@@ -20,10 +21,29 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
         queryKey: ['notifications'],
         queryFn: () => notificationApi.list().then((r) => r.data),
         enabled: !!user,
-        refetchInterval: 60_000,
+        refetchInterval: 30_000,
     });
 
     const unread = notifs?.filter((n) => !n.lu).length ?? 0;
+    const prevUnread = useRef(unread);
+
+    useEffect(() => {
+        if (unread > prevUnread.current && 'Notification' in window) {
+            if (Notification.permission === 'default') {
+                Notification.requestPermission();
+            } else if (Notification.permission === 'granted') {
+                const fresh = notifs?.filter((n) => !n.lu) ?? [];
+                const top = fresh[0];
+                if (top) {
+                    new Notification(top.titre, {
+                        body: top.message,
+                        icon: '/favicon.svg',
+                    });
+                }
+            }
+        }
+        prevUnread.current = unread;
+    }, [unread, notifs]);
     const now = new Date();
     const dateStr = `${JOURS[now.getDay()]} ${now.getDate()} ${MOIS[now.getMonth()]} ${now.getFullYear()}`;
     const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'US';

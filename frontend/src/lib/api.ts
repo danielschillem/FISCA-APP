@@ -232,6 +232,12 @@ export const notificationApi = {
     readAll: (ids: string[]) => api.put('/notifications/read-all', { ids }),
 };
 
+// ── Checklist fiscale ─────────────────────────────────────────
+export const checklistApi = {
+    list: () => api.get<Record<string, boolean>>('/checklist'),
+    toggle: (id: string, checked: boolean) => api.put(`/checklist/${id}`, { checked }),
+};
+
 // ── Workflow ─────────────────────────────────────────────────
 export const workflowApi = {
     list: (statut?: string) => api.get('/workflow', { params: statut ? { statut } : undefined }),

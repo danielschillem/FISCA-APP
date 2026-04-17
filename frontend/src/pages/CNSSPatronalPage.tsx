@@ -6,7 +6,7 @@ import { Card, Btn, Spinner, Table, Badge } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import type { Employee, CNSSPatronal } from '../types';
 import { MOIS_FR } from '../types';
-import { Zap, Lock } from 'lucide-react';
+import { Zap, Lock, Download } from 'lucide-react';
 
 export default function CNSSPatronalPage() {
     const { plan } = useAppStore();
@@ -135,6 +135,44 @@ function CNSSContent() {
                     </Table>
                 </div>
             </Card>
+            {/* Declarations list with export */}
+            {declarations.length > 0 && (
+                <Card title="Déclarations CNSS générées">
+                    <div className="overflow-x-auto">
+                        <Table columns={['Période', 'Salariés CNSS', 'Salariés CARFO', 'Total patronal CNSS', 'Total CARFO', 'Total général', 'Statut', 'Export']}>
+                            {declarations.map((d) => (
+                                <tr key={d.id} className="hover:bg-gray-50">
+                                    <td className="py-3 px-4 text-sm font-medium text-gray-900">{d.periode}</td>
+                                    <td className="py-3 px-4 text-sm text-right">{d.nb_salaries_cnss}</td>
+                                    <td className="py-3 px-4 text-sm text-right">{d.nb_salaries_carfo}</td>
+                                    <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(d.cotisation_pat_cnss)}</td>
+                                    <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(d.total_carfo)}</td>
+                                    <td className="py-3 px-4 text-sm text-right font-bold font-mono text-green-700">{fmtN(d.total_general)}</td>
+                                    <td className="py-3 px-4 text-sm">
+                                        <Badge color={d.statut === 'valide' ? 'green' : 'gray'}>{d.statut}</Badge>
+                                    </td>
+                                    <td className="py-3 px-4 text-sm">
+                                        <button
+                                            onClick={async () => {
+                                                const res = await cnssApi.export(d.id);
+                                                const url = URL.createObjectURL(new Blob([res.data]));
+                                                const a = document.createElement('a');
+                                                a.href = url;
+                                                a.download = `CNSS_${d.periode.replace(' ', '_')}.pdf`;
+                                                a.click();
+                                                URL.revokeObjectURL(url);
+                                            }}
+                                            className="flex items-center gap-1 text-xs text-green-700 hover:underline font-medium"
+                                        >
+                                            <Download className="w-3.5 h-3.5" /> PDF
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </Table>
+                    </div>
+                </Card>
+            )}
         </div>
     );
 }

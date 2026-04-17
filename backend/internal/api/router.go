@@ -76,6 +76,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 	bilanH := handlers.NewBilanHandler(db)
 	adminH := handlers.NewAdminHandler(db)
 	orgH := handlers.NewOrgHandler(db)
+	checklistH := handlers.NewChecklistHandler(db)
 
 	// Routes publiques
 	r.Route("/api", func(r chi.Router) {
@@ -120,6 +121,10 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			r.Get("/notifications", notifH.List)
 			r.Put("/notifications/read-all", notifH.ReadAll)
 			r.Put("/notifications/{id}/read", notifH.ReadOne)
+
+			// Checklist fiscale
+			r.Get("/checklist", checklistH.List)
+			r.Put("/checklist/{id}", checklistH.Toggle)
 
 			// Assistant IA [Plan: Pro+] — rate limit 10 req/min (API OpenAI coûteuse)
 			assistantRateLimit := mw.RateLimit(10, 10.0/60)

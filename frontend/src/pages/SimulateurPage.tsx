@@ -1,8 +1,10 @@
 ﻿import { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { calcEmploye, calcIRF, calcIRCM, calcCME, calcPatente, calcMFP, calcIS, fmt, fmtN } from '../lib/fiscalCalc';
+import { simulationApi } from '../lib/api';
 import { Card, Input, Select, Btn } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
-import { Lock, TrendingUp, BarChart2 } from 'lucide-react';
+import { Lock, TrendingUp, BarChart2, Save, FolderOpen, Trash2 } from 'lucide-react';
 
 const MOIS_PROJ = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 
@@ -28,13 +30,34 @@ const defaultInput = (label: string): ScenInput => ({
 });
 
 function SimContent() {
+    const qc = useQueryClient();
     const [mode, setMode] = useState<'simulateur' | 'projection'>('simulateur');
     const [a, setA] = useState<ScenInput>(defaultInput('Scénario A'));
     const [b, setB] = useState<ScenInput>({ ...defaultInput('Scénario B'), categorie: 'Cadre', salaire_base: 350000 });
     const [showAB, setShowAB] = useState(false);
+    const [showSaved, setShowSaved] = useState(false);
 
     const rA = calcEmploye({ ...a, heures_sup: 0 });
     const rB = calcEmploye({ ...b, heures_sup: 0 });
+
+    const { data: savedSims = [] } = useQuery<{ id: string; label: string; input_data: ScenInput; result_data: object; created_at: string }[]>({
+        queryKey: ['simulations'],
+        queryFn: () => simulationApi.list().then((r) => r.data),
+    });
+
+    const saveMut = useMutation({
+        mutationFn: (s: ScenInput) => simulationApi.create({
+            label: s.label || 'Simulation',
+            input_data: s,
+            result_data: calcEmploye({ ...s, heures_sup: 0 }),
+        }),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['simulations'] }),
+    });
+
+    const deleteMut = useMutation({
+        mutationFn: (id: string) => simulationApi.delete(id),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['simulations'] }),
+    });
 
     // Projection annuelle : 12 mois avec le même scénario A
     const projections = useMemo(() => {
@@ -75,11 +98,51 @@ function SimContent() {
 
             {mode === 'simulateur' ? (
                 <>
-                    <div className="flex justify-end">
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
+                        <Btn variant="outline" onClick={() => setShowSaved(!showSaved)}>
+                            <FolderOpen className="w-4 h-4" /> {showSaved ? 'Masquer sauvegardes' : `Sauvegardes (${savedSims.length})`}
+                        </Btn>
+                        <Btn variant="outline" onClick={() => saveMut.mutate(a)} disabled={saveMut.isPending}>
+                            <Save className="w-4 h-4" /> Sauvegarder A
+                        </Btn>
+                        {showAB && (
+                            <Btn variant="outline" onClick={() => saveMut.mutate(b)} disabled={saveMut.isPending}>
+                                <Save className="w-4 h-4" /> Sauvegarder B
+                            </Btn>
+                        )}
                         <Btn variant="outline" onClick={() => setShowAB(!showAB)}>
                             {showAB ? '← Mode simple' : 'Comparer A vs B'}
                         </Btn>
                     </div>
+
+                    {/* Saved simulations panel */}
+                    {showSaved && savedSims.length > 0 && (
+                        <Card title="Simulations sauvegardées">
+                            <div className="space-y-2">
+                                {savedSims.map((s) => (
+                                    <div key={s.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 text-sm">
+                                        <span className="font-medium text-gray-800">{s.label}</span>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setA({ ...s.input_data, label: s.label })}
+                                                className="text-xs text-blue-600 hover:underline font-medium"
+                                            >Charger → A</button>
+                                            {showAB && (
+                                                <button
+                                                    onClick={() => setB({ ...s.input_data, label: s.label })}
+                                                    className="text-xs text-purple-600 hover:underline font-medium"
+                                                >Charger → B</button>
+                                            )}
+                                            <button
+                                                onClick={() => deleteMut.mutate(s.id)}
+                                                className="text-gray-400 hover:text-red-500"
+                                            ><Trash2 className="w-3.5 h-3.5" /></button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </Card>
+                    )}
 
                     <div className={`grid gap-6 ${showAB ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1 max-w-2xl'}`}>
                         <ScenarioPanel label="Scénario A" s={a} setS={setA} r={rA} />
