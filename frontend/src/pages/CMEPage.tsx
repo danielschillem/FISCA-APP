@@ -1,11 +1,12 @@
 ﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { cmeApi } from '../lib/api';
+import { cmeApi, companyApi } from '../lib/api';
 import { calcCME, fmt, fmtN } from '../lib/fiscalCalc';
 import { Card, Btn, Spinner } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
-import { Save, Trash2, Download, Lock, CheckCircle } from 'lucide-react';
-import type { CMEDeclaration } from '../types';
+import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
+import type { CMEDeclaration, Company } from '../types';
+import { generateCMEForm } from '../lib/pdfDGI';
 
 type Zone = 'A' | 'B' | 'C' | 'D';
 const ZONES: { value: Zone; label: string; desc: string }[] = [
@@ -44,6 +45,11 @@ function CMEContent() {
     const { data: history = [], isLoading } = useQuery<CMEDeclaration[]>({
         queryKey: ['cme', annee],
         queryFn: () => cmeApi.list(annee).then((r) => r.data),
+    });
+
+    const { data: company } = useQuery<Company>({
+        queryKey: ['company'],
+        queryFn: () => companyApi.get().then((r) => r.data),
     });
 
     const createMut = useMutation({
@@ -197,6 +203,10 @@ function CMEContent() {
                                                     className="p-1 text-blue-600 hover:bg-blue-50 rounded">
                                                     <Download className="w-3.5 h-3.5" />
                                                 </button>
+                                                <button onClick={() => generateCMEForm(d, company)} title="Formulaire DGI"
+                                                    className="p-1 text-orange-500 hover:bg-orange-50 rounded">
+                                                    <FileText className="w-3.5 h-3.5" />
+                                                </button>
                                                 <button onClick={() => deleteMut.mutate(d.id)} title="Supprimer"
                                                     className="p-1 text-red-500 hover:bg-red-50 rounded">
                                                     <Trash2 className="w-3.5 h-3.5" />
@@ -213,9 +223,9 @@ function CMEContent() {
 
             <Card title="Base légale">
                 <ul className="text-xs text-gray-500 space-y-1">
-                    <li>• Art. 533 CGI 2025 : CME applicable aux micro-entreprises (CA ≤ 150 M)</li>
+                    <li>• Art. 533 CGI 2025 : CME applicable aux micro-entreprises (CA ≤ 150 M)</li>
                     <li>• 8 classes tarifaires selon CA et zone géographique (A, B, C, D)</li>
-                    <li>• Art. 537 : Réduction de 25 % pour les adhérents d'un CGA agréé</li>
+                    <li>• Art. 537 : Réduction de 25 % pour les adhérents d'un CGA agréé</li>
                     <li>• Paiement annuel avant le 30 avril</li>
                 </ul>
             </Card>

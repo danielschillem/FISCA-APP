@@ -1,11 +1,12 @@
 ﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { retenueApi } from '../lib/api';
+import { retenueApi, companyApi } from '../lib/api';
 import { fmt, fmtN } from '../lib/fiscalCalc';
-import type { RetenueSource } from '../types';
+import type { RetenueSource, Company } from '../types';
 import { Card, Btn, Spinner, Table } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
-import { X, Lock } from 'lucide-react';
+import { generateRetenuesForm } from '../lib/pdfDGI';
+import { X, Lock, FileText } from 'lucide-react';
 
 // Types retenue : CGI 2025 Art. 206-207 (RAS) et Art. 121-126/140 (IRF/IRCM)
 const RETENUE_TYPES: Record<string, { label: string; taux: number }> = {
@@ -40,6 +41,11 @@ function RetenuesContent() {
     const { data: retenues = [], isLoading } = useQuery<RetenueSource[]>({
         queryKey: ['retenues', mois, annee],
         queryFn: () => retenueApi.list(mois, annee).then((r) => r.data),
+    });
+
+    const { data: company } = useQuery<Company>({
+        queryKey: ['company'],
+        queryFn: () => companyApi.get().then((r) => r.data),
     });
 
     const create = useMutation({
@@ -90,7 +96,12 @@ function RetenuesContent() {
                 <div className="bg-green-50 rounded-xl p-4"><p className="text-xs text-gray-500">Net versé</p><p className="text-xl font-bold text-green-700">{fmt(totaux.net)}</p></div>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-between">
+                {retenues.length > 0 && (
+                    <Btn variant="outline" onClick={() => generateRetenuesForm(retenues, company, mois, annee)}>
+                        <FileText className="w-4 h-4" /> Formulaire DGI RAS
+                    </Btn>
+                )}
                 <Btn onClick={() => setShowAdd(!showAdd)}>+ Ajouter prestation</Btn>
             </div>
 

@@ -1,11 +1,12 @@
 ﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ircmApi } from '../lib/api';
+import { ircmApi, companyApi } from '../lib/api';
 import { calcIRCM, fmt } from '../lib/fiscalCalc';
 import { Card, Btn, Spinner } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
-import { Save, Trash2, Download, Lock, CheckCircle } from 'lucide-react';
-import type { IRCMDeclaration } from '../types';
+import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
+import type { IRCMDeclaration, Company } from '../types';
+import { generateIRCMForm } from '../lib/pdfDGI';
 
 type IRCMType = 'CREANCES' | 'OBLIGATIONS' | 'DIVIDENDES';
 
@@ -31,6 +32,11 @@ function IRCMContent() {
     const { data: history = [], isLoading } = useQuery<IRCMDeclaration[]>({
         queryKey: ['ircm', annee],
         queryFn: () => ircmApi.list(annee).then((r) => r.data),
+    });
+
+    const { data: company } = useQuery<Company>({
+        queryKey: ['company'],
+        queryFn: () => companyApi.get().then((r) => r.data),
     });
 
     const createMut = useMutation({
@@ -172,6 +178,10 @@ function IRCMContent() {
                                                     className="p-1 text-blue-600 hover:bg-blue-50 rounded">
                                                     <Download className="w-3.5 h-3.5" />
                                                 </button>
+                                                <button onClick={() => generateIRCMForm(d, company)} title="Formulaire DGI"
+                                                    className="p-1 text-orange-500 hover:bg-orange-50 rounded">
+                                                    <FileText className="w-3.5 h-3.5" />
+                                                </button>
                                                 <button onClick={() => deleteMut.mutate(d.id)} title="Supprimer"
                                                     className="p-1 text-red-500 hover:bg-red-50 rounded">
                                                     <Trash2 className="w-3.5 h-3.5" />
@@ -189,7 +199,7 @@ function IRCMContent() {
             <Card title="Base légale">
                 <ul className="text-xs text-gray-500 space-y-1">
                     <li>• Art. 140 CGI 2025 : IRCM : retenue libératoire à la source</li>
-                    <li>• Créances & dépôts : 25 % · Obligations & bons : 6 % · Dividendes : 12,5 %</li>
+                    <li>• Créances &amp; dépôts : 25 % · Obligations &amp; bons : 6 % · Dividendes : 12,5 %</li>
                     <li>• Art. 150 : Déclaration et versement mensuel (avant le 15 du mois suivant)</li>
                 </ul>
             </Card>

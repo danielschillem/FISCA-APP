@@ -1,11 +1,12 @@
 ﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { tvaApi } from '../lib/api';
+import { tvaApi, companyApi } from '../lib/api';
 import { calcTVA, fmt, fmtN } from '../lib/fiscalCalc';
 import { Card, Btn, Spinner } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
-import type { TVADeclaration } from '../types';
-import { Save, X, Lock } from 'lucide-react';
+import type { TVADeclaration, Company } from '../types';
+import { generateTVAForm } from '../lib/pdfDGI';
+import { Save, X, Lock, FileText } from 'lucide-react';
 
 type LigneLocal = { label: string; ht: number; taux: number; type_op: 'vente' | 'achat' };
 
@@ -35,6 +36,11 @@ function TVAContent() {
         queryKey: ['tva'],
         queryFn: () => tvaApi.list().then((r) => r.data?.data ?? r.data ?? []),
         staleTime: 30_000,
+    });
+
+    const { data: company } = useQuery<Company>({
+        queryKey: ['company'],
+        queryFn: () => companyApi.get().then((r) => r.data),
     });
 
     const totC = collectee.reduce((s, l) => {
@@ -161,8 +167,16 @@ function TVAContent() {
                                                 </span>
                                             </td>
                                             <td className="py-2 px-3 text-right">
-                                                <button onClick={() => deleteMut.mutate(d.id)}
-                                                    className="text-xs text-red-400 hover:text-red-600 p-1"><X className="w-3.5 h-3.5" /></button>
+                                                <div className="flex justify-end gap-1">
+                                                    <button
+                                                        onClick={() => generateTVAForm(d, company)}
+                                                        title="Formulaire DGI"
+                                                        className="p-1 text-orange-500 hover:bg-orange-50 rounded">
+                                                        <FileText className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button onClick={() => deleteMut.mutate(d.id)}
+                                                        className="text-xs text-red-400 hover:text-red-600 p-1"><X className="w-3.5 h-3.5" /></button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}

@@ -1,11 +1,12 @@
 ﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { isApi } from '../lib/api';
+import { isApi, companyApi } from '../lib/api';
 import { calcIS, calcMFP, fmt, fmtN } from '../lib/fiscalCalc';
 import { Card, Btn, Spinner } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
-import { Save, Trash2, Download, Lock, CheckCircle } from 'lucide-react';
-import type { ISDeclaration } from '../types';
+import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
+import type { ISDeclaration, Company } from '../types';
+import { generateISForm } from '../lib/pdfDGI';
 
 type Regime = 'reel' | 'simplifie';
 
@@ -29,6 +30,11 @@ function ISContent() {
     const { data: history = [], isLoading } = useQuery<ISDeclaration[]>({
         queryKey: ['is', annee],
         queryFn: () => isApi.list(annee).then((r) => r.data),
+    });
+
+    const { data: company } = useQuery<Company>({
+        queryKey: ['company'],
+        queryFn: () => companyApi.get().then((r) => r.data),
     });
 
     const createMut = useMutation({
@@ -192,6 +198,10 @@ function ISContent() {
                                                     className="p-1 text-blue-600 hover:bg-blue-50 rounded">
                                                     <Download className="w-3.5 h-3.5" />
                                                 </button>
+                                                <button onClick={() => generateISForm(d, company)} title="Formulaire DGI"
+                                                    className="p-1 text-orange-500 hover:bg-orange-50 rounded">
+                                                    <FileText className="w-3.5 h-3.5" />
+                                                </button>
                                                 <button onClick={() => deleteMut.mutate(d.id)} title="Supprimer"
                                                     className="p-1 text-red-500 hover:bg-red-50 rounded">
                                                     <Trash2 className="w-3.5 h-3.5" />
@@ -208,11 +218,11 @@ function ISContent() {
 
             <Card title="Base légale">
                 <ul className="text-xs text-gray-500 space-y-1">
-                    <li>• Art. 42 CGI 2025 : IS au taux de 27,5 % du bénéfice net imposable</li>
-                    <li>• Art. 40 : MFP = 0,5 % du chiffre d'affaires (minimum garanti)</li>
+                    <li>• Art. 42 CGI 2025 : IS au taux de 27,5 % du bénéfice net imposable</li>
+                    <li>• Art. 40 : MFP = 0,5 % du chiffre d'affaires (minimum garanti)</li>
                     <li>• L'impôt dû est le maximum entre IS théorique et MFP</li>
-                    <li>• Déclaration et paiement : avant le 30 avril de l'année suivante</li>
-                    <li>• Acomptes trimestriels de 25 % du dernier IS payé</li>
+                    <li>• Déclaration et paiement : avant le 30 avril de l'année suivante</li>
+                    <li>• Acomptes trimestriels de 25 % du dernier IS payé</li>
                 </ul>
             </Card>
         </div>

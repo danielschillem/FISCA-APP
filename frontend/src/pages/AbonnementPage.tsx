@@ -1,8 +1,10 @@
-﻿import { useAuthStore, useAppStore } from '../lib/store';
+﻿import { useState } from 'react';
+import { useAuthStore, useAppStore } from '../lib/store';
 import { usePermissions } from '../lib/permissions';
 import { Card } from '../components/ui';
 import {
     Check, X, ArrowUpRight, Users, User, Building2, Lock, Zap, Star,
+    Smartphone, CreditCard, Copy, CheckCircle2,
 } from 'lucide-react';
 
 // ─── Plan definitions ─────────────────────────────────────────
@@ -125,14 +127,22 @@ export default function AbonnementPage() {
     const allPlans: PlanDef[] = [...PHYSIQUE_PLANS, ...MORAL_PLANS];
     const currentDef = allPlans.find((p) => p.id === currentPlan);
 
+    const [payModal, setPayModal] = useState<{ planId: string; label: string; price: string; color: string } | null>(null);
+    const [copied, setCopied] = useState('');
+
+    const copyText = (text: string, key: string) => {
+        navigator.clipboard.writeText(text);
+        setCopied(key);
+        setTimeout(() => setCopied(''), 2000);
+    };
+
     const handleUpgrade = (planId: string) => {
-        const subject = planId === 'moral_enterprise'
-            ? 'Devis%20Plan%20Entreprise'
-            : `Upgrade%20vers%20${planId}`;
-        const body = planId === 'moral_enterprise'
-            ? 'Bonjour%2C%20je%20souhaite%20obtenir%20un%20devis%20pour%20le%20plan%20Entreprise.'
-            : `Bonjour%2C%20je%20souhaite%20passer%20au%20plan%20${planId}.`;
-        window.open(`mailto:contact@fisca.bf?subject=${subject}&body=${body}`, '_blank');
+        if (planId === 'moral_enterprise') {
+            window.open('mailto:contact@fisca.bf?subject=Devis%20Plan%20Entreprise&body=Bonjour%2C%20je%20souhaite%20un%20devis%20pour%20le%20plan%20Entreprise.', '_blank');
+            return;
+        }
+        const p = allPlans.find((x) => x.id === planId);
+        if (p) setPayModal({ planId: p.id, label: p.label, price: p.price, color: p.color });
     };
 
     const PlanCard = ({ p, isActive }: { p: PlanDef; isActive: boolean }) => {
@@ -207,6 +217,88 @@ export default function AbonnementPage() {
 
     return (
         <div className="space-y-8 max-w-5xl">
+            {/* Modal paiement */}
+            {payModal && (
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setPayModal(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">Passer au plan <span style={{ color: payModal.color }}>{payModal.label}</span></h3>
+                                <p className="text-sm text-gray-500">{payModal.price} / mois</p>
+                            </div>
+                            <button onClick={() => setPayModal(null)} className="p-1 rounded-full hover:bg-gray-100">
+                                <X className="w-5 h-5 text-gray-400" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* Orange Money */}
+                            <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Smartphone className="w-4 h-4 text-orange-500" />
+                                    <span className="text-sm font-semibold text-orange-700">Orange Money</span>
+                                </div>
+                                <p className="text-xs text-gray-600 mb-2">Envoyez le montant au numéro :</p>
+                                <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-orange-100">
+                                    <span className="font-mono font-bold text-gray-900">+226 70 00 00 00</span>
+                                    <button onClick={() => copyText('+22670000000', 'orange')} className="text-orange-500 hover:text-orange-700">
+                                        {copied === 'orange' ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">Nom : FISCA SARL · Motif : <strong>{payModal.planId} – {user?.email}</strong></p>
+                            </div>
+
+                            {/* Moov Money */}
+                            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Smartphone className="w-4 h-4 text-blue-500" />
+                                    <span className="text-sm font-semibold text-blue-700">Moov Money</span>
+                                </div>
+                                <p className="text-xs text-gray-600 mb-2">Envoyez le montant au numéro :</p>
+                                <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-blue-100">
+                                    <span className="font-mono font-bold text-gray-900">+226 70 11 11 11</span>
+                                    <button onClick={() => copyText('+22670111111', 'moov')} className="text-blue-500 hover:text-blue-700">
+                                        {copied === 'moov' ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">Nom : FISCA SARL · Motif : <strong>{payModal.planId} – {user?.email}</strong></p>
+                            </div>
+
+                            {/* Virement */}
+                            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <CreditCard className="w-4 h-4 text-gray-500" />
+                                    <span className="text-sm font-semibold text-gray-700">Virement bancaire</span>
+                                </div>
+                                <div className="space-y-1 text-xs text-gray-600">
+                                    <div className="flex justify-between"><span>Banque</span><span className="font-medium">CBAO Burkina</span></div>
+                                    <div className="flex justify-between"><span>Titulaire</span><span className="font-medium">FISCA SARL</span></div>
+                                    <div className="flex items-center justify-between">
+                                        <span>IBAN</span>
+                                        <div className="flex items-center gap-1">
+                                            <span className="font-mono font-medium">BF00 0000 0000 0000 0000 00</span>
+                                            <button onClick={() => copyText('BF00000000000000000000', 'iban')} className="text-gray-400 hover:text-gray-700">
+                                                {copied === 'iban' ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-5 bg-green-50 rounded-xl p-3 text-xs text-green-700">
+                            Après paiement, envoyez la preuve à <strong>contact@fisca.bf</strong> avec en objet votre email. Activation sous 24h.
+                        </div>
+                        <button
+                            onClick={() => window.open(`mailto:contact@fisca.bf?subject=Paiement%20${payModal.planId}&body=Bonjour%2C%20je%20viens%20d%27effectuer%20le%20paiement%20pour%20le%20plan%20${payModal.label}.%20Mon%20email%20: ${user?.email}`, '_blank')}
+                            className="mt-3 w-full text-center text-sm font-semibold py-2.5 rounded-xl text-white transition-all hover:opacity-90"
+                            style={{ background: payModal.color }}
+                        >
+                            Confirmer le paiement par email
+                        </button>
+                    </div>
+                </div>
+            )}
             {/* Plan actuel résumé */}
             <div className="rounded-2xl border-2 p-5 flex items-center gap-4" style={{ borderColor: currentDef?.color ?? '#94a3b8' }}>
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0"
