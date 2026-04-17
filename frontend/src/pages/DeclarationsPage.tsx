@@ -126,27 +126,45 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
     t(company?.adresse ?? '', ML + 2, y + 6.5, 7.5, true, 'left', BLACK);
     y += lineH;
 
-    // BP
+    // BP — filled with actual company data
     const bpH = 6;
+    const LGRAY: [number, number, number] = [110, 110, 110];
     box(ML, y, CW, bpH);
-    t('BP ..........  Quartier ................  Secteur ...  N et rue ..................  Section ...........  Lot ....  Parcelle ....', ML + 2, y + 4.5, 5, false);
+    const bpY = y + 4.5;
+    t('BP', ML + 2, bpY, 4.5, false, 'left', LGRAY);
+    t(company?.bp ?? '', ML + 7, bpY, 6.5, true, 'left', BLACK);
+    t('Quartier', ML + 33, bpY, 4.5, false, 'left', LGRAY);
+    t(company?.quartier ?? '', ML + 45, bpY, 6.5, true, 'left', BLACK);
+    t('Secteur', ML + 78, bpY, 4.5, false, 'left', LGRAY);
+    t('N et rue', ML + 92, bpY, 4.5, false, 'left', LGRAY);
+    t(company?.adresse ?? '', ML + 104, bpY, 6.5, true, 'left', BLACK);
+    t('Section', ML + 142, bpY, 4.5, false, 'left', LGRAY);
+    t('Lot', ML + 162, bpY, 4.5, false, 'left', LGRAY);
+    t('Parcelle', ML + 173, bpY, 4.5, false, 'left', LGRAY);
     y += bpH;
 
     // Etablissements secondaires
     const etabH = 5.5;
     for (let i = 1; i <= 3; i++) {
         box(ML, y, CW, etabH);
-        t(`${i}. Adresse etablissement secondaire ...............................................................................................................`, ML + 2, y + 4, 5, false);
+        t(`${i}. Adresse etablissement secondaire`, ML + 2, y + 4, 5, false);
         y += etabH;
     }
 
     // Adresse domicile
     box(ML, y, CW, lineH);
-    t('Adresse du domicile (Localite) ...................................................................................................................', ML + 2, y + 4.5, 5, false);
+    t('Adresse du domicile (Localite)', ML + 2, y + 3, 5, false);
     y += lineH;
 
     box(ML, y, CW, bpH);
-    t('BP ..........  Quartier ................  Secteur ...  N et rue ..................  Section ...........  Lot ....  Parcelle ....', ML + 2, y + 4.5, 5, false);
+    const bpY2 = y + 4.5;
+    t('BP', ML + 2, bpY2, 4.5, false, 'left', LGRAY);
+    t('Quartier', ML + 33, bpY2, 4.5, false, 'left', LGRAY);
+    t('Secteur', ML + 78, bpY2, 4.5, false, 'left', LGRAY);
+    t('N et rue', ML + 92, bpY2, 4.5, false, 'left', LGRAY);
+    t('Section', ML + 142, bpY2, 4.5, false, 'left', LGRAY);
+    t('Lot', ML + 162, bpY2, 4.5, false, 'left', LGRAY);
+    t('Parcelle', ML + 173, bpY2, 4.5, false, 'left', LGRAY);
     y += bpH;
 
     // --- III. TPA ---

@@ -104,6 +104,23 @@ function dgiIdentification(doc: jsPDF, ML: number, CW: number, y: number, compan
     t(doc, adresse, ML + 2, y + rowH - 1.5, 8, false, 'left', BLACK);
     y += rowH;
 
+    // BP / Quartier
+    const bpH = 6;
+    const LGRAY: RGB = [110, 110, 110];
+    box(doc, ML, y, CW, bpH);
+    const bpY = y + 4.5;
+    t(doc, 'BP', ML + 2, bpY, 4.5, false, 'left', LGRAY);
+    t(doc, company?.bp ?? '', ML + 7, bpY, 6.5, true, 'left', BLACK);
+    t(doc, 'Quartier', ML + 33, bpY, 4.5, false, 'left', LGRAY);
+    t(doc, company?.quartier ?? '', ML + 45, bpY, 6.5, true, 'left', BLACK);
+    t(doc, 'Secteur', ML + 78, bpY, 4.5, false, 'left', LGRAY);
+    t(doc, 'N et rue', ML + 92, bpY, 4.5, false, 'left', LGRAY);
+    t(doc, company?.adresse ?? '', ML + 104, bpY, 6.5, true, 'left', BLACK);
+    t(doc, 'Section', ML + 142, bpY, 4.5, false, 'left', LGRAY);
+    t(doc, 'Lot', ML + 162, bpY, 4.5, false, 'left', LGRAY);
+    t(doc, 'Parcelle', ML + 173, bpY, 4.5, false, 'left', LGRAY);
+    y += bpH;
+
     // Tel | Email
     box(doc, ML, y, hw, rowH);
     box(doc, ML + hw, y, hw, rowH);
