@@ -20,7 +20,7 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    region: frankfurt
+    region: oregon
     plan: free
     autoDeploy: true
     branch: main
@@ -33,21 +33,21 @@ services:
       - key: PORT
         value: "8080"
       - key: ALLOWED_ORIGIN
-        sync: false        # → ex: https://fisca-frontend.onrender.com,https://app.fisca.bf
+        sync: false        # → ex: https://fisca-frontend.onrender.com
       - key: ADMIN_SECRET
-        sync: false
+        generateValue: true
       - key: SUPERADMIN_EMAIL
-        sync: false        # → email du super administrateur FISCA
+        sync: false
       - key: SUPERADMIN_PASSWORD
-        sync: false        # → mot de passe du super administrateur
+        sync: false
       - key: OPENAI_API_KEY
-        sync: false        # → clé API OpenAI pour l'assistant IA (optionnel)
+        sync: false
       - key: MISTRAL_API_KEY
-        sync: false        # → clé API Mistral pour l'assistant IA (fallback OpenAI)
+        value: "1jDYA7oooMGxqUOSspxRo1RmCgRjLHkO"
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
-        sync: false
+        value: "587"
       - key: SMTP_USER
         sync: false
       - key: SMTP_PASS
@@ -61,7 +61,7 @@ services:
     runtime: docker
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
-    region: frankfurt
+    region: oregon
     plan: free
     autoDeploy: true
     branch: main

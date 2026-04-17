@@ -12,6 +12,7 @@ import (
 
 	"github.com/fisca-app/backend/internal/api"
 	"github.com/fisca-app/backend/internal/db"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
@@ -21,10 +22,21 @@ func main() {
 		log.Println("Pas de fichier .env, utilisation des variables d'environnement système")
 	}
 
-	// Connexion base de données
-	database, err := db.Connect()
+	// Connexion base de données avec retry (utile au démarrage sur Render)
+	var database *pgxpool.Pool
+	var err error
+	for attempt := 1; attempt <= 5; attempt++ {
+		database, err = db.Connect()
+		if err == nil {
+			break
+		}
+		log.Printf("Tentative connexion DB %d/5 échouée: %v", attempt, err)
+		if attempt < 5 {
+			time.Sleep(time.Duration(attempt*2) * time.Second)
+		}
+	}
 	if err != nil {
-		log.Fatalf("Connexion DB échouée: %v", err)
+		log.Fatalf("Connexion DB échouée après 5 tentatives: %v", err)
 	}
 	defer database.Close()
 
