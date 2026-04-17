@@ -406,8 +406,8 @@ export default function DeclarationsPage() {
         queryFn: () => declarationApi.list(annee).then((r) => r.data ?? []),
     });
     const { data: tvaDecls   = [] } = useQuery<TVADeclaration[]>({
-        queryKey: ['tva'],
-        queryFn: () => tvaApi.list().then((r) => r.data?.data ?? r.data ?? []),
+        queryKey: ['tva', annee],
+        queryFn: () => tvaApi.list(annee).then((r) => r.data ?? []),
     });
     const { data: irfDecls   = [] } = useQuery<IRFDeclaration[]>({
         queryKey: ['irf', annee],
@@ -441,8 +441,7 @@ export default function DeclarationsPage() {
     // ── Helper to build normalized rows ─────────────────────────────
     const buildRows = (): UnifiedDecl[] => [
         ...iutsDecls.map(d   => ({ id: d.id, type: 'IUTS/TPA' as TaxType, annee: d.annee, mois: d.mois,  montant: d.total,                  statut: d.statut, ref: d.ref,  created_at: d.created_at, raw: d })),
-        ...tvaDecls.filter(d => d.annee === annee)
-                   .map(d   => ({ id: d.id, type: 'TVA'      as TaxType, annee: d.annee, mois: d.mois,  montant: Math.max(0, d.tva_nette), statut: d.statut, ref: d.ref,  created_at: d.created_at, raw: d })),
+        ...tvaDecls.map(d    => ({ id: d.id, type: 'TVA'      as TaxType, annee: d.annee, mois: d.mois,  montant: Math.max(0, d.tva_nette), statut: d.statut, ref: d.ref,  created_at: d.created_at, raw: d })),
         ...irfDecls.map(d    => ({ id: d.id, type: 'IRF'      as TaxType, annee: d.annee,                montant: d.irf_total,               statut: d.statut, ref: d.ref,  created_at: d.created_at, raw: d })),
         ...ircmDecls.map(d   => ({ id: d.id, type: 'IRCM'     as TaxType, annee: d.annee,                montant: d.ircm_total,              statut: d.statut, ref: d.ref,  created_at: d.created_at, raw: d })),
         ...isDecls.map(d     => ({ id: d.id, type: 'IS/MFP'   as TaxType, annee: d.annee,                montant: d.is_du,                   statut: d.statut, ref: d.ref,  created_at: d.created_at, raw: d })),

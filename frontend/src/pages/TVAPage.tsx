@@ -36,7 +36,7 @@ function TVAContent() {
 
     const { data: declarations = [], isLoading } = useQuery<TVADeclaration[]>({
         queryKey: ['tva'],
-        queryFn: () => tvaApi.list().then((r) => r.data?.data ?? r.data ?? []),
+        queryFn: () => tvaApi.list().then((r) => r.data ?? []),
         staleTime: 30_000,
     });
 

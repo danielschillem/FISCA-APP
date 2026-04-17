@@ -117,7 +117,7 @@ export const simulationApi = {
 
 // ── TVA ───────────────────────────────────────────────────────
 export const tvaApi = {
-    list: () => api.get('/tva'),
+    list: (annee?: number) => api.get('/tva', { params: annee ? { annee } : undefined }),
     create: (data: object) => api.post('/tva', data),
     get: (id: string) => api.get(`/tva/${id}`),
     update: (id: string, data: object) => api.put(`/tva/${id}`, data),
