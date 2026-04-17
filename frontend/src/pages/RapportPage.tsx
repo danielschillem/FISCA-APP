@@ -7,7 +7,7 @@ import { declarationApi, dashboardApi, companyApi } from '../lib/api';
 import { fmt, fmtN } from '../lib/fiscalCalc';
 import { Card, Spinner, Btn } from '../components/ui';
 import { MOIS_FR } from '../types';
-import type { Declaration, Company } from '../types';
+import type { Declaration, Company, DashboardKPI } from '../types';
 import { Printer, FileDown, FileSpreadsheet } from 'lucide-react';
 
 export default function RapportPage() {
@@ -21,9 +21,7 @@ export default function RapportPage() {
         queryFn: () => declarationApi.list(selectedAnnee).then((r) => r.data),
     });
 
-    const { data: kpis, isLoading: l2 } = useQuery<{
-        iuts_total: number; tpa_total: number; cnss_total: number; nb_salaries: number;
-    }>({
+    const { data: kpis, isLoading: l2 } = useQuery<DashboardKPI>({
         queryKey: ['dashboard'],
         queryFn: () => dashboardApi.get().then((r) => r.data),
     });
@@ -62,14 +60,14 @@ export default function RapportPage() {
         y += 2; doc.setDrawColor(...GRAY); doc.line(14, y, 196, y); y += 6;
         doc.setFontSize(8); doc.setTextColor(...GRAY); doc.setFont('Helvetica', 'bold');
         doc.text('RÉSUMÉ DES OBLIGATIONS (EXERCICE EN COURS)', 14, y); y += 4;
-        const iutsTotal = (kpis?.iuts_total ?? 0) + (kpis?.tpa_total ?? 0);
+        const iutsTotal = (kpis?.total_annee?.iuts_total ?? 0) + (kpis?.total_annee?.tpa_total ?? 0);
         autoTable(doc, {
             startY: y,
             body: [
-                ['IUTS + TPA', fmtN(iutsTotal) + ' FCFA'],
-                ['CSS salaries', fmtN(kpis?.cnss_total ?? 0) + ' FCFA'],
-                ['Nombre de salaries', String(kpis?.nb_salaries ?? 0)],
-                ['Total obligations', fmtN(iutsTotal + (kpis?.cnss_total ?? 0)) + ' FCFA'],
+                ['IUTS + TPA (annee)', fmtN(iutsTotal) + ' FCFA'],
+                ['CSS salaries (annee)', fmtN(kpis?.total_annee?.css_total ?? 0) + ' FCFA'],
+                ['Nombre d\'employes', String(kpis?.nb_employes ?? 0)],
+                ['Total obligations (annee)', fmtN(iutsTotal + (kpis?.total_annee?.css_total ?? 0)) + ' FCFA'],
             ],
             styles: { fontSize: 8, textColor: BLACK, cellPadding: 2 },
             columnStyles: { 0: { cellWidth: 60, fontStyle: 'bold', fillColor: LIGHT }, 1: { cellWidth: 55, halign: 'right' } },
@@ -131,10 +129,10 @@ export default function RapportPage() {
 
                 <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                     {[
-                        { label: 'IUTS / TPA', value: (kpis?.iuts_total ?? 0) + (kpis?.tpa_total ?? 0) },
-                        { label: 'CSS salaries', value: kpis?.cnss_total ?? 0 },
-                        { label: 'Nb salaries', value: kpis?.nb_salaries ?? 0, raw: true },
-                        { label: 'Total obligations', value: (kpis?.iuts_total ?? 0) + (kpis?.tpa_total ?? 0) + (kpis?.cnss_total ?? 0) },
+                        { label: 'IUTS / TPA', value: (kpis?.total_annee?.iuts_total ?? 0) + (kpis?.total_annee?.tpa_total ?? 0) },
+                        { label: 'CSS salaries', value: kpis?.total_annee?.css_total ?? 0 },
+                        { label: 'Nb employes', value: kpis?.nb_employes ?? 0, raw: true },
+                        { label: 'Total obligations', value: (kpis?.total_annee?.iuts_total ?? 0) + (kpis?.total_annee?.tpa_total ?? 0) + (kpis?.total_annee?.css_total ?? 0) },
                     ].map(({ label, value, raw }) => (
                         <div key={label} className="bg-gray-50 rounded-xl p-4">
                             <p className="text-xs text-gray-500">{label}</p>
