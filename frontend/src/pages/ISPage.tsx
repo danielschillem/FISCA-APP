@@ -7,6 +7,7 @@ import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
 import type { ISDeclaration, Company } from '../types';
 import { generateISForm } from '../lib/pdfDGI';
+import { usePaymentGate } from '../components/PaymentModal';
 
 type Regime = 'reel' | 'simplifie';
 
@@ -18,6 +19,7 @@ export default function ISPage() {
 
 function ISContent() {
     const qc = useQueryClient();
+    const { requestPayment, PaymentModalComponent } = usePaymentGate();
     const [annee, setAnnee] = useState(new Date().getFullYear());
     const [ca, setCa] = useState(500_000_000);
     const [benefice, setBenefice] = useState(50_000_000);
@@ -75,6 +77,7 @@ function ISContent() {
 
     return (
         <div className="max-w-3xl space-y-6">
+            {PaymentModalComponent}
             <Card title="IS / MFP : Impôt sur les Sociétés / Minimum Forfaitaire Patronal">
                 <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 42 (IS 27,5 %) · Art. 40 (MFP 0,5 % du CA)</p>
 
@@ -198,7 +201,7 @@ function ISContent() {
                                                     className="p-1 text-blue-600 hover:bg-blue-50 rounded">
                                                     <Download className="w-3.5 h-3.5" />
                                                 </button>
-                                                <button onClick={() => generateISForm(d, company)} title="Formulaire DGI"
+                                                <button onClick={() => requestPayment('is', d.id, () => generateISForm(d, company))} title="Formulaire DGI"
                                                     className="p-1 text-orange-500 hover:bg-orange-50 rounded">
                                                     <FileText className="w-3.5 h-3.5" />
                                                 </button>

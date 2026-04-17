@@ -293,3 +293,13 @@ export const orgApi = {
     revokeAccess: (companyId: string, userId: string) =>
         api.delete(`/org/companies/${companyId}/access/${userId}`),
 };
+
+// ── Paiements Orange Money (génération PDF) ───────────────────
+export const paymentApi = {
+    initiate: (data: { document_type: string; document_id: string; telephone: string }) =>
+        api.post('/payments/initiate', data),
+    status: (id: string) => api.get(`/payments/${id}/status`),
+    check: (document_type: string, document_id: string) =>
+        api.get('/payments', { params: { document_type, document_id } }),
+};
+

@@ -7,6 +7,7 @@ import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
 import type { CMEDeclaration, Company } from '../types';
 import { generateCMEForm } from '../lib/pdfDGI';
+import { usePaymentGate } from '../components/PaymentModal';
 
 type Zone = 'A' | 'B' | 'C' | 'D';
 const ZONES: { value: Zone; label: string; desc: string }[] = [
@@ -36,6 +37,7 @@ export default function CMEPage() {
 
 function CMEContent() {
     const qc = useQueryClient();
+    const { requestPayment, PaymentModalComponent } = usePaymentGate();
     const [annee, setAnnee] = useState(new Date().getFullYear());
     const [ca, setCa] = useState(30_000_000);
     const [zone, setZone] = useState<Zone>('A');
@@ -79,6 +81,7 @@ function CMEContent() {
 
     return (
         <div className="max-w-3xl space-y-6">
+            {PaymentModalComponent}
             <Card title="CME : Contribution des Micro-Entreprises">
                 <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 533-542 · Régime simplifié pour CA ≤ 150 M FCFA</p>
 
@@ -203,7 +206,7 @@ function CMEContent() {
                                                     className="p-1 text-blue-600 hover:bg-blue-50 rounded">
                                                     <Download className="w-3.5 h-3.5" />
                                                 </button>
-                                                <button onClick={() => generateCMEForm(d, company)} title="Formulaire DGI"
+                                                <button onClick={() => requestPayment('cme', d.id, () => generateCMEForm(d, company))} title="Formulaire DGI"
                                                     className="p-1 text-orange-500 hover:bg-orange-50 rounded">
                                                     <FileText className="w-3.5 h-3.5" />
                                                 </button>

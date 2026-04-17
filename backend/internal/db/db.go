@@ -470,6 +470,31 @@ func RunMigrations(pool *pgxpool.Pool) error {
 		updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 		PRIMARY KEY (user_id, item_id)
 	);
+
+	-- ─── Paiements Orange Money (génération PDF) ──────────────────────────────
+	CREATE TABLE IF NOT EXISTS payments (
+		id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		company_id       UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+		user_id          UUID NOT NULL REFERENCES users(id),
+		document_type    TEXT NOT NULL,       -- 'iuts', 'tva', 'retenues', 'is', 'ircm', 'cme', 'irf', 'bulletin', 'patente'
+		document_id      TEXT NOT NULL,       -- ID du document à débloquer
+		montant_base     NUMERIC(10,0) NOT NULL DEFAULT 2000,
+		taux_frais       NUMERIC(6,4) NOT NULL DEFAULT 0.015,
+		frais            NUMERIC(10,2) NOT NULL,
+		total            NUMERIC(10,2) NOT NULL,
+		telephone        TEXT NOT NULL,
+		statut           TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'completed', 'failed', 'expired'
+		om_reference     TEXT,               -- référence transaction Orange Money
+		om_order_id      TEXT UNIQUE,        -- order ID envoyé à l'API OM
+		webhook_received BOOLEAN NOT NULL DEFAULT FALSE,
+		created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_payments_company_id  ON payments(company_id);
+	CREATE INDEX IF NOT EXISTS idx_payments_user_id     ON payments(user_id);
+	CREATE INDEX IF NOT EXISTS idx_payments_statut      ON payments(statut);
+	CREATE INDEX IF NOT EXISTS idx_payments_om_order_id ON payments(om_order_id);
 	`
 	_, err := pool.Exec(context.Background(), schema)
 	if err != nil {

@@ -77,6 +77,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 	adminH := handlers.NewAdminHandler(db)
 	orgH := handlers.NewOrgHandler(db)
 	checklistH := handlers.NewChecklistHandler(db)
+	paymentH := handlers.NewPaymentHandler(db)
 
 	// Routes publiques
 	r.Route("/api", func(r chi.Router) {
@@ -89,6 +90,9 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 		r.With(authRateLimit).Post("/auth/reset-password", authH.ResetPassword)
 		r.Post("/auth/refresh", authH.Refresh)
 		r.Post("/auth/logout", authH.Logout)
+
+		// Webhook Orange Money (public — pas de JWT)
+		r.Post("/payments/webhook", paymentH.Webhook)
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			dbStatus := "ok"
@@ -116,6 +120,11 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 
 			// Dashboard KPIs
 			r.Get("/dashboard", dashH.Get)
+
+			// Paiements Orange Money (génération PDF)
+			r.Post("/payments/initiate", paymentH.Initiate)
+			r.Get("/payments", paymentH.Check)
+			r.Get("/payments/{id}/status", paymentH.Status)
 
 			// Notifications
 			r.Get("/notifications", notifH.List)

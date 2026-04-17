@@ -6,6 +6,7 @@ import { Card, Btn, Spinner } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import type { TVADeclaration, Company } from '../types';
 import { generateTVAForm } from '../lib/pdfDGI';
+import { usePaymentGate } from '../components/PaymentModal';
 import { Save, X, Lock, FileText } from 'lucide-react';
 
 type LigneLocal = { label: string; ht: number; taux: number; type_op: 'vente' | 'achat' };
@@ -20,6 +21,7 @@ export default function TVAPage() {
 
 function TVAContent() {
     const qc = useQueryClient();
+    const { requestPayment, PaymentModalComponent } = usePaymentGate();
     const [mois, setMois] = useState(now.getMonth() + 1);
     const [annee, setAnnee] = useState(now.getFullYear());
     const [saving, setSaving] = useState(false);
@@ -95,6 +97,7 @@ function TVAContent() {
 
     return (
         <div className="space-y-6">
+            {PaymentModalComponent}
             {/* Période + actions */}
             <div className="flex items-center gap-3 flex-wrap">
                 <select value={mois} onChange={(e) => setMois(+e.target.value)}
@@ -169,7 +172,7 @@ function TVAContent() {
                                             <td className="py-2 px-3 text-right">
                                                 <div className="flex justify-end gap-1">
                                                     <button
-                                                        onClick={() => generateTVAForm(d, company)}
+                                                        onClick={() => requestPayment('tva', d.id, () => generateTVAForm(d, company))}
                                                         title="Formulaire DGI"
                                                         className="p-1 text-orange-500 hover:bg-orange-50 rounded">
                                                         <FileText className="w-3.5 h-3.5" />

@@ -5,6 +5,41 @@ import (
 	"time"
 )
 
+// ─── PAYMENT ─────────────────────────────────────────────────
+
+type Payment struct {
+	ID              string     `json:"id"`
+	CompanyID       string     `json:"company_id"`
+	UserID          string     `json:"user_id"`
+	DocumentType    string     `json:"document_type"`
+	DocumentID      string     `json:"document_id"`
+	MontantBase     float64    `json:"montant_base"`
+	TauxFrais       float64    `json:"taux_frais"`
+	Frais           float64    `json:"frais"`
+	Total           float64    `json:"total"`
+	Telephone       string     `json:"telephone"`
+	Statut          string     `json:"statut"` // pending | completed | failed | expired
+	OMReference     *string    `json:"om_reference,omitempty"`
+	OMOrderID       *string    `json:"om_order_id,omitempty"`
+	WebhookReceived bool       `json:"webhook_received"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+}
+
+type InitiatePaymentRequest struct {
+	DocumentType string  `json:"document_type"` // 'iuts','tva','retenues','is','ircm','cme','irf','bulletin','patente'
+	DocumentID   string  `json:"document_id"`
+	Telephone    string  `json:"telephone"`    // ex: "70123456" ou "+22670123456"
+	MontantBase  float64 `json:"montant_base"` // optionnel, défaut 2000
+}
+
+type PaymentStatusResponse struct {
+	ID       string  `json:"id"`
+	Statut   string  `json:"statut"`
+	Total    float64 `json:"total"`
+	Frais    float64 `json:"frais"`
+}
+
 // ─── COMPANY ────────────────────────────────────────────────
 
 type Company struct {

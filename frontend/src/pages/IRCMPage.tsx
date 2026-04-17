@@ -7,6 +7,7 @@ import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
 import type { IRCMDeclaration, Company } from '../types';
 import { generateIRCMForm } from '../lib/pdfDGI';
+import { usePaymentGate } from '../components/PaymentModal';
 
 type IRCMType = 'CREANCES' | 'OBLIGATIONS' | 'DIVIDENDES';
 
@@ -24,6 +25,7 @@ export default function IRCMPage() {
 
 function IRCMContent() {
     const qc = useQueryClient();
+    const { requestPayment, PaymentModalComponent } = usePaymentGate();
     const [annee, setAnnee] = useState(new Date().getFullYear());
     const [type, setType] = useState<IRCMType>('CREANCES');
     const [montant, setMontant] = useState(1_000_000);
@@ -66,6 +68,7 @@ function IRCMContent() {
 
     return (
         <div className="max-w-3xl space-y-6">
+            {PaymentModalComponent}
             <Card title="IRCM : Impôt sur les Revenus des Capitaux Mobiliers">
                 <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 140-156 · Retenue libératoire à la source</p>
                 <div className="grid grid-cols-2 gap-4 mb-4">
@@ -178,7 +181,7 @@ function IRCMContent() {
                                                     className="p-1 text-blue-600 hover:bg-blue-50 rounded">
                                                     <Download className="w-3.5 h-3.5" />
                                                 </button>
-                                                <button onClick={() => generateIRCMForm(d, company)} title="Formulaire DGI"
+                                                <button onClick={() => requestPayment('ircm', d.id, () => generateIRCMForm(d, company))} title="Formulaire DGI"
                                                     className="p-1 text-orange-500 hover:bg-orange-50 rounded">
                                                     <FileText className="w-3.5 h-3.5" />
                                                 </button>

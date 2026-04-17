@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { declarationApi, companyApi, bulletinApi } from '../lib/api';
 import { fmtN } from '../lib/fiscalCalc';
 import { Card, Btn, Badge, Spinner } from '../components/ui';
+import { usePaymentGate } from '../components/PaymentModal';
 import type { Declaration, Company, Bulletin } from '../types';
 import { MOIS_FR } from '../types';
 import { FileDown, FileText, Trash2, CheckCircle2, Clock, AlertCircle, Loader2 } from 'lucide-react';
@@ -352,6 +353,7 @@ export default function DeclarationsPage() {
     const [annee, setAnnee] = useState(new Date().getFullYear());
     const [deleting, setDeleting] = useState<string | null>(null);
     const [downloadingPDF, setDownloadingPDF] = useState<string | null>(null);
+    const { requestPayment, PaymentModalComponent } = usePaymentGate();
     const qc = useQueryClient();
 
     const { data: company } = useQuery<Company>({
@@ -384,18 +386,22 @@ export default function DeclarationsPage() {
     };
 
     const handleDownloadPDF = async (d: Declaration) => {
+        // Récupérer les bulletins pour les avoir prêts au paiement
         setDownloadingPDF(d.id);
+        let bulletins: Bulletin[] = [];
         try {
             const res = await bulletinApi.list(d.mois, d.annee);
-            const bulletins: Bulletin[] = res.data ?? [];
-            generateOfficialDGIPDF(d, company, bulletins);
+            bulletins = res.data ?? [];
         } finally {
             setDownloadingPDF(null);
         }
+        // Demander le paiement avant de générer
+        requestPayment('iuts', d.id, () => generateOfficialDGIPDF(d, company, bulletins));
     };
 
     return (
         <div className="space-y-6">
+            {PaymentModalComponent}
             {/* Filtre annee */}
             <Card>
                 <div className="flex items-center gap-4">

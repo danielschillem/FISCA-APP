@@ -6,6 +6,7 @@ import type { RetenueSource, Company } from '../types';
 import { Card, Btn, Spinner, Table } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { generateRetenuesForm } from '../lib/pdfDGI';
+import { usePaymentGate } from '../components/PaymentModal';
 import { X, Lock, FileText } from 'lucide-react';
 
 // Types retenue : CGI 2025 Art. 206-207 (RAS) et Art. 121-126/140 (IRF/IRCM)
@@ -27,6 +28,7 @@ export default function RetenuesPage() {
 
 function RetenuesContent() {
     const qc = useQueryClient();
+    const { requestPayment, PaymentModalComponent } = usePaymentGate();
     const now = new Date();
     const [showAdd, setShowAdd] = useState(false);
     const [mois, setMois] = useState(now.getMonth() + 1);
@@ -71,7 +73,7 @@ function RetenuesContent() {
 
     return (
         <div className="space-y-6">
-            {/* Period filter */}
+            {PaymentModalComponent}
             <div className="flex items-center gap-3">
                 <select
                     value={mois}
@@ -98,7 +100,7 @@ function RetenuesContent() {
 
             <div className="flex justify-between">
                 {retenues.length > 0 && (
-                    <Btn variant="outline" onClick={() => generateRetenuesForm(retenues, company, mois, annee)}>
+                    <Btn variant="outline" onClick={() => requestPayment('retenues', `${annee}-${mois}`, () => generateRetenuesForm(retenues, company, mois, annee))}>
                         <FileText className="w-4 h-4" /> Formulaire DGI RAS
                     </Btn>
                 )}

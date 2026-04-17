@@ -9,6 +9,7 @@ import { MOIS_FR } from '../types';
 import { Zap, Lock, FileSpreadsheet, FileText } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { exportBulletinPDF, exportAllBulletinsPDF } from '../lib/pdfBulletin';
+import { usePaymentGate } from '../components/PaymentModal';
 
 export default function BulletinsPage() {
     const { plan } = useAppStore();
@@ -20,6 +21,7 @@ export default function BulletinsPage() {
 
 function BulletinsContent() {
     const qc = useQueryClient();
+    const { requestPayment, PaymentModalComponent } = usePaymentGate();
     const now = new Date();
     const [mois, setMois] = useState(now.getMonth() + 1);
     const [annee, setAnnee] = useState(now.getFullYear());
@@ -50,6 +52,7 @@ function BulletinsContent() {
 
     return (
         <div className="space-y-6">
+            {PaymentModalComponent}
             {/* Period + cotisation controls */}
             <div className="flex flex-wrap items-end gap-3">
                 <div>
@@ -87,7 +90,7 @@ function BulletinsContent() {
                         <>
                             <Btn
                                 variant="outline"
-                                onClick={() => exportAllBulletinsPDF(bulletins, company)}
+                                onClick={() => requestPayment('bulletin', `all-${annee}-${mois}`, () => exportAllBulletinsPDF(bulletins, company))}
                                 title="Exporter tous les bulletins en PDF"
                             >
                                 <FileText className="w-4 h-4" /> PDF
@@ -170,7 +173,7 @@ function BulletinCard({ bulletin: b, company }: { bulletin: Bulletin; company?: 
                     <p className="text-xs text-gray-500">{b.periode} · {b.categorie}</p>
                 </div>
                 <div className="flex gap-2">
-                    <Btn size="sm" variant="outline" onClick={() => exportBulletinPDF(b, company)}>
+                    <Btn size="sm" variant="outline" onClick={() => requestPayment('bulletin', b.id, () => exportBulletinPDF(b, company))}>
                         <FileText className="w-3.5 h-3.5" /> PDF
                     </Btn>
                 </div>
