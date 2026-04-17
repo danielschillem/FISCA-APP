@@ -64,8 +64,8 @@ jobs:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
         run: |
           set -e
-          BACKEND_SVC="srv-d7h04rl7vvec73akmqe0"
-          FRONTEND_SVC="srv-d7h05bt7vvec73akmvrg"
+          BACKEND_SVC="srv-d7h5qv1f9bms739m9g4g"
+          FRONTEND_SVC="srv-d7h5r2vaqgkc739ovevg"
 
           echo "Triggering backend deploy..."
           curl -sf -X POST "https://api.render.com/v1/services/$BACKEND_SVC/deploys" \
