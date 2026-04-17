@@ -4,14 +4,16 @@
 # Base de données : Neon PostgreSQL (gratuit, déjà créé)
 #
 # ── PROCÉDURE DE DÉPLOIEMENT ──────────────────────────────────────────────────
-# 1. Render Dashboard → New → Blueprint → repo danielschillem/FISCA-APP
-# 2. Render crée fisca-backend + fisca-frontend
-# 3. fisca-backend → Environment → ajouter :
-#    DATABASE_URL = <URL Neon PostgreSQL>
-#    OPENAI_API_KEY = sk-... (optionnel, pour l'assistant IA)
-# 4. fisca-frontend → Settings → Custom Domain (ex: app.fisca.bf)
-# 5. fisca-backend → Settings → Deploy Hook URL
-#    → GitHub Secrets → RENDER_DEPLOY_HOOK_BACKEND
+# 1. Render Dashboard → supprimer les anciens services fisca-backend / fisca-frontend
+# 2. New → Blueprint → repo danielschillem/FISCA-APP → branch main
+# 3. Render crée fisca-backend + fisca-frontend (URLs prévisibles)
+#    https://fisca-backend.onrender.com   — backend Go
+#    https://fisca-frontend.onrender.com  — frontend React
+# 4. Variables déjà configurées dans ce fichier :
+#    DATABASE_URL, ALLOWED_ORIGIN, VITE_API_URL, MISTRAL_API_KEY
+# 5. Variables optionnelles à saisir dans Render Dashboard :
+#    SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD  (admin initial)
+#    OPENAI_API_KEY, SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM
 
 services:
   # ── Backend Go ────────────────────────────────────────────────────────────
@@ -33,7 +35,7 @@ services:
       - key: PORT
         value: "8080"
       - key: ALLOWED_ORIGIN
-        sync: false        # → ex: https://fisca-frontend.onrender.com
+        value: "https://fisca-frontend.onrender.com"
       - key: ADMIN_SECRET
         generateValue: true
       - key: SUPERADMIN_EMAIL
@@ -67,5 +69,5 @@ services:
     branch: main
     envVars:
       - key: VITE_API_URL
-        sync: false        # → coller manuellement : https://fisca-backend.onrender.com/api
+        value: "https://fisca-backend.onrender.com/api"
 
