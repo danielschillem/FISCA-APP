@@ -145,6 +145,7 @@ export interface Bulletin {
     iuts_brut: number;
     iuts_net: number;
     cotisation_sociale: number;
+    fsp: number;
     tpa: number;
     salaire_net: number;
     created_at: string;
