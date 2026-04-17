@@ -35,3 +35,6 @@ dashboard/test-results/
 dashboard/e2e/.auth/
 .vercel
 .env*.local
+
+# Local Netlify folder
+.netlify
