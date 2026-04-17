@@ -18,7 +18,7 @@ const TH_BG: RGB = [220, 220, 220];   // gris en-tete colonnes
 
 const pad = (n: number) => n.toString().padStart(2, '0');
 const n2 = (n: number) => n.toFixed(2).replace('.', ',');
-const p3 = (n: number) => n > 0 ? n.toFixed(3).replace('.', ',') : '';
+const p3 = (n: number) => n > 0 ? n.toFixed(3).replace('.', ',') + ' %' : '';
 const amt = (n: number) => n !== 0 ? fmtN(Math.round(n)) : '';
 const lastDay = (m: number, y: number) => new Date(y, m, 0).getDate();
 
@@ -69,7 +69,7 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
     // Calculs
     const fsp = b.fsp ?? 0;
     const totalRet = b.iuts_net + b.cotisation_sociale + fsp;
-    const cotTaux = b.cotisation === 'CARFO' ? '6,000' : '5,500';
+    const cotTaux = b.cotisation === 'CARFO' ? '6,000 %' : '5,500 %';
     const tauxH = b.salaire_base > 0 ? b.salaire_base / 173.33 : 0;
     const baseCNSS = Math.min(b.brut_total, 600_000);
     const baseFSP = Math.max(0, b.brut_total - b.iuts_net - b.cotisation_sociale);
@@ -188,24 +188,24 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
         '', amt(baseCNSS), cotTaux, '', amt(b.cotisation_sociale),
     ));
     if (fsp > 0)
-        body.push(dataRow('FSP - Fonds de Soutien Patriotique', '', amt(baseFSP), '1,000', '', amt(fsp)));
+        body.push(dataRow('FSP - Fonds de Soutien Patriotique', '', amt(baseFSP), '1,000 %', '', amt(fsp)));
 
     // Charges patronales
     addSec('CHARGES PATRONALES (a titre indicatif)');
-    body.push(dataRow('TPA - Taxe Patronale et Apprentissage', '', amt(b.brut_total), '3,000', '', amt(b.tpa ?? 0)));
+    body.push(dataRow('TPA - Taxe Patronale et Apprentissage', '', amt(b.brut_total), '3,000 %', '', amt(b.tpa ?? 0)));
     addTot('TOTAL DES COTISATIONS ET CONTRIBUTIONS', '', amt(totalRet));
 
     // En-tete 2 niveaux
     const HEAD = [
         [
             c('Designation', { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
-            c('Nombre',      { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
-            c('Base',        { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
+            c('Nombre', { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
+            c('Base', { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
             c('Taux\nsalarial', { rowSpan: 2, halign: 'center', valign: 'middle', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
-            c('Part salarie',   { colSpan: 2,  halign: 'center',                 fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
+            c('Part salarie', { colSpan: 2, halign: 'center', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
         ],
         [
-            c('Gain',    { halign: 'center', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
+            c('Gain', { halign: 'center', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
             c('Retenue', { halign: 'center', fillColor: TH_BG, textColor: BLACK, fontStyle: 'bold', lineColor: BLACK, lineWidth: 0.4 }),
         ],
     ];
