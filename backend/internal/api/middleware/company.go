@@ -54,17 +54,19 @@ func CompanyContext(db *pgxpool.Pool) func(http.Handler) http.Handler {
 					}
 				} else {
 					// Fallback : première société accessible
+					var fallbackErr error
 					if orgRole == "org_admin" {
-						db.QueryRow(r.Context(),
+						fallbackErr = db.QueryRow(r.Context(),
 							`SELECT id FROM companies WHERE org_id=$1 ORDER BY nom LIMIT 1`,
-							orgID).Scan(&companyID) //nolint:errcheck
+							orgID).Scan(&companyID)
 					} else {
-						db.QueryRow(r.Context(),
+						fallbackErr = db.QueryRow(r.Context(),
 							`SELECT c.id FROM companies c
 							 JOIN org_company_access oca ON oca.company_id = c.id
 							 WHERE c.org_id=$1 AND oca.user_id=$2 ORDER BY c.nom LIMIT 1`,
-							orgID, userID).Scan(&companyID) //nolint:errcheck
+							orgID, userID).Scan(&companyID)
 					}
+					_ = fallbackErr // companyID vide géré par les handlers (retourne 404)
 				}
 			} else {
 				// ── Personne Physique ────────────────────────────────────────────
@@ -77,9 +79,9 @@ func CompanyContext(db *pgxpool.Pool) func(http.Handler) http.Handler {
 						return
 					}
 				} else {
-					db.QueryRow(r.Context(),
+					_ = db.QueryRow(r.Context(),
 						`SELECT id FROM companies WHERE user_id=$1 ORDER BY nom LIMIT 1`,
-						userID).Scan(&companyID) //nolint:errcheck
+						userID).Scan(&companyID) // companyID vide géré par les handlers (retourne 404)
 				}
 			}
 

@@ -263,9 +263,9 @@ WHERE 1=1`
 	args := []any{}
 	argN := 1
 	if search != "" {
-		query += fmt.Sprintf(" AND (c.nom ILIKE $%d OR u.email ILIKE $%d OR c.ifu ILIKE $%d)", argN, argN, argN)
-		args = append(args, "%"+search+"%")
-		argN++ //nolint:ineffassign
+		query += fmt.Sprintf(" AND (c.nom ILIKE $%d OR u.email ILIKE $%d OR c.ifu ILIKE $%d)", argN, argN+1, argN+2)
+		args = append(args, "%"+search+"%", "%"+search+"%", "%"+search+"%")
+		argN += 3 //nolint:ineffassign
 	}
 	if status == "active" {
 		query += " AND c.is_active = TRUE"

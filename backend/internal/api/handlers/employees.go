@@ -114,7 +114,9 @@ func validateEmployee(e *models.Employee) string {
 		return "Les montants ne peuvent pas être négatifs"
 	}
 	const maxSalary = 100_000_000 // 100M FCFA
-	if e.SalaireBase > maxSalary || e.Anciennete > maxSalary {
+	if e.SalaireBase > maxSalary || e.Anciennete > maxSalary ||
+		e.HeuresSup > maxSalary || e.Logement > maxSalary ||
+		e.Transport > maxSalary || e.Fonction > maxSalary {
 		return "Montant invalide"
 	}
 	return ""
