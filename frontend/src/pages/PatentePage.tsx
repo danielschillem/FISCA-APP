@@ -171,7 +171,7 @@ function PatenteContent() {
                             <tbody className="divide-y divide-gray-50">
                                 {history.map((d) => (
                                     <tr key={d.id} className="hover:bg-gray-50">
-                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? ':'}</td>
+                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? '-'}</td>
                                         <td className="py-2 text-right">{fmt(d.ca)}</td>
                                         <td className="py-2 text-right">{fmt(d.droit_fixe)}</td>
                                         <td className="py-2 text-right font-semibold text-red-700">{fmt(d.total_patente)}</td>
@@ -183,8 +183,11 @@ function PatenteContent() {
                                         <td className="py-2 text-right">
                                             <div className="flex justify-end gap-1">
                                                 {d.statut === 'brouillon' && (
-                                                    <button onClick={() => validerMut.mutate(d.id)} title="Valider"
-                                                        className="p-1 text-green-600 hover:bg-green-50 rounded">
+                                                    <button
+                                                        onClick={() => validerMut.mutate(d.id)}
+                                                        disabled={validerMut.isPending}
+                                                        title="Valider"
+                                                        className="p-1 text-green-600 hover:bg-green-50 rounded disabled:opacity-40">
                                                         <CheckCircle className="w-3.5 h-3.5" />
                                                     </button>
                                                 )}
@@ -196,8 +199,11 @@ function PatenteContent() {
                                                     className="p-1 text-purple-600 hover:bg-purple-50 rounded">
                                                     <FileText className="w-3.5 h-3.5" />
                                                 </button>
-                                                <button onClick={() => deleteMut.mutate(d.id)} title="Supprimer"
-                                                    className="p-1 text-red-500 hover:bg-red-50 rounded">
+                                                <button
+                                                    onClick={() => { if (window.confirm('Supprimer cette déclaration de Patente ?')) deleteMut.mutate(d.id); }}
+                                                    disabled={deleteMut.isPending}
+                                                    title="Supprimer"
+                                                    className="p-1 text-red-500 hover:bg-red-50 rounded disabled:opacity-40">
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                 </button>
                                             </div>

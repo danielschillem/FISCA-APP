@@ -85,6 +85,7 @@ function ISContent() {
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Année fiscale</label>
                         <input type="number" value={annee} onChange={(e) => setAnnee(+e.target.value)}
+                            min={2000} max={2100}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
                     </div>
                     <div className="col-span-2">
@@ -109,6 +110,9 @@ function ISContent() {
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Bénéfice imposable (FCFA)</label>
                         <NumericInput value={benefice} onChange={setBenefice} />
+                        {benefice > ca && ca > 0 && (
+                            <p className="text-xs text-amber-600 mt-1">Attention : le bénéfice ne peut pas excéder le CA.</p>
+                        )}
                     </div>
                     <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={cga} onChange={(e) => setCga(e.target.checked)} className="accent-green-600" />
@@ -178,7 +182,7 @@ function ISContent() {
                             <tbody className="divide-y divide-gray-50">
                                 {history.map((d) => (
                                     <tr key={d.id} className="hover:bg-gray-50">
-                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? ':'}</td>
+                                        <td className="py-2 font-mono text-gray-600">{d.ref ?? '-'}</td>
                                         <td className="py-2 text-right">{fmt(d.ca)}</td>
                                         <td className="py-2 text-right">{fmt(d.is_theorique)}</td>
                                         <td className="py-2 text-right font-semibold text-red-700">{fmt(d.is_du)}</td>
@@ -190,8 +194,11 @@ function ISContent() {
                                         <td className="py-2 text-right">
                                             <div className="flex justify-end gap-1">
                                                 {d.statut === 'brouillon' && (
-                                                    <button onClick={() => validerMut.mutate(d.id)} title="Valider"
-                                                        className="p-1 text-green-600 hover:bg-green-50 rounded">
+                                                    <button
+                                                        onClick={() => validerMut.mutate(d.id)}
+                                                        disabled={validerMut.isPending}
+                                                        title="Valider"
+                                                        className="p-1 text-green-600 hover:bg-green-50 rounded disabled:opacity-40">
                                                         <CheckCircle className="w-3.5 h-3.5" />
                                                     </button>
                                                 )}
@@ -203,8 +210,11 @@ function ISContent() {
                                                     className="p-1 text-orange-500 hover:bg-orange-50 rounded">
                                                     <FileText className="w-3.5 h-3.5" />
                                                 </button>
-                                                <button onClick={() => deleteMut.mutate(d.id)} title="Supprimer"
-                                                    className="p-1 text-red-500 hover:bg-red-50 rounded">
+                                                <button
+                                                    onClick={() => { if (window.confirm('Supprimer cette déclaration IS/MFP ?')) deleteMut.mutate(d.id); }}
+                                                    disabled={deleteMut.isPending}
+                                                    title="Supprimer"
+                                                    className="p-1 text-red-500 hover:bg-red-50 rounded disabled:opacity-40">
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                 </button>
                                             </div>
