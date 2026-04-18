@@ -90,6 +90,8 @@ function TVAContent() {
         } catch { /* ignore */ } finally { setSaving(false); }
     };
 
+    const [pdfErr, setPdfErr] = useState('');
+
     const deleteMut = useMutation({
         mutationFn: (id: string) => tvaApi.delete(id),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['tva'] }),
@@ -174,10 +176,26 @@ function TVAContent() {
                                             <td className="py-2 px-3 text-right">
                                                 <div className="flex justify-end gap-1">
                                                     <button
-                                                        onClick={() => requestPayment('tva', d.id, async () => {
-                                                            const full = await tvaApi.get(d.id);
-                                                            generateTVAForm(full.data as TVADeclaration, company);
-                                                        })}
+                                                        onClick={() => {
+                                                            setPdfErr('');
+                                                            requestPayment('tva', d.id, async () => {
+                                                                try {
+                                                                    // Toujours récupérer les données fraîches côté serveur,
+                                                                    // même si company est déjà en cache — évite les données
+                                                                    // manquantes sur mobile (réseau lent, token périmé, etc.)
+                                                                    const [full, compRes] = await Promise.all([
+                                                                        tvaApi.get(d.id),
+                                                                        companyApi.get(),
+                                                                    ]);
+                                                                    generateTVAForm(
+                                                                        full.data as TVADeclaration,
+                                                                        compRes.data as Company,
+                                                                    );
+                                                                } catch {
+                                                                    setPdfErr('Erreur PDF — vérifiez votre connexion et réessayez.');
+                                                                }
+                                                            });
+                                                        }}
                                                         title="Formulaire DGI"
                                                         className="p-1 text-orange-500 hover:bg-orange-50 rounded">
                                                         <FileText className="w-3.5 h-3.5" />
@@ -191,6 +209,11 @@ function TVAContent() {
                                 </tbody>
                             </table>
                         </div>
+                    )}
+                    {pdfErr && (
+                        <p className="mt-2 text-xs text-red-600 bg-red-50 rounded px-3 py-2 flex items-center gap-1">
+                            <X className="w-3.5 h-3.5 flex-shrink-0" />{pdfErr}
+                        </p>
                     )}
                 </Card>
             )}
