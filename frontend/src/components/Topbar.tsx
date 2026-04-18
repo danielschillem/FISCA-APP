@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { notificationApi } from '../lib/api';
 import type { Notification } from '../types';
+import { getProchaines } from '../lib/fiscalCalendar';
 
 interface TopbarProps {
     title: string;
@@ -44,6 +45,40 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
         }
         prevUnread.current = unread;
     }, [unread, notifs]);
+
+    // -- Push notifications J-7 : échéances fiscales proches ----------------
+    useEffect(() => {
+        if (!user || !('Notification' in window)) return;
+
+        const fire = () => {
+            if (Notification.permission !== 'granted') return;
+
+            const now = new Date();
+            const annee = now.getFullYear();
+            const FIRED_KEY = `fisca_notif_echeances_${annee}_${now.getMonth()}`;
+            if (localStorage.getItem(FIRED_KEY)) return; // déjà envoyé ce mois
+
+            const prochaines = getProchaines(annee, 10, now);
+            const urgentes = prochaines.filter(e => e.joursRestants >= 0 && e.joursRestants <= 7);
+            if (urgentes.length === 0) return;
+
+            localStorage.setItem(FIRED_KEY, '1');
+            const top = urgentes[0];
+            new Notification(`Échéance fiscale dans ${top.joursRestants === 0 ? "aujourd'hui" : `${top.joursRestants}j`} : ${top.label}`, {
+                body: top.description,
+                icon: '/favicon.svg',
+                tag: `echeance-${top.id}`,
+            });
+        };
+
+        // Demander la permission si pas encore accordée, puis vérifier
+        if (Notification.permission === 'default') {
+            Notification.requestPermission().then(() => fire());
+        } else {
+            fire();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.email]); // Une seule fois par session utilisateur
     const now = new Date();
     const dateStr = `${JOURS[now.getDay()]} ${now.getDate()} ${MOIS[now.getMonth()]} ${now.getFullYear()}`;
     const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'US';

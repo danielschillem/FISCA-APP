@@ -12,6 +12,7 @@ import {
     BarChart2, TrendingUp, Users, User, AlertTriangle, CheckCircle2,
     Clock, Minus, CalendarDays, ArrowRight, Eye, FileText, Receipt,
     Home, BookOpen, PenLine, FileCheck, GitBranch, History,
+    WifiOff, UserPlus, Building2,
 } from 'lucide-react';
 import { getProchaines, getEcheancesParRegime, TYPE_COLORS, type Echeance } from '../lib/fiscalCalendar';
 import { useRegime } from '../lib/regime';
@@ -47,9 +48,10 @@ export default function DashboardPage() {
     const { isAuditeur, isComptable, isGestionnaireRH, roleLabel, roleBadgeColor } = usePermissions();
     const { regime, info: regimeInfo } = useRegime();
 
-    const { data: kpi, isLoading: kpiLoading } = useQuery<DashboardKPI>({
+    const { data: kpi, isLoading: kpiLoading, isError: kpiError } = useQuery<DashboardKPI>({
         queryKey: ['dashboard'],
         queryFn: () => dashboardApi.get().then((r) => r.data),
+        retry: 2,
     });
 
     const { data: declarations = [] } = useQuery({
@@ -75,6 +77,103 @@ export default function DashboardPage() {
     }, 0);
 
     if (kpiLoading) return <Spinner />;
+
+    // Etat d'erreur API
+    if (kpiError) return (
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+            <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+                <WifiOff className="w-7 h-7 text-red-400" />
+            </div>
+            <div className="text-center max-w-sm">
+                <h2 className="text-lg font-bold text-gray-900 mb-1">Impossible de charger le tableau de bord</h2>
+                <p className="text-sm text-gray-500 mb-4">Le serveur ne répond pas. Vérifiez votre connexion et réessayez.</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-xl hover:bg-green-700 transition-colors"
+                >
+                    Réessayer
+                </button>
+            </div>
+        </div>
+    );
+
+    // Empty state : nouveau compte sans données
+    const isNewUser = (kpi?.nb_employes ?? 0) === 0 && declarations.length === 0 && regime === '';
+    if (isNewUser) return (
+        <div className="space-y-6">
+            <div className="bg-gradient-to-br from-green-50 to-teal-50 border border-green-100 rounded-2xl p-8 text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Building2 className="w-8 h-8 text-green-600" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Bienvenue sur FISCA !</h2>
+                <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">
+                    Votre espace fiscal est prêt. Suivez les 3 étapes ci-dessous pour démarrer votre gestion fiscale.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+                    {[
+                        {
+                            step: '1', icon: Building2, label: 'Fiche contribuable',
+                            desc: 'Renseignez votre IFU, régime fiscal et coordonnées.', to: '/parametres',
+                            cta: 'Compléter ma fiche',
+                        },
+                        {
+                            step: '2', icon: UserPlus, label: 'Premier employé',
+                            desc: 'Ajoutez vos salariés pour générer bulletins et déclarations.', to: '/saisie',
+                            cta: 'Ajouter un employé',
+                        },
+                        {
+                            step: '3', icon: FileCheck, label: 'Première déclaration',
+                            desc: 'Déclarez l\'IUTS du mois en cours auprès de la DGI.', to: '/declarations',
+                            cta: 'Créer une déclaration',
+                        },
+                    ].map(({ step, icon: Icon, label, desc, to, cta }) => (
+                        <button
+                            key={step}
+                            onClick={() => navigate(to)}
+                            className="bg-white rounded-xl p-5 text-left border border-gray-100 shadow-sm hover:shadow-md hover:border-green-200 transition-all group"
+                        >
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="w-6 h-6 bg-green-600 text-white text-xs font-bold rounded-full flex items-center justify-center">{step}</span>
+                                <Icon className="w-4 h-4 text-green-600" />
+                                <span className="text-sm font-semibold text-gray-800">{label}</span>
+                            </div>
+                            <p className="text-xs text-gray-500 mb-3 leading-relaxed">{desc}</p>
+                            <span className="text-xs font-semibold text-green-600 group-hover:text-green-700">{cta} →</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Calendrier fiscal visible même sans données */}
+            <Card title="Prochaines échéances fiscales">
+                <div className="space-y-2">
+                    {prochaines.slice(0, 3).map((e: Echeance) => {
+                        const dot = TYPE_COLORS[e.type] ?? '#94a3b8';
+                        return (
+                            <div key={e.id} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: dot }} />
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-gray-800">{e.label}</p>
+                                    <p className="text-xs text-gray-500">{e.description}</p>
+                                </div>
+                                <p className="text-xs font-bold text-gray-700 shrink-0">
+                                    {e.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                                </p>
+                            </div>
+                        );
+                    })}
+                </div>
+                <button
+                    onClick={() => navigate('/calendrier')}
+                    className="mt-4 w-full flex items-center justify-center gap-2 text-xs text-green-600 font-semibold hover:text-green-700 py-2 rounded-lg hover:bg-green-50 transition-colors"
+                >
+                    <CalendarDays className="w-3.5 h-3.5" />
+                    Voir le calendrier fiscal complet
+                    <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+            </Card>
+        </div>
+    );
 
     const orgRole = user?.org_role;
     const quickLinks = orgRole ? (QUICK_LINKS[orgRole] ?? []) : [];
