@@ -37,11 +37,10 @@ function AuditTrail({ declId }: { declId: string }) {
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Historique des transitions</p>
             {etapes.map((e, i) => (
                 <div key={e.id ?? i} className="flex items-start gap-2.5">
-                    <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${
-                        e.etape === 'approuve' ? 'bg-green-400' :
-                        e.etape === 'rejete' ? 'bg-red-400' :
-                        e.etape === 'soumis' ? 'bg-blue-400' : 'bg-gray-300'
-                    }`} />
+                    <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${e.etape === 'approuve' ? 'bg-green-400' :
+                            e.etape === 'rejete' ? 'bg-red-400' :
+                                e.etape === 'soumis' ? 'bg-blue-400' : 'bg-gray-300'
+                        }`} />
                     <div className="flex-1 min-w-0">
                         <span className="text-xs font-semibold text-gray-700">{ETAPE_LABEL[e.etape] ?? e.etape}</span>
                         {e.commentaire && <span className="text-xs text-gray-500 ml-2 italic">— {e.commentaire}</span>}
