@@ -91,6 +91,15 @@ export default function SaisiePage() {
         }
     };
 
+    const handleDownloadTemplate = () => {
+        const headers = ['nom', 'categorie', 'salaire_base', 'anciennete', 'heures_sup', 'logement', 'transport', 'fonction', 'charges'];
+        const examples = [
+            ['Dupont Jean', 'Non-cadre', '150000', '3', '0', '0', '10000', '0', '0'],
+            ['Martin Sophie', 'Cadre', '300000', '5', '8', '50000', '15000', '25000', '0'],
+        ];
+        downloadCsvTemplate('modele-employes.csv', headers, examples);
+    };
+
     const handleExport = async () => {
         const res = await employeeApi.export();
         const url = URL.createObjectURL(res.data);
