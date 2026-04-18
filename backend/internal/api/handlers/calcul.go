@@ -68,7 +68,7 @@ func (h *CalculHandler) Calcul(w http.ResponseWriter, r *http.Request) {
 		SalaireNet:   res.NetAPayer,
 		AbattForf:    res.AbattForf,
 		AbattFam:     res.AbattFam,
-		RetPersonnel: res.FSP, // alias FSP — rétro-compat
+		RetPersonnel: res.FSP, // alias FSP - rétro-compat
 	})
 }
 

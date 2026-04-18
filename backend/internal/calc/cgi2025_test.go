@@ -7,7 +7,7 @@ import (
 	"github.com/fisca-app/backend/internal/calc"
 )
 
-// ─── TVA ───────────────────────────────────────────────────────
+// --- TVA -------------------------------------------------------
 
 func TestCalcTVA_Taux18(t *testing.T) {
 	res := calc.CalcTVA(1_000_000, calc.TVATauxStandard)
@@ -84,7 +84,7 @@ func TestCalcSoldeTVA_Credit(t *testing.T) {
 	}
 }
 
-// ─── RAS ───────────────────────────────────────────────────────
+// --- RAS -------------------------------------------------------
 
 func TestCalcRAS_ResidentIFU(t *testing.T) {
 	res := calc.CalcRAS(1_000_000, "RESIDENT_IFU")
@@ -136,7 +136,7 @@ func TestCalcRAS_TypeInconnu(t *testing.T) {
 	}
 }
 
-// ─── IRF ───────────────────────────────────────────────────────
+// --- IRF -------------------------------------------------------
 
 func TestCalcIRF_DeuxTranches(t *testing.T) {
 	// Loyer brut 400 000 → base 200 000 → 100k×18% + 100k×25% = 18k+25k = 43k
@@ -182,7 +182,7 @@ func TestCalcIRF_TauxEffectifCroissant(t *testing.T) {
 	}
 }
 
-// ─── IRCM ──────────────────────────────────────────────────────
+// --- IRCM ------------------------------------------------------
 
 func TestCalcIRCM_Creances(t *testing.T) {
 	res := calc.CalcIRCM(1_000_000, "CREANCES")
@@ -231,7 +231,7 @@ func TestCalcIRCM_NetCoherent(t *testing.T) {
 	}
 }
 
-// ─── IS / MFP ──────────────────────────────────────────────────
+// --- IS / MFP --------------------------------------------------
 
 func TestCalcIS_Taux27_5(t *testing.T) {
 	res := calc.CalcIS(100_000_000, false)
@@ -287,7 +287,7 @@ func TestCalcMFP_AvecCGA(t *testing.T) {
 	}
 }
 
-// ─── CME ───────────────────────────────────────────────────────
+// --- CME -------------------------------------------------------
 
 func TestCalcCME_ZoneA_Classe8(t *testing.T) {
 	// CA ≤ 1 500 000 → classe 8
@@ -343,7 +343,7 @@ func TestCalcCME_ZoneInconnueFallback(t *testing.T) {
 	}
 }
 
-// ─── PATENTE ───────────────────────────────────────────────────
+// --- PATENTE ---------------------------------------------------
 
 func TestCalcPatente_TrancheBasse(t *testing.T) {
 	// CA ≤ 5 000 000 → droits fixes 10 000 FCFA
@@ -378,7 +378,7 @@ func TestCalcPatente_TranchePlafond(t *testing.T) {
 	}
 }
 
-// ─── CNSS PATRONAL ─────────────────────────────────────────────
+// --- CNSS PATRONAL ---------------------------------------------
 
 func TestCalcCNSSPatronal_CNSS(t *testing.T) {
 	// Brute 200 000, CNSS → base = min(200k, 600k) = 200k
@@ -421,7 +421,7 @@ func TestCalcCNSSPatronal_PlafondCNSS(t *testing.T) {
 	}
 }
 
-// ─── PÉNALITÉS DE RETARD ───────────────────────────────────────
+// --- PÉNALITÉS DE RETARD ---------------------------------------
 
 func TestCalcPenaliteRetard_1Mois(t *testing.T) {
 	// 1 mois → 10% majoration + 1% intérêts = 11%, minimum 5 000
@@ -509,13 +509,13 @@ func TestCalcPenaliteRetard_EntierFCFA(t *testing.T) {
 	for _, c := range cases {
 		res := calc.CalcPenaliteRetard(c.montant, c.mois)
 		if res.TotalPenalite != math.Round(res.TotalPenalite) {
-			t.Errorf("TotalPenalite(%.0f, %d) = %v — pas entier (FCFA indivisible)",
+			t.Errorf("TotalPenalite(%.0f, %d) = %v - pas entier (FCFA indivisible)",
 				c.montant, c.mois, res.TotalPenalite)
 		}
 	}
 }
 
-// ─── SMIG ──────────────────────────────────────────────────────
+// --- SMIG ------------------------------------------------------
 
 func TestSMIG_Positif(t *testing.T) {
 	if calc.SMIG <= 0 {

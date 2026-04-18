@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+﻿import { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -77,7 +77,7 @@ export default function RapportPage() {
         if (decl) {
             const tableY = ((doc as DocWithTable).lastAutoTable?.finalY ?? (y + 30)) + 8;
             doc.setFontSize(8); doc.setTextColor(...GRAY); doc.setFont('Helvetica', 'bold');
-            doc.text(`DECLARATION – ${MOIS_FR[(decl.mois ?? 1) - 1].toUpperCase()} ${decl.annee}`, 14, tableY - 3);
+            doc.text(`DECLARATION - ${MOIS_FR[(decl.mois ?? 1) - 1].toUpperCase()} ${decl.annee}`, 14, tableY - 3);
             autoTable(doc, {
                 startY: tableY,
                 head: [['Periode', 'Brut', 'IUTS', 'TPA', 'CSS', 'Total du']],
@@ -89,7 +89,7 @@ export default function RapportPage() {
         }
         const pageH = doc.internal.pageSize.getHeight();
         doc.setFontSize(7); doc.setTextColor(...GRAY); doc.setFont('Helvetica', 'normal');
-        doc.text(`Genere par FISCA – ${new Date().toLocaleDateString('fr-FR')}`, 14, pageH - 10);
+        doc.text(`Genere par FISCA - ${new Date().toLocaleDateString('fr-FR')}`, 14, pageH - 10);
         doc.text('Page 1/1', 196, pageH - 10, { align: 'right' });
         doc.save(`rapport-fiscal-${String(selectedMois).padStart(2, '0')}-${selectedAnnee}.pdf`);
     };
@@ -158,7 +158,7 @@ export default function RapportPage() {
                                 </div>
                             ))}
                         </div>
-                        <p className="text-xs text-gray-400">{decl.nb_salaries} salarie{decl.nb_salaries !== 1 ? 's' : ''} · Statut : {decl.statut} · Ref. : {decl.ref ?? '—'}</p>
+                        <p className="text-xs text-gray-400">{decl.nb_salaries} salarie{decl.nb_salaries !== 1 ? 's' : ''} - Statut : {decl.statut} - Ref. : {decl.ref ?? ' - '}</p>
                     </Card>
                 ) : (
                     <Card title=""><p className="text-center text-gray-400 py-8 text-sm">Aucune declaration pour {MOIS_FR[selectedMois - 1]} {selectedAnnee}</p></Card>

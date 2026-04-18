@@ -80,7 +80,7 @@ func RequireSuperAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		role, _ := r.Context().Value(RoleKey).(string)
 		if role != "super_admin" {
-			http.Error(w, `{"error":"accès interdit — super admin requis"}`, http.StatusForbidden)
+			http.Error(w, `{"error":"accès interdit - super admin requis"}`, http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -92,7 +92,7 @@ func RequireOrgAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		orgRole, _ := r.Context().Value(OrgRoleKey).(string)
 		if orgRole != "org_admin" {
-			http.Error(w, `{"error":"accès interdit — admin organisation requis"}`, http.StatusForbidden)
+			http.Error(w, `{"error":"accès interdit - admin organisation requis"}`, http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r)

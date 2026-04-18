@@ -1,4 +1,4 @@
-﻿// ─── Fiscal calculation utilities (mirroring CGI 2025 engine) ─
+// --- Fiscal calculation utilities (mirroring CGI 2025 engine) -
 
 // Formateur PDF-safe : espace ASCII ordinaire comme séparateur de milliers.
 // toLocaleString('fr-FR') produit \u202F (espace fine insécable) non rendu
@@ -15,14 +15,14 @@ export const pct = (n: number): string =>
 
 // IUTS tranches CGI 2025 : 9 tranches barème marginal (Art. 107-112)
 const IUTS_TRANCHES = [
-    { plafond: 30_000, taux: 0.00 },   // 0 – 30 000 : exonéré
-    { plafond: 50_000, taux: 0.12 },   // 30 001 – 50 000
-    { plafond: 80_000, taux: 0.14 },   // 50 001 – 80 000
-    { plafond: 120_000, taux: 0.16 },  // 80 001 – 120 000
-    { plafond: 170_000, taux: 0.18 },  // 120 001 – 170 000
-    { plafond: 250_000, taux: 0.20 },  // 170 001 – 250 000
-    { plafond: 400_000, taux: 0.24 },  // 250 001 – 400 000
-    { plafond: 600_000, taux: 0.28 },  // 400 001 – 600 000
+    { plafond: 30_000, taux: 0.00 },   // 0 - 30 000 : exonéré
+    { plafond: 50_000, taux: 0.12 },   // 30 001 - 50 000
+    { plafond: 80_000, taux: 0.14 },   // 50 001 - 80 000
+    { plafond: 120_000, taux: 0.16 },  // 80 001 - 120 000
+    { plafond: 170_000, taux: 0.18 },  // 120 001 - 170 000
+    { plafond: 250_000, taux: 0.20 },  // 170 001 - 250 000
+    { plafond: 400_000, taux: 0.24 },  // 250 001 - 400 000
+    { plafond: 600_000, taux: 0.28 },  // 400 001 - 600 000
     { plafond: Infinity, taux: 0.30 }, // > 600 000
 ];
 
@@ -186,7 +186,7 @@ export const RAS_LABELS: Record<string, string> = {
     COMMANDE_PUB_BIENS: 'Commande pub. : biens/TP (1 %)',
 };
 
-// CME CGI 2025 — Art. 533-542
+// CME CGI 2025 - Art. 533-542
 // Plafond légal : CA ≤ 15 000 000 FCFA pour le régime CME.
 // Au-delà, l'entreprise relève du RSI (IS/MFP, module distinct).
 export const CME_CA_PLAFOND = 15_000_000;
@@ -211,12 +211,12 @@ export function calcCME(ca: number, zone: string, adhesionCGA: boolean) {
     return { ca, zone, classe, cme, cmeNet: adhesionCGA ? Math.round(cme * 0.75) : cme };
 }
 
-// Heures supplémentaires — Code du Travail BF Art. 151
+// Heures supplémentaires - Code du Travail BF Art. 151
 // La semaine légale est de 40 h (173,33 h/mois standard).
 // Majorations sur le taux horaire de base (salaire_base / 173,33) :
-//   • +25 % : heures normales supplémentaires (41e–48e heure)
-//   • +50 % : heures de nuit ou dimanche, ou au-delà de 48 h/semaine
-//   • +100 % : jours fériés légaux
+// - +25 % : heures normales supplémentaires (41e-48e heure)
+// - +50 % : heures de nuit ou dimanche, ou au-delà de 48 h/semaine
+// - +100 % : jours fériés légaux
 export const HEURES_MOIS_STANDARD = 173.33;
 
 export type TypeHeuresSup = 'normale' | 'nuit_dimanche' | 'ferie';

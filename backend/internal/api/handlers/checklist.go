@@ -17,7 +17,7 @@ func NewChecklistHandler(db *pgxpool.Pool) *ChecklistHandler {
 	return &ChecklistHandler{DB: db}
 }
 
-// GET /api/checklist — retourne { "item_id": true/false, ... } pour l'utilisateur courant
+// GET /api/checklist - retourne { "item_id": true/false, ... } pour l'utilisateur courant
 func (h *ChecklistHandler) List(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
 
@@ -40,7 +40,7 @@ func (h *ChecklistHandler) List(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, result)
 }
 
-// PUT /api/checklist/{id} — coche/décoche un item
+// PUT /api/checklist/{id} - coche/décoche un item
 func (h *ChecklistHandler) Toggle(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
 	itemID := chi.URLParam(r, "id")

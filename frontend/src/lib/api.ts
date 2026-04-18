@@ -28,7 +28,7 @@ api.interceptors.response.use(
     }
 );
 
-// ── Auth ─────────────────────────────────────────────────────
+// -- Auth -----------------------------------------------------
 export const authApi = {
     login: (data: { email: string; password: string }) =>
         api.post('/auth/login', data),
@@ -45,7 +45,7 @@ export const authApi = {
     setPlan: (plan: string) => api.patch('/me/plan', { plan }),
 };
 
-// ── Employees ─────────────────────────────────────────────────
+// -- Employees -------------------------------------------------
 export const employeeApi = {
     list: (page = 1, limit = 50) => api.get('/employees', { params: { page, limit } }),
     create: (data: object) => api.post('/employees', data),
@@ -61,7 +61,7 @@ export const employeeApi = {
     },
 };
 
-// ── Calcul ────────────────────────────────────────────────────
+// -- Calcul ----------------------------------------------------
 export const calculApi = {
     calcul: (data: object) => api.post('/calcul', data),
     tva: (data: object) => api.post('/calcul/tva', data),
@@ -75,7 +75,7 @@ export const calculApi = {
     penalites: (data: object) => api.post('/calcul/penalites', data),
 };
 
-// ── Declarations ──────────────────────────────────────────────
+// -- Declarations ----------------------------------------------
 export const declarationApi = {
     list: (annee?: number) => api.get('/declarations', { params: annee ? { annee } : undefined }),
     create: (data: object) => api.post('/declarations', data),
@@ -88,7 +88,7 @@ export const declarationApi = {
     workflow: (id: string) => api.get(`/declarations/${id}/workflow`),
 };
 
-// ── Company ───────────────────────────────────────────────────
+// -- Company ---------------------------------------------------
 export const companyApi = {
     get: () => api.get('/company'),
     update: (data: object) => api.put('/company', data),
@@ -98,7 +98,7 @@ export const companyApi = {
     delete: (id: string) => api.delete(`/companies/${id}`),
 };
 
-// ── Bulletins ─────────────────────────────────────────────────
+// -- Bulletins -------------------------------------------------
 export const bulletinApi = {
     list: (mois?: number, annee?: number) => api.get('/bulletins', { params: { mois, annee } }),
     generate: (data: object) => api.post('/bulletins/generate', data),
@@ -107,7 +107,7 @@ export const bulletinApi = {
     delete: (id: string) => api.delete(`/bulletins/${id}`),
 };
 
-// ── Simulations ───────────────────────────────────────────────
+// -- Simulations -----------------------------------------------
 export const simulationApi = {
     list: () => api.get('/simulations'),
     create: (data: object) => api.post('/simulations', data),
@@ -115,7 +115,7 @@ export const simulationApi = {
     delete: (id: string) => api.delete(`/simulations/${id}`),
 };
 
-// ── TVA ───────────────────────────────────────────────────────
+// -- TVA -------------------------------------------------------
 export const tvaApi = {
     list: (annee?: number) => api.get('/tva', { params: annee ? { annee } : undefined }),
     create: (data: object) => api.post('/tva', data),
@@ -127,7 +127,7 @@ export const tvaApi = {
     deleteLigne: (id: string, lid: string) => api.delete(`/tva/${id}/lignes/${lid}`),
 };
 
-// ── Retenues à la source ──────────────────────────────────────
+// -- Retenues à la source --------------------------------------
 export const retenueApi = {
     taux: () => api.get('/retenues/taux'),
     list: (mois?: number, annee?: number) => api.get('/retenues', { params: { mois, annee } }),
@@ -138,7 +138,7 @@ export const retenueApi = {
     export: (id: string) => api.get(`/retenues/${id}/export`, { responseType: 'blob' }),
 };
 
-// ── CNSS Patronal ─────────────────────────────────────────────
+// -- CNSS Patronal ---------------------------------------------
 export const cnssApi = {
     list: (mois?: number, annee?: number) => api.get('/cnss', { params: { mois, annee } }),
     generate: (data: object) => api.post('/cnss/generer', data),
@@ -149,13 +149,13 @@ export const cnssApi = {
     export: (id: string) => api.get(`/cnss/${id}/export`, { responseType: 'blob' }),
 };
 
-// ── Historique fiscal ─────────────────────────────────────────
+// -- Historique fiscal -----------------------------------------
 export const historiqueApi = {
     get: (annee: number) => api.get('/historique-fiscal', { params: { annee } }),
     annees: () => api.get('/historique-fiscal/annees'),
 };
 
-// ── Exercice fiscal ───────────────────────────────────────────
+// -- Exercice fiscal -------------------------------------------
 export const exerciceApi = {
     actif: () => api.get('/exercice/actif'),
     list: () => api.get('/exercice'),
@@ -164,7 +164,7 @@ export const exerciceApi = {
     cloturer: (id: string) => api.put(`/exercice/${id}/cloturer`),
 };
 
-// ── IRF : Revenus Fonciers ────────────────────────────────────
+// -- IRF : Revenus Fonciers ------------------------------------
 export const irfApi = {
     list: (annee?: number) => api.get('/irf', { params: { annee } }),
     create: (data: { annee: number; loyer_brut: number }) => api.post('/irf', data),
@@ -174,7 +174,7 @@ export const irfApi = {
     export: (id: string) => api.get(`/irf/${id}/export`, { responseType: 'blob' }),
 };
 
-// ── IRCM : Capitaux Mobiliers ─────────────────────────────────
+// -- IRCM : Capitaux Mobiliers ---------------------------------
 export const ircmApi = {
     list: (annee?: number) => api.get('/ircm', { params: { annee } }),
     create: (data: { annee: number; montant_brut: number; type_revenu: string }) => api.post('/ircm', data),
@@ -184,7 +184,7 @@ export const ircmApi = {
     export: (id: string) => api.get(`/ircm/${id}/export`, { responseType: 'blob' }),
 };
 
-// ── IS / MFP : Impôt sur les Sociétés ────────────────────────
+// -- IS / MFP : Impôt sur les Sociétés ------------------------
 export const isApi = {
     list: (annee?: number) => api.get('/is', { params: { annee } }),
     create: (data: { annee: number; ca: number; benefice: number; regime: string; adhesion_cga: boolean }) =>
@@ -195,7 +195,7 @@ export const isApi = {
     export: (id: string) => api.get(`/is/${id}/export`, { responseType: 'blob' }),
 };
 
-// ── CME : Micro-Entreprises ───────────────────────────────────
+// -- CME : Micro-Entreprises -----------------------------------
 export const cmeApi = {
     list: (annee?: number) => api.get('/cme', { params: { annee } }),
     create: (data: { annee: number; ca: number; zone: string; adhesion_cga: boolean }) => api.post('/cme', data),
@@ -205,7 +205,7 @@ export const cmeApi = {
     export: (id: string) => api.get(`/cme/${id}/export`, { responseType: 'blob' }),
 };
 
-// ── Patente Professionnelle ───────────────────────────────────
+// -- Patente Professionnelle -----------------------------------
 export const patenteApi = {
     list: (annee?: number) => api.get('/patente', { params: { annee } }),
     create: (data: { annee: number; ca: number; valeur_locative: number }) => api.post('/patente', data),
@@ -215,42 +215,42 @@ export const patenteApi = {
     export: (id: string) => api.get(`/patente/${id}/export`, { responseType: 'blob' }),
 };
 
-// ── Dashboard ─────────────────────────────────────────────────
+// -- Dashboard -------------------------------------------------
 export const dashboardApi = {
     get: () => api.get('/dashboard'),
 };
 
-// ── Bilan fiscal annuel ───────────────────────────────────────
+// -- Bilan fiscal annuel ---------------------------------------
 export const bilanApi = {
     get: (annee?: number) => api.get('/bilan', { params: annee ? { annee } : undefined }),
 };
 
-// ── Notifications ─────────────────────────────────────────────
+// -- Notifications ---------------------------------------------
 export const notificationApi = {
     list: () => api.get('/notifications'),
     readOne: (id: string) => api.put(`/notifications/${id}/read`),
     readAll: (ids: string[]) => api.put('/notifications/read-all', { ids }),
 };
 
-// ── Checklist fiscale ─────────────────────────────────────────
+// -- Checklist fiscale -----------------------------------------
 export const checklistApi = {
     list: () => api.get<Record<string, boolean>>('/checklist'),
     toggle: (id: string, checked: boolean) => api.put(`/checklist/${id}`, { checked }),
 };
 
-// ── Workflow ─────────────────────────────────────────────────
+// -- Workflow -------------------------------------------------
 export const workflowApi = {
     list: (statut?: string) => api.get('/workflow', { params: statut ? { statut } : undefined }),
     get: (id: string) => api.get(`/declarations/${id}/workflow`),
     transition: (id: string, action: string) => api.post(`/declarations/${id}/${action}`),
 };
 
-// ── Assistant IA ──────────────────────────────────────────────
+// -- Assistant IA ----------------------------------------------
 export const assistantApi = {
     chat: (message: string) => api.post('/assistant', { message }),
 };
 
-// ── Super Admin ───────────────────────────────────────────────
+// -- Super Admin -----------------------------------------------
 export const adminApi = {
     stats: () => api.get('/admin/stats'),
     // Utilisateurs
@@ -278,7 +278,7 @@ export const adminApi = {
         api.get('/admin/audit', { params: { limit, offset } }),
 };
 
-// ── Organisation Admin ────────────────────────────────────────
+// -- Organisation Admin ----------------------------------------
 export const orgApi = {
     getInfo: () => api.get('/org/info'),
     listMembers: () => api.get('/org/members'),
@@ -294,7 +294,7 @@ export const orgApi = {
         api.delete(`/org/companies/${companyId}/access/${userId}`),
 };
 
-// ── Paiements Orange Money (génération PDF) ───────────────────
+// -- Paiements Orange Money (génération PDF) -------------------
 export const paymentApi = {
     initiate: (data: { document_type: string; document_id: string; telephone: string }) =>
         api.post('/payments/initiate', data),

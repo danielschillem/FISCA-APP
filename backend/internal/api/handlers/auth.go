@@ -77,7 +77,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.UserType == "physique" {
-		// ── Personne Physique : un compte solo ─────────────────────────────────
+		// -- Personne Physique : un compte solo ---------------------------------
 		var user models.User
 		err = h.DB.QueryRow(r.Context(),
 			`INSERT INTO users (email, password_hash, plan, role, user_type, is_active)
@@ -106,7 +106,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ── Personne Morale : organisation + admin interne ─────────────────────────
+	// -- Personne Morale : organisation + admin interne -------------------------
 	maxUsers, maxCompanies, maxEmployees := planLimits(req.Plan)
 
 	tx, err := h.DB.Begin(r.Context())
@@ -220,7 +220,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !user.IsActive {
-		jsonError(w, "Compte suspendu — contactez l'administrateur", http.StatusForbidden)
+		jsonError(w, "Compte suspendu - contactez l'administrateur", http.StatusForbidden)
 		return
 	}
 
@@ -272,7 +272,7 @@ func (h *AuthHandler) storeRefreshToken(ctx context.Context, userID string) (str
 	return token, err
 }
 
-// POST /api/auth/refresh — échange un refresh token valide contre de nouveaux tokens.
+// POST /api/auth/refresh - échange un refresh token valide contre de nouveaux tokens.
 func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		RefreshToken string `json:"refresh_token"`
@@ -317,13 +317,13 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, models.AuthResponse{Token: token, RefreshToken: newRefresh, User: user})
 }
 
-// POST /api/auth/logout — révoque le refresh token.
+// POST /api/auth/logout - révoque le refresh token.
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		RefreshToken string `json:"refresh_token"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.RefreshToken == "" {
-		// Pas d'erreur fatale — le client peut déjà avoir supprimé le token
+		// Pas d'erreur fatale - le client peut déjà avoir supprimé le token
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -417,7 +417,7 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, map[string]string{"message": "Mot de passe réinitialisé avec succès."})
 }
 
-// ─── HELPERS ──────────────────────────────────────────────────
+// --- HELPERS --------------------------------------------------
 
 func jsonOK(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json")
@@ -462,5 +462,5 @@ func isPgDuplicate(err error) bool {
 	return strings.Contains(err.Error(), "23505") || strings.Contains(err.Error(), "duplicate key")
 }
 
-// planFromContext — référence utilisée par pgx.Tx (évite "imported and not used")
+// planFromContext - référence utilisée par pgx.Tx (évite "imported and not used")
 var _ = pgx.ErrNoRows

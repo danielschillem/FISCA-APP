@@ -69,7 +69,7 @@ func (h *SimulationHandler) List(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, items)
 }
 
-// POST /api/simulations — calcul + sauvegarde [Plan: Pro+]
+// POST /api/simulations - calcul + sauvegarde [Plan: Pro+]
 func (h *SimulationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	companyID, err := h.companyID(r)
 	if err != nil {

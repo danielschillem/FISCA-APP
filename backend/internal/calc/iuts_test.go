@@ -1,4 +1,4 @@
-// FISCA — Backend Go Tests
+// FISCA - Backend Go Tests
 
 package calc_test
 
@@ -97,15 +97,15 @@ func TestCalcSalarie_AbattementFamilialCap(t *testing.T) {
 func TestCalcIUTS_HauteTranche(t *testing.T) {
 	// Base imposable = 700 000 FCFA
 	// Tranches :
-	//   0–30k     :    0
-	//   30–50k    : 20k × 12% =  2 400
-	//   50–80k    : 30k × 14% =  4 200
-	//   80–120k   : 40k × 16% =  6 400
-	//   120–170k  : 50k × 18% =  9 000
-	//   170–250k  : 80k × 20% = 16 000
-	//   250–400k  :150k × 24% = 36 000
-	//   400–600k  :200k × 28% = 56 000
-	//   600–700k  :100k × 30% = 30 000
+	//   0-30k     :    0
+	//   30-50k    : 20k × 12% =  2 400
+	//   50-80k    : 30k × 14% =  4 200
+	//   80-120k   : 40k × 16% =  6 400
+	//   120-170k  : 50k × 18% =  9 000
+	//   170-250k  : 80k × 20% = 16 000
+	//   250-400k  :150k × 24% = 36 000
+	//   400-600k  :200k × 28% = 56 000
+	//   600-700k  :100k × 30% = 30 000
 	//   Total = 160 000
 	got := calc.CalcIUTS(700000)
 	want := 160000.0
@@ -222,7 +222,7 @@ func TestCalcSalarie_FSP_EntierFCFA(t *testing.T) {
 	for _, e := range cases {
 		res := calc.CalcSalarie(e)
 		if res.FSP != math.Round(res.FSP) {
-			t.Errorf("FSP = %v — pas entier (FCFA indivisible)", res.FSP)
+			t.Errorf("FSP = %v - pas entier (FCFA indivisible)", res.FSP)
 		}
 	}
 }

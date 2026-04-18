@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { calcEmploye, calcIRF, calcIRCM, calcCME, calcPatente, calcMFP, calcIS, calcHeuresSup, fmt, fmtN, CME_CA_PLAFOND, HEURES_MOIS_STANDARD, type TypeHeuresSup } from '../lib/fiscalCalc';
 import { Card, Input, Select } from '../components/ui';
 import { Briefcase, Home, TrendingUp, Store, Scroll, BookOpen, AlertTriangle, type LucideIcon } from 'lucide-react';
@@ -46,7 +46,7 @@ export default function CalculPage() {
     );
 }
 
-// ─── IUTS Calculator ─────────────────────────────────────────
+// --- IUTS Calculator -----------------------------------------
 function ResultRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
     return (
         <div className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
@@ -67,7 +67,7 @@ function IUTSCalc() {
     const [form, setForm] = useState({
         charges: 2, categorie: 'Non-cadre', cotisation: 'CNSS',
     });
-    // Calculateur heures supplémentaires — Code du Travail BF Art. 151
+    // Calculateur heures supplémentaires - Code du Travail BF Art. 151
     const [hsNbStr, setHsNbStr] = useState('0');
     const [hsType, setHsType] = useState<TypeHeuresSup>('normale');
     const [showHsCalc, setShowHsCalc] = useState(false);
@@ -157,13 +157,13 @@ function IUTSCalc() {
                     </div>
                 </Card>
 
-                {/* ── Calculateur heures supplémentaires ── */}
-                <Card title="Calculateur heures supp. — Code du Travail BF Art. 151">
+                {/* -- Calculateur heures supplémentaires -- */}
+                <Card title="Calculateur heures supp. - Code du Travail BF Art. 151">
                     <button
                         onClick={() => setShowHsCalc((v) => !v)}
                         className="flex items-center gap-2 text-xs text-green-700 font-medium hover:text-green-900 mb-2"
                     >
-                        {showHsCalc ? '▾' : '▸'} {showHsCalc ? 'Masquer' : 'Afficher'} le calculateur de majoration
+                        {showHsCalc ? '[-]' : '[+]'} {showHsCalc ? 'Masquer' : 'Afficher'} le calculateur de majoration
                     </button>
                     {showHsCalc && (
                         <div className="space-y-3">
@@ -184,7 +184,7 @@ function IUTSCalc() {
                                 <label className="block text-xs font-medium text-gray-700 mb-2">Type d'heures (Art. 151)</label>
                                 <div className="grid grid-cols-1 gap-1.5">
                                     {([
-                                        ['normale', '+25 %', 'Heures normales (41e–48e heure)'],
+                                        ['normale', '+25 %', 'Heures normales (41e-48e heure)'],
                                         ['nuit_dimanche', '+50 %', 'Nuit, dimanche, ou au-delà de 48 h/sem.'],
                                         ['ferie', '+100 %', 'Jours fériés légaux'],
                                     ] as [TypeHeuresSup, string, string][]).map(([k, badge, desc]) => (
@@ -261,7 +261,7 @@ function IUTSCalc() {
     );
 }
 
-// ─── IRF ────────────────────────────────────────────────────
+// --- IRF ----------------------------------------------------
 function IRFCalc() {
     const [loyerStr, setLoyerStr] = useState('300000');
     const loyer = parseFloat(loyerStr) || 0;
@@ -269,7 +269,7 @@ function IRFCalc() {
 
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <Card title="IRF : Revenus Fonciers (CGI 2025 Art. 121–126)">
+            <Card title="IRF : Revenus Fonciers (CGI 2025 Art. 121-126)">
                 <Input
                     label="Loyer brut mensuel (FCFA)"
                     type="text"
@@ -279,9 +279,9 @@ function IRFCalc() {
                     suffix="FCFA"
                 />
                 <div className="mt-4 text-xs text-gray-500 space-y-1">
-                    <p>• Abattement 50 % sur loyer brut (Art. 124)</p>
-                    <p>• 18 % sur base nette ≤ 100 000 FCFA</p>
-                    <p>• 25 % sur base nette &gt; 100 000 FCFA</p>
+                    <p>- Abattement 50 % sur loyer brut (Art. 124)</p>
+                    <p>- 18 % sur base nette ≤ 100 000 FCFA</p>
+                    <p>- 25 % sur base nette &gt; 100 000 FCFA</p>
                 </div>
             </Card>
             <Card title="Résultat IRF">
@@ -313,7 +313,7 @@ function IRFCalc() {
     );
 }
 
-// ─── IRCM ───────────────────────────────────────────────────
+// --- IRCM ---------------------------------------------------
 function IRCMCalc() {
     const [montantStr, setMontantStr] = useState('1000000');
     const [type, setType] = useState('DIVIDENDES');
@@ -364,7 +364,7 @@ function IRCMCalc() {
     );
 }
 
-// ─── CME ────────────────────────────────────────────────────
+// --- CME ----------------------------------------------------
 function CMECalc() {
     const [caStr, setCAStr] = useState('5000000');
     const [zone, setZone] = useState('A');
@@ -382,7 +382,7 @@ function CMECalc() {
                         <div className="flex items-start gap-2 p-2.5 bg-red-50 border border-red-200 rounded-lg">
                             <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
                             <p className="text-xs text-red-700 leading-snug">
-                                <strong>CA hors régime CME</strong> — plafond légal : {fmtN(CME_CA_PLAFOND)} FCFA
+                                <strong>CA hors régime CME</strong> - plafond légal : {fmtN(CME_CA_PLAFOND)} FCFA
                                 (Art. 533 CGI 2025). Utilisez le module <strong>IS / MFP</strong> pour votre déclaration.
                             </p>
                         </div>
@@ -417,7 +417,7 @@ function CMECalc() {
     );
 }
 
-// ─── Patente ────────────────────────────────────────────────
+// --- Patente ------------------------------------------------
 function PatenteCalc() {
     const [caStr, setCAStr] = useState('20000000');
     const [locatifStr, setLocatifStr] = useState('500000');
@@ -427,7 +427,7 @@ function PatenteCalc() {
 
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <Card title="Patentes (CGI 2025 Art. 237–240)">
+            <Card title="Patentes (CGI 2025 Art. 237-240)">
                 <div className="space-y-3">
                     <Input label="CA HT exercice précédent (FCFA)" type="text" inputMode="numeric" value={caStr} onChange={(e) => setCAStr(e.target.value)} suffix="FCFA" />
                     <Input label="Valeur locative locaux prof. (FCFA)" type="text" inputMode="numeric" value={locatifStr} onChange={(e) => setLocatifStr(e.target.value)} suffix="FCFA" />
@@ -444,7 +444,7 @@ function PatenteCalc() {
     );
 }
 
-// ─── IS / MFP ───────────────────────────────────────────────
+// --- IS / MFP -----------------------------------------------
 function ISCalc() {
     const [caStr, setCAStr] = useState('100000000');
     const [beneficeStr, setBeneficeStr] = useState('10000000');

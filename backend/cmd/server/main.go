@@ -28,7 +28,7 @@ if port == "" {
 port = "8080"
 }
 
-// Demarrage immediat du serveur HTTP — Render health check passe des maintenant
+// Demarrage immediat du serveur HTTP - Render health check passe des maintenant
 var (
 handlerMu      sync.RWMutex
 currentHandler http.Handler

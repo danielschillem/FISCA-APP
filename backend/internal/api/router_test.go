@@ -1,4 +1,4 @@
-// Tests smoke HTTP — router FISCA-APP (sans DB réelle)
+// Tests smoke HTTP - router FISCA-APP (sans DB réelle)
 package api_test
 
 import (

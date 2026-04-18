@@ -58,7 +58,7 @@ function IRFContent() {
     return (
         <div className="max-w-3xl space-y-6">
             <Card title="IRF : Impôt sur les Revenus Fonciers">
-                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 121-126 · Abattement 50 % · Taux progressif 18 % / 25 %</p>
+                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 121-126 - Abattement 50 % - Taux progressif 18 % / 25 %</p>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Année fiscale</label>
@@ -173,10 +173,10 @@ function IRFContent() {
 
             <Card title="Base légale">
                 <ul className="text-xs text-gray-500 space-y-1">
-                    <li>• Art. 121 CGI 2025 : revenus provenant de la location d'immeubles</li>
-                    <li>• Art. 122 : Abattement forfaitaire de 50 % sur le loyer brut</li>
-                    <li>• Art. 124 : Taux progressif 18 % jusqu'à 100 000 FCFA base nette, 25 % au-delà</li>
-                    <li>• Déclaration annuelle avant le 30 avril</li>
+                    <li>- Art. 121 CGI 2025 : revenus provenant de la location d'immeubles</li>
+                    <li>- Art. 122 : Abattement forfaitaire de 50 % sur le loyer brut</li>
+                    <li>- Art. 124 : Taux progressif 18 % jusqu'à 100 000 FCFA base nette, 25 % au-delà</li>
+                    <li>- Déclaration annuelle avant le 30 avril</li>
                 </ul>
             </Card>
         </div>

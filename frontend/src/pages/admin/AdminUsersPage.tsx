@@ -10,7 +10,7 @@ import {
     Building2, Calendar, User as UserIcon, RefreshCw, Eye,
 } from 'lucide-react';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// --- Constants ----------------------------------------------------------------
 const PLAN_STYLES: Record<string, { label: string; badge: string }> = {
     starter: { label: 'Starter', badge: 'bg-slate-100 text-slate-600 border border-slate-200' },
     pro: { label: 'Pro', badge: 'bg-sky-100 text-sky-700 border border-sky-200' },
@@ -29,7 +29,7 @@ const STATUS_LABELS: Record<string, string> = {
     trial: 'Essai', active: 'Actif', suspended: 'Suspendu', expired: 'Expire',
 };
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
+// --- Avatar -------------------------------------------------------------------
 function Avatar({ email }: { email: string }) {
     const initials = email.slice(0, 2).toUpperCase();
     const colors = ['bg-blue-500', 'bg-violet-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500'];
@@ -41,7 +41,7 @@ function Avatar({ email }: { email: string }) {
     );
 }
 
-// ─── License Form Modal ───────────────────────────────────────────────────────
+// --- License Form Modal -------------------------------------------------------
 function LicenseModal({ userId, license, onClose }: { userId: string; license?: License; onClose: () => void }) {
     const qc = useQueryClient();
     const [form, setForm] = useState({
@@ -126,7 +126,7 @@ function LicenseModal({ userId, license, onClose }: { userId: string; license?: 
     );
 }
 
-// ─── User Detail Slide-Over ───────────────────────────────────────────────────
+// --- User Detail Slide-Over ---------------------------------------------------
 function UserDrawer({ user, onClose }: { user: AdminUser; onClose: () => void }) {
     const qc = useQueryClient();
     const navigate = useNavigate();
@@ -296,7 +296,7 @@ function UserDrawer({ user, onClose }: { user: AdminUser; onClose: () => void })
     );
 }
 
-// ─── Table Row ────────────────────────────────────────────────────────────────
+// --- Table Row ----------------------------------------------------------------
 function UserRow({ user, onSelect }: { user: AdminUser; onSelect: () => void }) {
     const plan = PLAN_STYLES[user.plan] ?? { label: user.plan, badge: 'bg-gray-100 text-gray-600' };
     const licStatus = user.license?.status;
@@ -348,7 +348,7 @@ function UserRow({ user, onSelect }: { user: AdminUser; onSelect: () => void }) 
     );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// --- Main Page ----------------------------------------------------------------
 export default function AdminUsersPage() {
     const [search, setSearch] = useState('');
     const [plan, setPlan] = useState('');

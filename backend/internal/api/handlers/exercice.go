@@ -39,7 +39,7 @@ func scanExercice(row interface {
 	)
 }
 
-// GET /api/exercice — liste tous les exercices de la société
+// GET /api/exercice - liste tous les exercices de la société
 func (h *ExerciceHandler) List(w http.ResponseWriter, r *http.Request) {
 	cid, err := h.companyID(r)
 	if err != nil {
@@ -70,7 +70,7 @@ func (h *ExerciceHandler) List(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, list)
 }
 
-// GET /api/exercice/actif — retourne l'exercice en cours (statut='en_cours')
+// GET /api/exercice/actif - retourne l'exercice en cours (statut='en_cours')
 func (h *ExerciceHandler) Actif(w http.ResponseWriter, r *http.Request) {
 	cid, err := h.companyID(r)
 	if err != nil {
@@ -94,7 +94,7 @@ func (h *ExerciceHandler) Actif(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, e)
 }
 
-// POST /api/exercice — crée un nouvel exercice
+// POST /api/exercice - crée un nouvel exercice
 func (h *ExerciceHandler) Create(w http.ResponseWriter, r *http.Request) {
 	cid, err := h.companyID(r)
 	if err != nil {
@@ -148,7 +148,7 @@ func (h *ExerciceHandler) Create(w http.ResponseWriter, r *http.Request) {
 	jsonCreated(w, e)
 }
 
-// PUT /api/exercice/{id}/cloturer — clôture l'exercice
+// PUT /api/exercice/{id}/cloturer - clôture l'exercice
 func (h *ExerciceHandler) Cloturer(w http.ResponseWriter, r *http.Request) {
 	cid, err := h.companyID(r)
 	if err != nil {
@@ -171,7 +171,7 @@ func (h *ExerciceHandler) Cloturer(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, map[string]string{"statut": "cloture", "date_cloture": now.Format(time.RFC3339)})
 }
 
-// PUT /api/exercice/{id} — met à jour note/dates d'un exercice en cours
+// PUT /api/exercice/{id} - met à jour note/dates d'un exercice en cours
 func (h *ExerciceHandler) Update(w http.ResponseWriter, r *http.Request) {
 	cid, err := h.companyID(r)
 	if err != nil {

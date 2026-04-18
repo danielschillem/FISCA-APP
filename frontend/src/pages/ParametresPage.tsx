@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { companyApi, authApi } from '../lib/api';
 import { Card, Btn, Input, Select, Spinner } from '../components/ui';
@@ -8,25 +8,25 @@ import type { Company } from '../types';
 import { CheckCircle2, AlertCircle, Building2, MapPin, FileText, UserCircle, Info } from 'lucide-react';
 
 const FORMES_JURIDIQUES = [
-    { value: '', label: '— Sélectionner —' },
-    { value: 'SARL', label: 'SARL – Société à Responsabilité Limitée' },
-    { value: 'SA', label: 'SA – Société Anonyme' },
-    { value: 'SAS', label: 'SAS – Société par Actions Simplifiée' },
-    { value: 'SNC', label: 'SNC – Société en Nom Collectif' },
-    { value: 'GIE', label: 'GIE – Groupement d\'Intérêt Économique' },
-    { value: 'EI', label: 'EI – Entreprise Individuelle' },
-    { value: 'EURL', label: 'EURL – Entreprise Unipersonnelle à Responsabilité Limitée' },
-    { value: 'SCS', label: 'SCS – Société en Commandite Simple' },
+    { value: '', label: ' - Sélectionner - ' },
+    { value: 'SARL', label: 'SARL - Société à Responsabilité Limitée' },
+    { value: 'SA', label: 'SA - Société Anonyme' },
+    { value: 'SAS', label: 'SAS - Société par Actions Simplifiée' },
+    { value: 'SNC', label: 'SNC - Société en Nom Collectif' },
+    { value: 'GIE', label: 'GIE - Groupement d\'Intérêt Économique' },
+    { value: 'EI', label: 'EI - Entreprise Individuelle' },
+    { value: 'EURL', label: 'EURL - Entreprise Unipersonnelle à Responsabilité Limitée' },
+    { value: 'SCS', label: 'SCS - Société en Commandite Simple' },
     { value: 'Association', label: 'Association / ONG' },
     { value: 'Autre', label: 'Autre' },
 ];
 
 const REGIMES = [
-    { value: '', label: '— Sélectionner —' },
-    { value: 'RNI', label: 'RNI – Régime du Réel Normal d\'Imposition' },
-    { value: 'RSI', label: 'RSI – Régime du Réel Simplifié d\'Imposition' },
-    { value: 'CME', label: 'CME – Contribution des Micro-Entreprises' },
-    { value: 'BNC', label: 'BNC – Bénéfices Non Commerciaux' },
+    { value: '', label: ' - Sélectionner - ' },
+    { value: 'RNI', label: 'RNI - Régime du Réel Normal d\'Imposition' },
+    { value: 'RSI', label: 'RSI - Régime du Réel Simplifié d\'Imposition' },
+    { value: 'CME', label: 'CME - Contribution des Micro-Entreprises' },
+    { value: 'BNC', label: 'BNC - Bénéfices Non Commerciaux' },
 ];
 
 function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
@@ -64,7 +64,7 @@ export default function ParametresPage() {
         },
     });
 
-    // ── Compte utilisateur ────────────────────────────────────
+    // -- Compte utilisateur ------------------------------------
     const [email, setEmail] = useState(user?.email ?? '');
     const [emailSuccess, setEmailSuccess] = useState('');
     const [emailError, setEmailError] = useState('');
@@ -120,8 +120,8 @@ export default function ParametresPage() {
     return (
         <div className="max-w-3xl space-y-6">
 
-            {/* ── Fiche contribuable DGI ─────────────────────────── */}
-            <Card title="Fiche contribuable – Informations DGI">
+            {/* -- Fiche contribuable DGI --------------------------- */}
+            <Card title="Fiche contribuable - Informations DGI">
                 <p className="text-xs text-gray-500 mb-5">
                     Ces informations sont pré-remplies automatiquement sur vos déclarations DGI (IUTS, TVA, IS, IRF, IRCM, retenues à la source…).
                     Complétez-les une fois, elles s'appliquent à tous vos formulaires.
@@ -216,7 +216,7 @@ export default function ParametresPage() {
                 </div>
             </Card>
 
-            {/* ── Compte utilisateur ────────────────────────────── */}
+            {/* -- Compte utilisateur ------------------------------ */}
             <Card title="Compte utilisateur">
                 <div className="space-y-5">
                     <SectionTitle icon={<UserCircle className="w-4 h-4" />} title="Identifiants de connexion" />

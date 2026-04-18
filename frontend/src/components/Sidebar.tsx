@@ -265,7 +265,7 @@ export default function Sidebar() {
                     {/* Version + Mentions légales */}
                     <div className="mt-3 pt-3 border-t border-slate-800/60 flex items-center justify-between">
                         <span className="text-[10px] text-slate-600 font-mono">
-                            v{APP_VERSION} · © {COPYRIGHT_YEAR_END} {DEVELOPER_NAME}
+                            v{APP_VERSION} - © {COPYRIGHT_YEAR_END} {DEVELOPER_NAME}
                         </span>
                         <NavLink
                             to="/mentions-legales"

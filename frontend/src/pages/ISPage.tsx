@@ -79,7 +79,7 @@ function ISContent() {
         <div className="max-w-3xl space-y-6">
             {PaymentModalComponent}
             <Card title="IS / MFP : Impôt sur les Sociétés / Minimum Forfaitaire Patronal">
-                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 42 (IS 27,5 %) · Art. 40 (MFP 0,5 % du CA)</p>
+                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 42 (IS 27,5 %) - Art. 40 (MFP 0,5 % du CA)</p>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -221,11 +221,11 @@ function ISContent() {
 
             <Card title="Base légale">
                 <ul className="text-xs text-gray-500 space-y-1">
-                    <li>• Art. 42 CGI 2025 : IS au taux de 27,5 % du bénéfice net imposable</li>
-                    <li>• Art. 40 : MFP = 0,5 % du chiffre d'affaires (minimum garanti)</li>
-                    <li>• L'impôt dû est le maximum entre IS théorique et MFP</li>
-                    <li>• Déclaration et paiement : avant le 30 avril de l'année suivante</li>
-                    <li>• Acomptes trimestriels de 25 % du dernier IS payé</li>
+                    <li>- Art. 42 CGI 2025 : IS au taux de 27,5 % du bénéfice net imposable</li>
+                    <li>- Art. 40 : MFP = 0,5 % du chiffre d'affaires (minimum garanti)</li>
+                    <li>- L'impôt dû est le maximum entre IS théorique et MFP</li>
+                    <li>- Déclaration et paiement : avant le 30 avril de l'année suivante</li>
+                    <li>- Acomptes trimestriels de 25 % du dernier IS payé</li>
                 </ul>
             </Card>
         </div>

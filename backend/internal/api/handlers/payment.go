@@ -108,7 +108,7 @@ func (h *PaymentHandler) Initiate(w http.ResponseWriter, r *http.Request) {
 		companyID, req.DocumentType, req.DocumentID,
 	).Scan(&existingID)
 	if err == nil && existingID != "" {
-		// Paiement déjà effectué — retourner directement le succès
+		// Paiement déjà effectué - retourner directement le succès
 		jsonOK(w, map[string]any{
 			"id":     existingID,
 			"statut": "completed",
@@ -147,8 +147,8 @@ func (h *PaymentHandler) Initiate(w http.ResponseWriter, r *http.Request) {
 	// Appel API Orange Money (si configurée)
 	omURL := os.Getenv("OM_API_URL")
 	if omURL == "" {
-		// Mode sandbox/mock — approuver automatiquement pour les tests
-		log.Printf("[PAYMENT] OM_API_URL non configuré — mode mock, approbation automatique")
+		// Mode sandbox/mock - approuver automatiquement pour les tests
+		log.Printf("[PAYMENT] OM_API_URL non configuré - mode mock, approbation automatique")
 		h.DB.Exec(ctx, //nolint:errcheck
 			`UPDATE payments SET statut='completed', om_reference='MOCK-'+$1, updated_at=NOW() WHERE id=$2`,
 			orderID, paymentID,
@@ -167,7 +167,7 @@ func (h *PaymentHandler) Initiate(w http.ResponseWriter, r *http.Request) {
 	omErr := callOrangeMoney(ctx, omURL, orderID, phone, total, paymentID)
 	if omErr != nil {
 		log.Printf("[PAYMENT] Orange Money API error: %v", omErr)
-		// Ne pas bloquer — le paiement est créé, le webhook peut encore arriver
+		// Ne pas bloquer - le paiement est créé, le webhook peut encore arriver
 		// Ou l'utilisateur peut retry
 		h.DB.Exec(ctx, //nolint:errcheck
 			`UPDATE payments SET statut='failed', updated_at=NOW() WHERE id=$1`, paymentID,
@@ -218,7 +218,7 @@ func (h *PaymentHandler) Status(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// POST /api/payments/webhook  (route publique — appelée par Orange Money)
+// POST /api/payments/webhook  (route publique - appelée par Orange Money)
 func (h *PaymentHandler) Webhook(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
@@ -296,7 +296,7 @@ func (h *PaymentHandler) Check(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, map[string]any{"paid": paid, "payment_id": paymentID})
 }
 
-// ─── Appel API Orange Money ───────────────────────────────────────────────────
+// --- Appel API Orange Money ---------------------------------------------------
 
 // callOrangeMoney envoie la demande de paiement à l'API OM.
 // La structure exacte dépend de votre contrat avec Orange Money.

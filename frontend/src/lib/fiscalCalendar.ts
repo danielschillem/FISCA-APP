@@ -104,60 +104,60 @@ export function getEcheancesAnnee(annee: number, today: Date = new Date()): Eche
         });
     };
 
-    // ── IUTS : le 15 du mois suivant (mensuel) ─────────────────────────────
+    // -- IUTS : le 15 du mois suivant (mensuel) -----------------------------
     for (let m = 0; m < 12; m++) {
         const moisDeclaration = m + 1 > 11 ? 0 : m + 1;
         const anneeDeclaration = m + 1 > 11 ? annee + 1 : annee;
         add('IUTS', `Déclaration et paiement IUTS : ${nomMois(m)} ${annee}`, 15, moisDeclaration, anneeDeclaration);
     }
 
-    // ── CNSS Patronal : le 15 du mois suivant ──────────────────────────────
+    // -- CNSS Patronal : le 15 du mois suivant ------------------------------
     for (let m = 0; m < 12; m++) {
         const moisDecl = m + 1 > 11 ? 0 : m + 1;
         const anneeDecl = m + 1 > 11 ? annee + 1 : annee;
         add('CNSS', `Cotisations CNSS/CARFO : ${nomMois(m)} ${annee}`, 15, moisDecl, anneeDecl);
     }
 
-    // ── TVA : le 15 du mois suivant ────────────────────────────────────────
+    // -- TVA : le 15 du mois suivant ----------------------------------------
     for (let m = 0; m < 12; m++) {
         const moisDecl = m + 1 > 11 ? 0 : m + 1;
         const anneeDecl = m + 1 > 11 ? annee + 1 : annee;
         add('TVA', `Déclaration TVA : ${nomMois(m)} ${annee}`, 15, moisDecl, anneeDecl);
     }
 
-    // ── Retenue à la source : le 15 du mois suivant ────────────────────────
+    // -- Retenue à la source : le 15 du mois suivant ------------------------
     for (let m = 0; m < 12; m++) {
         const moisDecl = m + 1 > 11 ? 0 : m + 1;
         const anneeDecl = m + 1 > 11 ? annee + 1 : annee;
         add('RAS', `Retenue à la source : ${nomMois(m)} ${annee}`, 15, moisDecl, anneeDecl);
     }
 
-    // ── IS : 4 acomptes trimestriels (31 mars, 30 juin, 30 sept, 31 déc) ──
+    // -- IS : 4 acomptes trimestriels (31 mars, 30 juin, 30 sept, 31 déc) --
     add('IS_acompte', `IS 1er acompte (25% de l'IS N-1) : T1 ${annee}`, 31, 2); // 31 mars
     add('IS_acompte', `IS 2e acompte (25% de l'IS N-1) : T2 ${annee}`, 30, 5);  // 30 juin
     add('IS_acompte', `IS 3e acompte (25% de l'IS N-1) : T3 ${annee}`, 30, 8);  // 30 sept
     add('IS_acompte', `IS 4e acompte (25% de l'IS N-1) : T4 ${annee}`, 31, 11); // 31 déc
 
-    // ── IS : Solde annuel au 31 mars de l'année suivante ──────────────────
+    // -- IS : Solde annuel au 31 mars de l'année suivante ------------------
     add('IS_solde', `IS Solde annuel : Exercice ${annee}`, 31, 2, annee + 1);
 
-    // ── Patente : 31 janvier ───────────────────────────────────────────────
+    // -- Patente : 31 janvier -----------------------------------------------
     add('Patente', `Déclaration et paiement Patente : ${annee}`, 31, 0);
 
-    // ── IRF : 30 avril ────────────────────────────────────────────────────
+    // -- IRF : 30 avril ----------------------------------------------------
     add('IRF', `Déclaration IRF (revenus fonciers) : ${annee - 1}`, 30, 3);
 
-    // ── IRCM : 30 avril ───────────────────────────────────────────────────
+    // -- IRCM : 30 avril ---------------------------------------------------
     add('IRCM', `Déclaration IRCM (capitaux mobiliers) : ${annee - 1}`, 30, 3);
 
-    // ── CME : le 15 du mois suivant (mensuel) ──────────────────────────────
+    // -- CME : le 15 du mois suivant (mensuel) ------------------------------
     for (let m = 0; m < 12; m++) {
         const moisDecl = m + 1 > 11 ? 0 : m + 1;
         const anneeDecl = m + 1 > 11 ? annee + 1 : annee;
         add('CME', `CME Micro-Entreprises : ${nomMois(m)} ${annee}`, 15, moisDecl, anneeDecl);
     }
 
-    // ── Taxe Professionnelle : 31 janvier ─────────────────────────────────
+    // -- Taxe Professionnelle : 31 janvier ---------------------------------
     add('TP', `Taxe Professionnelle : ${annee}`, 31, 0);
 
     return echeances.sort((a, b) => a.date.getTime() - b.date.getTime());

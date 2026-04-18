@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { workflowApi } from '../lib/api';
 import { Card, Badge, Btn, Spinner } from '../components/ui';
@@ -76,7 +76,7 @@ function WorkflowContent() {
                                 </div>
                                 <p className="font-semibold text-gray-900 text-sm truncate">{e.titre}</p>
                                 <p className="text-xs text-gray-500 mt-0.5">
-                                    {MOIS_FR[(e.mois ?? 1) - 1]} {e.annee} · Créé par {e.createur}
+                                    {MOIS_FR[(e.mois ?? 1) - 1]} {e.annee} - Créé par {e.createur}
                                 </p>
                                 {e.commentaire && (
                                     <p className="text-xs text-orange-600 mt-1 italic flex items-center gap-1"><MessageSquare className="w-3 h-3" /> {e.commentaire}</p>

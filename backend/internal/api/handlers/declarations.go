@@ -120,7 +120,7 @@ func (h *DeclarationHandler) Get(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, d)
 }
 
-// POST /api/declarations — Calcul + enregistrement à partir des employés
+// POST /api/declarations - Calcul + enregistrement à partir des employés
 func (h *DeclarationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	companyID, err := h.companyID(r)
 	if err != nil {
@@ -245,7 +245,7 @@ func (h *DeclarationHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// GET /api/declarations/{id}/export — Export DIPE format DGI Burkina Faso
+// GET /api/declarations/{id}/export - Export DIPE format DGI Burkina Faso
 func (h *DeclarationHandler) Export(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	companyID, err := h.companyID(r)
@@ -302,8 +302,8 @@ func (h *DeclarationHandler) Export(w http.ResponseWriter, r *http.Request) {
 	cw := csv.NewWriter(w)
 	cw.Comma = ';'
 
-	// ── Entête DIPE ──
-	_ = cw.Write([]string{"FISCA — DIPE IUTS/TPA/CSS", "Burkina Faso", "CGI 2025"})
+	// -- Entête DIPE --
+	_ = cw.Write([]string{"FISCA - DIPE IUTS/TPA/CSS", "Burkina Faso", "CGI 2025"})
 	_ = cw.Write([]string{""})
 	_ = cw.Write([]string{"ENTREPRISE", nom})
 	_ = cw.Write([]string{"IFU", ifu})
@@ -314,7 +314,7 @@ func (h *DeclarationHandler) Export(w http.ResponseWriter, r *http.Request) {
 	_ = cw.Write([]string{"DATE GENERATION", time.Now().Format("02/01/2006 15:04")})
 	_ = cw.Write([]string{""})
 
-	// ── Tableau récapitulatif ──
+	// -- Tableau récapitulatif --
 	_ = cw.Write([]string{"=== RECAPITULATIF ==="})
 	_ = cw.Write([]string{"NB SALARIES", strconv.Itoa(d.NbSalarie)})
 	_ = cw.Write([]string{"MASSE SALARIALE BRUTE", fmt.Sprintf("%.0f", d.BrutTotal)})
@@ -325,7 +325,7 @@ func (h *DeclarationHandler) Export(w http.ResponseWriter, r *http.Request) {
 	_ = cw.Write([]string{"STATUT", d.Statut})
 	_ = cw.Write([]string{""})
 
-	// ── Détail par employé ──
+	// -- Détail par employé --
 	_ = cw.Write([]string{"=== DETAIL PAR EMPLOYE ==="})
 	_ = cw.Write([]string{
 		"NOM", "CATEGORIE", "COTISATION", "CHARGES", "SALAIRE_BASE",
@@ -361,8 +361,8 @@ func (h *DeclarationHandler) Export(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	// ── Pied de page ──
+	// -- Pied de page --
 	_ = cw.Write([]string{""})
-	_ = cw.Write([]string{"Généré par FISCA — Plateforme Fiscale BF", "www.fisca.bf"})
+	_ = cw.Write([]string{"Généré par FISCA - Plateforme Fiscale BF", "www.fisca.bf"})
 	cw.Flush()
 }

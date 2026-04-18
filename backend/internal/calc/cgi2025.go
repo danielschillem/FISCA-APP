@@ -2,7 +2,7 @@ package calc
 
 import "math"
 
-// ─── CNSS PATRONAL ────────────────────────────────────────────
+// --- CNSS PATRONAL --------------------------------------------
 // CGI 2025 / Code Travail BF
 
 const (
@@ -53,7 +53,7 @@ func CalcCNSSPatronal(remBrute float64, cotisation string) CNSSPatronalResult {
 	}
 }
 
-// ─── TVA — CGI 2025 Art. 317 ──────────────────────────────────
+// --- TVA - CGI 2025 Art. 317 ----------------------------------
 
 const (
 	TVATauxStandard   = 0.18
@@ -121,7 +121,7 @@ func CalcSoldeTVA(lignes []TVALigneInput) SoldeTVA {
 	}
 }
 
-// ─── RAS — CGI 2025 Art. 206–226 ──────────────────────────────
+// --- RAS - CGI 2025 Art. 206-226 ------------------------------
 
 // Taux RAS par type de prestataire
 var rasTaux = map[string]float64{
@@ -171,7 +171,7 @@ func CalcRAS(montantHT float64, typeKey string) RASResult {
 	return RASResult{HT: montantHT, RAS: ras, Net: montantHT - ras, Taux: taux, Exonere: exonere}
 }
 
-// ─── IRF — CGI 2025 Art. 121–126 ──────────────────────────────
+// --- IRF - CGI 2025 Art. 121-126 ------------------------------
 
 type IRFResult struct {
 	LoyerBrut    float64
@@ -214,7 +214,7 @@ func CalcIRF(loyerBrut float64) IRFResult {
 	}
 }
 
-// ─── IRCM — CGI 2025 Art. 140 ─────────────────────────────────
+// --- IRCM - CGI 2025 Art. 140 ---------------------------------
 
 var ircmTaux = map[string]float64{
 	"CREANCES":    0.25,
@@ -239,7 +239,7 @@ func CalcIRCM(montantBrut float64, typeRevenu string) IRCMResult {
 	return IRCMResult{Brut: montantBrut, IRCM: ircm, Net: montantBrut - ircm, Taux: taux}
 }
 
-// ─── IS / MFP — CGI 2025 Art. 42 ─────────────────────────────
+// --- IS / MFP - CGI 2025 Art. 42 -----------------------------
 
 const (
 	isTaux          = 0.275
@@ -287,7 +287,7 @@ func CalcMFP(caHT float64, regime string, adhesionCGA bool) MFPResult {
 	return MFPResult{CA: caHT, MFPCalcule: mfpCalc, MFPMinimum: minimum, MFPDu: mfpDu}
 }
 
-// ─── CME — CGI 2025 Art. 533 ──────────────────────────────────
+// --- CME - CGI 2025 Art. 533 ----------------------------------
 
 var cmeTarifs = map[string][8]float64{
 	"A": {200000, 160000, 120000, 80000, 60000, 30000, 20000, 10000},
@@ -346,7 +346,7 @@ func CalcCME(ca float64, zone string, adhesionCGA bool) CMEResult {
 	return CMEResult{CA: ca, Zone: zone, Classe: classe, CME: cme, CMENet: cmeNet}
 }
 
-// ─── PATENTES — CGI 2025 Art. 237–240 ────────────────────────
+// --- PATENTES - CGI 2025 Art. 237-240 ------------------------
 
 var patenteTableauA = []struct {
 	max   float64
@@ -398,7 +398,7 @@ func CalcPatente(ca, valeurLocative float64) PatenteResult {
 	}
 }
 
-// ─── PÉNALITÉS DE RETARD — CGI 2025 Art. 607 ────────────────
+// --- PÉNALITÉS DE RETARD - CGI 2025 Art. 607 ----------------
 
 const (
 	penaliteBase     = 0.10 // Majoration 1er mois : 10 %

@@ -1,4 +1,4 @@
-// Middleware CompanyContext : lit le header optionnel X-Company-ID et vérifie
+﻿// Middleware CompanyContext : lit le header optionnel X-Company-ID et vérifie
 // les droits d'accès selon le type d'utilisateur (physique ou morale).
 // Si absent, utilise la première société accessible.
 package middleware
@@ -29,7 +29,7 @@ func CompanyContext(db *pgxpool.Pool) func(http.Handler) http.Handler {
 			var companyID string
 
 			if orgID != "" {
-				// ── Personne Morale ──────────────────────────────────────────────
+				// -- Personne Morale ----------------------------------------------
 				if requestedID != "" {
 					if orgRole == "org_admin" {
 						// org_admin accède à n'importe quelle société de l'org
@@ -69,7 +69,7 @@ func CompanyContext(db *pgxpool.Pool) func(http.Handler) http.Handler {
 					_ = fallbackErr // companyID vide géré par les handlers (retourne 404)
 				}
 			} else {
-				// ── Personne Physique ────────────────────────────────────────────
+				// -- Personne Physique --------------------------------------------
 				if requestedID != "" {
 					err := db.QueryRow(r.Context(),
 						`SELECT id FROM companies WHERE id=$1 AND user_id=$2`,

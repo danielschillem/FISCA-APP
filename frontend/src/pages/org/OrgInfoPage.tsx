@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+﻿import { useQuery } from '@tanstack/react-query';
 import { orgApi } from '../../lib/api';
 import type { OrgInfo } from '../../types';
 import { Building2, Users, Briefcase, UserCheck, Globe2, FileText } from 'lucide-react';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// --- Helpers ------------------------------------------------------------------
 const PLAN_LABELS: Record<string, { label: string; color: string }> = {
     physique_starter: { label: 'Physique Starter', color: 'bg-slate-100 text-slate-600 border border-slate-200' },
     physique_pro: { label: 'Physique Pro', color: 'bg-sky-100 text-sky-700 border border-sky-200' },
@@ -47,7 +47,7 @@ function QuotaCard({ label, used, max, Icon }: QuotaCardProps) {
     );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// --- Page ---------------------------------------------------------------------
 export default function OrgInfoPage() {
     const { data, isLoading, isError } = useQuery<OrgInfo>({
         queryKey: ['org-info'],

@@ -59,18 +59,18 @@ function PatenteContent() {
     // Tableau des droits fixes (Art. 238 CGI 2025)
     const DROITS_FIXES = [
         { tranche: 'CA < 30 M', droit: 30_000 },
-        { tranche: '30 M – 60 M', droit: 75_000 },
-        { tranche: '60 M – 100 M', droit: 150_000 },
-        { tranche: '100 M – 200 M', droit: 250_000 },
-        { tranche: '200 M – 500 M', droit: 500_000 },
-        { tranche: '500 M – 1 Md', droit: 1_000_000 },
+        { tranche: '30 M - 60 M', droit: 75_000 },
+        { tranche: '60 M - 100 M', droit: 150_000 },
+        { tranche: '100 M - 200 M', droit: 250_000 },
+        { tranche: '200 M - 500 M', droit: 500_000 },
+        { tranche: '500 M - 1 Md', droit: 1_000_000 },
         { tranche: '> 1 Md', droit: 2_000_000 },
     ];
 
     return (
         <div className="max-w-3xl space-y-6">
             <Card title="Patente Professionnelle">
-                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 237-240 · Droit fixe + 1 % valeur locative professionnelle</p>
+                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 237-240 - Droit fixe + 1 % valeur locative professionnelle</p>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -214,10 +214,10 @@ function PatenteContent() {
 
             <Card title="Base légale">
                 <ul className="text-xs text-gray-500 space-y-1">
-                    <li>• Art. 237 CGI 2025 : Toute personne physique ou morale exerçant une activité commerciale</li>
-                    <li>• Art. 238 : Droit fixe selon le tableau A (fonction du CA)</li>
-                    <li>• Art. 239 : Droit proportionnel = 1 % de la valeur locative des locaux professionnels</li>
-                    <li>• Art. 240 : Paiement avant le 31 mars de l'année d'imposition</li>
+                    <li>- Art. 237 CGI 2025 : Toute personne physique ou morale exerçant une activité commerciale</li>
+                    <li>- Art. 238 : Droit fixe selon le tableau A (fonction du CA)</li>
+                    <li>- Art. 239 : Droit proportionnel = 1 % de la valeur locative des locaux professionnels</li>
+                    <li>- Art. 240 : Paiement avant le 31 mars de l'année d'imposition</li>
                 </ul>
             </Card>
         </div>

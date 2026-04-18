@@ -196,11 +196,11 @@ function TVAContent() {
             )}
 
             <Card>
-                <p className="text-xs text-gray-500 mb-3">Référence légale : CGI 2025 : Art. 317 · Taux standard 18 % · Hôtellerie/restauration 10 %</p>
+                <p className="text-xs text-gray-500 mb-3">Référence légale : CGI 2025 : Art. 317 - Taux standard 18 % - Hôtellerie/restauration 10 %</p>
                 <div className="text-xs text-gray-400 space-y-1">
-                    <p>• Seuil d'assujettissement : CA ≥ 50 000 000 FCFA/an</p>
-                    <p>• Déclaration mensuelle, paiement avant le 15 du mois suivant</p>
-                    <p>• Crédit TVA : reportable sur les mois suivants ou remboursable</p>
+                    <p>- Seuil d'assujettissement : CA ≥ 50 000 000 FCFA/an</p>
+                    <p>- Déclaration mensuelle, paiement avant le 15 du mois suivant</p>
+                    <p>- Crédit TVA : reportable sur les mois suivants ou remboursable</p>
                 </div>
             </Card>
         </div>
@@ -336,7 +336,7 @@ function LignesPanel({
                                 {(l.taux * 100).toFixed(0)} %
                             </span>
                             <span className="col-span-1 text-xs text-gray-700 font-mono text-right whitespace-nowrap">
-                                {tva > 0 ? fmtN(tva) : '—'}
+                                {tva > 0 ? fmtN(tva) : ' - '}
                             </span>
                             <button
                                 onClick={() => onChange(lignes.filter((_, j) => j !== i))}

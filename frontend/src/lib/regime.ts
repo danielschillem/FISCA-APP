@@ -1,5 +1,5 @@
-/**
- * Régimes fiscaux Burkina Faso – CGI 2025
+﻿/**
+ * Régimes fiscaux Burkina Faso - CGI 2025
  * Centralise la logique de filtrage par régime d'imposition.
  */
 import { useQuery } from '@tanstack/react-query';

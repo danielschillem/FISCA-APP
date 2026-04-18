@@ -1,5 +1,5 @@
 ﻿// Tests logique pure : ISPage (sans rendu React)
-// CGI 2025 Art. 42 · IS 27.5 % · MFP 0.5 % · CGA réductions
+// CGI 2025 Art. 42 - IS 27.5 % - MFP 0.5 % - CGA réductions
 import { describe, it, expect } from 'vitest'
 import { calcIS, calcMFP } from '../lib/fiscalCalc'
 

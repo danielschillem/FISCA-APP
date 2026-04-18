@@ -142,7 +142,7 @@ func (h *HistoriqueFiscalHandler) Get(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, result)
 }
 
-// GET /api/historique-fiscal/annees — liste des années disponibles
+// GET /api/historique-fiscal/annees - liste des années disponibles
 func (h *HistoriqueFiscalHandler) Annees(w http.ResponseWriter, r *http.Request) {
 	companyID, err := h.companyID(r)
 	if err != nil {

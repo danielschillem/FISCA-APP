@@ -21,7 +21,7 @@ func NewOrgHandler(db *pgxpool.Pool) *OrgHandler {
 	return &OrgHandler{DB: db}
 }
 
-// GET /api/org/info — informations de l'organisation + stats
+// GET /api/org/info - informations de l'organisation + stats
 func (h *OrgHandler) GetInfo(w http.ResponseWriter, r *http.Request) {
 	orgID := mw.GetOrgID(r)
 	if orgID == "" {
@@ -52,7 +52,7 @@ func (h *OrgHandler) GetInfo(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, models.OrgInfo{Organization: org, Stats: stats})
 }
 
-// GET /api/org/members — liste des membres de l'organisation
+// GET /api/org/members - liste des membres de l'organisation
 func (h *OrgHandler) ListMembers(w http.ResponseWriter, r *http.Request) {
 	orgID := mw.GetOrgID(r)
 	if orgID == "" {
@@ -79,7 +79,7 @@ func (h *OrgHandler) ListMembers(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, members)
 }
 
-// POST /api/org/members — inviter / créer un utilisateur dans l'organisation
+// POST /api/org/members - inviter / créer un utilisateur dans l'organisation
 func (h *OrgHandler) InviteMember(w http.ResponseWriter, r *http.Request) {
 	orgID := mw.GetOrgID(r)
 	if orgID == "" {
@@ -144,7 +144,7 @@ func (h *OrgHandler) InviteMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Envoyer l'email d'invitation (asynchrone — ne bloque pas la réponse)
+	// Envoyer l'email d'invitation (asynchrone - ne bloque pas la réponse)
 	inviterEmail := mw.GetUserID(r) // on récupère l'email de l'invitant
 	var orgNom, inviterEmailStr string
 	h.DB.QueryRow(r.Context(), `SELECT nom FROM organizations WHERE id=$1`, orgID).Scan(&orgNom)              //nolint:errcheck
@@ -157,7 +157,7 @@ func (h *OrgHandler) InviteMember(w http.ResponseWriter, r *http.Request) {
 	jsonCreated(w, member)
 }
 
-// PATCH /api/org/members/{id}/role — changer le rôle d'un membre
+// PATCH /api/org/members/{id}/role - changer le rôle d'un membre
 func (h *OrgHandler) SetMemberRole(w http.ResponseWriter, r *http.Request) {
 	orgID := mw.GetOrgID(r)
 	targetID := chi.URLParam(r, "id")
@@ -188,7 +188,7 @@ func (h *OrgHandler) SetMemberRole(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// DELETE /api/org/members/{id} — retirer un membre de l'organisation
+// DELETE /api/org/members/{id} - retirer un membre de l'organisation
 func (h *OrgHandler) RemoveMember(w http.ResponseWriter, r *http.Request) {
 	orgID := mw.GetOrgID(r)
 	targetID := chi.URLParam(r, "id")
@@ -210,7 +210,7 @@ func (h *OrgHandler) RemoveMember(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// GET /api/org/companies — sociétés de l'org avec leurs membres ayant accès
+// GET /api/org/companies - sociétés de l'org avec leurs membres ayant accès
 func (h *OrgHandler) ListCompanies(w http.ResponseWriter, r *http.Request) {
 	orgID := mw.GetOrgID(r)
 	if orgID == "" {
@@ -255,7 +255,7 @@ func (h *OrgHandler) ListCompanies(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, companies)
 }
 
-// POST /api/org/companies/{id}/access — accorder l'accès à une société
+// POST /api/org/companies/{id}/access - accorder l'accès à une société
 func (h *OrgHandler) GrantAccess(w http.ResponseWriter, r *http.Request) {
 	orgID := mw.GetOrgID(r)
 	companyID := chi.URLParam(r, "id")
@@ -297,7 +297,7 @@ func (h *OrgHandler) GrantAccess(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// DELETE /api/org/companies/{id}/access/{uid} — révoquer l'accès
+// DELETE /api/org/companies/{id}/access/{uid} - révoquer l'accès
 func (h *OrgHandler) RevokeAccess(w http.ResponseWriter, r *http.Request) {
 	orgID := mw.GetOrgID(r)
 	companyID := chi.URLParam(r, "id")

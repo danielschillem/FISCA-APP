@@ -36,7 +36,7 @@ func (h *WorkflowHandler) companyID(r *http.Request) (string, error) {
 	return id, nil
 }
 
-// GET /api/workflow — liste des déclarations avec leur statut workflow
+// GET /api/workflow - liste des déclarations avec leur statut workflow
 func (h *WorkflowHandler) List(w http.ResponseWriter, r *http.Request) {
 	companyID, err := h.companyID(r)
 	if err != nil {
@@ -104,7 +104,7 @@ func (h *WorkflowHandler) List(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, items)
 }
 
-// GET /api/declarations/{id}/workflow — historique des étapes
+// GET /api/declarations/{id}/workflow - historique des étapes
 func (h *WorkflowHandler) History(w http.ResponseWriter, r *http.Request) {
 	companyID, err := h.companyID(r)
 	if err != nil {

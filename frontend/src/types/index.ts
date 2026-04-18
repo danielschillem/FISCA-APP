@@ -1,4 +1,4 @@
-﻿// ─── Fiscal types : CGI 2025 Burkina Faso ───────────────────
+﻿// --- Fiscal types : CGI 2025 Burkina Faso -------------------
 
 export interface Company {
     id: string;
@@ -472,7 +472,7 @@ export const MOIS_FR = [
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
 ];
 
-// ─── Organisation (Personne Morale) ─────────────────────────
+// --- Organisation (Personne Morale) -------------------------
 
 export interface Organization {
     id: string;
@@ -525,7 +525,7 @@ export interface OrgCompany {
     members: OrgCompanyAccess[];
 }
 
-// ─── Super Admin types ────────────────────────────────────────
+// --- Super Admin types ----------------------------------------
 
 export interface License {
     id: string;

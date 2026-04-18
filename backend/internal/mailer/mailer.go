@@ -1,12 +1,12 @@
 // Package mailer gère l'envoi d'emails via SMTP.
 // Variables d'environnement requises :
 //
-//	SMTP_HOST     — serveur SMTP (ex: smtp.sendgrid.net)
-//	SMTP_PORT     — port (ex: 587)
-//	SMTP_USER     — identifiant
-//	SMTP_PASS     — mot de passe / clé API
-//	SMTP_FROM     — adresse expéditeur (ex: noreply@fisca.bf)
-//	APP_URL       — URL de base de l'application (ex: https://app.fisca.bf)
+//	SMTP_HOST   - serveur SMTP (ex: smtp.sendgrid.net)
+//	SMTP_PORT   - port (ex: 587)
+//	SMTP_USER   - identifiant
+//	SMTP_PASS   - mot de passe / clé API
+//	SMTP_FROM   - adresse expéditeur (ex: noreply@fisca.bf)
+//	APP_URL     - URL de base de l'application (ex: https://app.fisca.bf)
 package mailer
 
 import (
@@ -21,7 +21,7 @@ import (
 func Send(to, subject, htmlBody string) error {
 	host := os.Getenv("SMTP_HOST")
 	if host == "" {
-		// Pas de mailer configuré — log et sortie silencieuse
+		// Pas de mailer configuré - log et sortie silencieuse
 		fmt.Printf("[MAILER] (non configuré) To=%s Subject=%s\n", to, subject)
 		return nil
 	}
@@ -75,7 +75,7 @@ func SendResetPassword(to, token string) error {
 <html lang="fr">
 <head><meta charset="UTF-8"></head>
 <body style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px">
-  <h2 style="color:#1a3c2e">FISCA — Réinitialisation du mot de passe</h2>
+  <h2 style="color:#1a3c2e">FISCA - Réinitialisation du mot de passe</h2>
   <p>Bonjour,</p>
   <p>Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le lien ci-dessous (valide 1 heure) :</p>
   <p style="margin:24px 0">
@@ -106,14 +106,14 @@ func SendInvitation(to, orgNom, invitedByEmail, password, orgRole string) error 
 	if roleLabel == "" {
 		roleLabel = orgRole
 	}
-	subject := fmt.Sprintf("Invitation FISCA — %s vous a ajouté à %s", invitedByEmail, orgNom)
+	subject := fmt.Sprintf("Invitation FISCA - %s vous a ajouté à %s", invitedByEmail, orgNom)
 	body := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="UTF-8"></head>
 <body style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px;color:#1e293b">
   <div style="background:linear-gradient(135deg,#16a34a,#059669);padding:24px;border-radius:12px;margin-bottom:24px">
     <h1 style="color:#fff;margin:0;font-size:22px">FISCA</h1>
-    <p style="color:#d1fae5;margin:4px 0 0;font-size:13px">Plateforme Fiscale · Burkina Faso</p>
+    <p style="color:#d1fae5;margin:4px 0 0;font-size:13px">Plateforme Fiscale - Burkina Faso</p>
   </div>
   <h2 style="color:#1a3c2e">Vous avez été invité(e) sur FISCA</h2>
   <p><strong>%s</strong> vous a ajouté(e) à l'organisation <strong>%s</strong> avec le rôle <strong>%s</strong>.</p>

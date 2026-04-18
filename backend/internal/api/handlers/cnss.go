@@ -16,7 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Taux CNSS Burkina Faso — CGI 2025 / Code du Travail
+// Taux CNSS Burkina Faso - CGI 2025 / Code du Travail
 const (
 	// Patronal : Famille 7,2 % + Accident 3,4 % + Retraite 5,5 % = 16,1 %
 	TauxPatronalCNSS  = 16.1 // % de la base cotisable (employeur)
@@ -111,7 +111,7 @@ func (h *CNSSHandler) List(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, items)
 }
 
-// POST /api/cnss/generer — génère la fiche CNSS patronal depuis la déclaration du mois
+// POST /api/cnss/generer - génère la fiche CNSS patronal depuis la déclaration du mois
 func (h *CNSSHandler) Generer(w http.ResponseWriter, r *http.Request) {
 	companyID, err := h.companyID(r)
 	if err != nil {
@@ -280,7 +280,7 @@ func (h *CNSSHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// GET /api/cnss/{id}/export — Déclaration CSV
+// GET /api/cnss/{id}/export - Déclaration CSV
 func (h *CNSSHandler) Export(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	companyID, err := h.companyID(r)
@@ -305,7 +305,7 @@ func (h *CNSSHandler) Export(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte{0xEF, 0xBB, 0xBF}) //nolint:errcheck
 
 	lines := [][]string{
-		{"DÉCLARATION CNSS PATRONAL — BURKINA FASO"},
+		{"DÉCLARATION CNSS PATRONAL - BURKINA FASO"},
 		{"Société", nomSoc, "IFU", ifu},
 		{"Période", d.Periode},
 		{"Date export", time.Now().Format("02/01/2006")},

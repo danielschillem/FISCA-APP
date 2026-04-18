@@ -12,7 +12,7 @@ const FEATURES = [
     { Icon: BarChart2, text: 'Tableaux de bord fiscaux en temps réel' },
     { Icon: FileCheck, text: 'Bulletins de paie & déclarations IUTS' },
     { Icon: Calculator, text: 'Calculateur CGI 2025 : tous les impôts BF' },
-    { Icon: ShieldCheck, text: 'Données sécurisées · Conforme OHADA' },
+    { Icon: ShieldCheck, text: 'Données sécurisées - Conforme OHADA' },
 ];
 
 export default function LoginPage() {
@@ -44,7 +44,7 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen flex">
 
-            {/* ── Panneau gauche : image + branding ──────────────────────── */}
+            {/* -- Panneau gauche : image + branding ------------------------ */}
             <div
                 className="hidden lg:flex lg:w-1/2 xl:w-[55%] flex-col justify-between p-12 relative overflow-hidden"
                 style={{ backgroundImage: 'url(/login_bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
@@ -66,7 +66,7 @@ export default function LoginPage() {
                 <div className="relative z-10">
                     <div className="mb-6">
                         <span className="inline-block bg-green-500/20 text-green-300 text-xs font-semibold px-3 py-1 rounded-full tracking-wider mb-4">
-                            CGI 2025 · Burkina Faso
+                            CGI 2025 - Burkina Faso
                         </span>
                         <h2 className="text-4xl font-extrabold text-white leading-snug mb-3">
                             Gérez votre<br />
@@ -92,17 +92,17 @@ export default function LoginPage() {
                 </div>
 
                 {/* Pied */}
-                <p className="relative z-10 text-slate-600 text-xs">© {new Date().getFullYear()} FISCA · Tous droits réservés</p>
+                <p className="relative z-10 text-slate-600 text-xs">© {new Date().getFullYear()} FISCA - Tous droits réservés</p>
             </div>
 
-            {/* ── Panneau droit : formulaire ──────────────────────────────── */}
+            {/* -- Panneau droit : formulaire -------------------------------- */}
             <div className="flex-1 flex items-center justify-center p-6 bg-[#f8fafc]">
                 <div className="w-full max-w-[400px]">
 
                     {/* Logo */}
                     <div className="lg:hidden text-center mb-8">
                         <h1 style={{ fontFamily: '"Arial Black", "Arial Bold", Arial, sans-serif', fontWeight: 900 }} className="text-3xl text-green-700 tracking-widest mb-1">FISCA</h1>
-                        <p className="text-gray-400 text-sm">Plateforme Fiscale · Burkina Faso</p>
+                        <p className="text-gray-400 text-sm">Plateforme Fiscale - Burkina Faso</p>
                     </div>
 
                     {/* Carte formulaire */}
@@ -163,7 +163,7 @@ export default function LoginPage() {
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         className="w-full pl-10 pr-11 py-3 border border-gray-200 bg-gray-50/60 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-400 focus:bg-white transition-all duration-150"
-                                        placeholder="••••••••••"
+                                        placeholder="----------"
                                         required
                                         autoComplete="current-password"
                                     />

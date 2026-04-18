@@ -252,7 +252,7 @@ func (h *EmployeeHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// GET /api/employees/export — Export CSV de tous les employés
+// GET /api/employees/export - Export CSV de tous les employés
 func (h *EmployeeHandler) Export(w http.ResponseWriter, r *http.Request) {
 	companyID, err := h.getCompanyID(r)
 	if err != nil {
@@ -300,7 +300,7 @@ func (h *EmployeeHandler) Export(w http.ResponseWriter, r *http.Request) {
 	cw.Flush()
 }
 
-// POST /api/employees/import — Import CSV d'employés (remplace ou complète)
+// POST /api/employees/import - Import CSV d'employés (remplace ou complète)
 // Format attendu (séparateur ; ou ,) :
 // NOM;CATEGORIE;COTISATION;CHARGES_FAMILIALES;SALAIRE_BASE;ANCIENNETE;HEURES_SUP;LOGEMENT;TRANSPORT;FONCTION
 func (h *EmployeeHandler) Import(w http.ResponseWriter, r *http.Request) {

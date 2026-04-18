@@ -4,10 +4,10 @@ import { useAuthStore } from './store';
  * Hook centralisé de gestion des permissions par rôle organisationnel.
  *
  * Rôles:
- *  - physique (solo) ou org_admin : accès complet en écriture
- *  - comptable    : écriture sur les déclarations fiscales, lecture seule sur RH
- *  - gestionnaire_rh : écriture sur les employés/bulletins, lecture seule sur fiscal
- *  - auditeur     : lecture seule totale
+ * - physique (solo) ou org_admin : accès complet en écriture
+ * - comptable    : écriture sur les déclarations fiscales, lecture seule sur RH
+ * - gestionnaire_rh : écriture sur les employés/bulletins, lecture seule sur fiscal
+ * - auditeur     : lecture seule totale
  */
 export function usePermissions() {
     const { user } = useAuthStore();

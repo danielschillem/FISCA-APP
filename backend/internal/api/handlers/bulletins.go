@@ -252,7 +252,7 @@ func (h *BulletinHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// GET /api/bulletins/{id}/export — Export HTML du bulletin de paie (imprimable / "PDF")
+// GET /api/bulletins/{id}/export - Export HTML du bulletin de paie (imprimable / "PDF")
 // Le client peut utiliser window.print() ou un outil headless pour générer le PDF.
 func (h *BulletinHandler) Export(w http.ResponseWriter, r *http.Request) {
 	companyID, err := h.companyID(r)
@@ -290,7 +290,7 @@ func (h *BulletinHandler) Export(w http.ResponseWriter, r *http.Request) {
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Bulletin de paie — %s — %s %d</title>
+<title>Bulletin de paie - %s - %s %d</title>
 <style>
   body{font-family:Arial,sans-serif;font-size:12px;margin:0;padding:20px;color:#222}
   h1{font-size:16px;margin-bottom:4px}h2{font-size:13px;color:#555}
@@ -304,7 +304,7 @@ func (h *BulletinHandler) Export(w http.ResponseWriter, r *http.Request) {
 </head>
 <body>
 <div class="header">
-  <div><h1>FISCA — Bulletin de paie</h1><h2>%s</h2><p>IFU : %s</p></div>
+  <div><h1>FISCA - Bulletin de paie</h1><h2>%s</h2><p>IFU : %s</p></div>
   <div style="text-align:right"><p><strong>Période : %s %d</strong></p><p>Émis le : %s</p></div>
 </div>
 <table>

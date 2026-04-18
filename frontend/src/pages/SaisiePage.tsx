@@ -391,7 +391,7 @@ export default function SaisiePage() {
                     {/* Pagination controls */}
                     {totalPages > 1 && (
                         <div className="flex items-center justify-between py-2 px-1">
-                            <p className="text-xs text-gray-500">{totalEmployees} employé(s) · Page {page} / {totalPages}</p>
+                            <p className="text-xs text-gray-500">{totalEmployees} employé(s) - Page {page} / {totalPages}</p>
                             <div className="flex gap-2">
                                 <button
                                     disabled={page <= 1}

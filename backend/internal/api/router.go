@@ -25,7 +25,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.RequestSize(1 << 20)) // 1 MB max body
-	// CORS — origines autorisées
+	// CORS - origines autorisées
 	allowedOrigins := []string{
 		"https://*.vercel.app",
 		"https://*.netlify.app", // frontend Netlify (prod + previews)
@@ -91,7 +91,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 		r.Post("/auth/refresh", authH.Refresh)
 		r.Post("/auth/logout", authH.Logout)
 
-		// Webhook Orange Money (public — pas de JWT)
+		// Webhook Orange Money (public - pas de JWT)
 		r.Post("/payments/webhook", paymentH.Webhook)
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
@@ -135,7 +135,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			r.Get("/checklist", checklistH.List)
 			r.Put("/checklist/{id}", checklistH.Toggle)
 
-			// Assistant IA [Plan: Pro+] — rate limit 10 req/min (API OpenAI coûteuse)
+			// Assistant IA [Plan: Pro+] - rate limit 10 req/min (API OpenAI coûteuse)
 			assistantRateLimit := mw.RateLimit(10, 10.0/60)
 			r.With(assistantRateLimit).Post("/assistant", assistantH.Chat)
 
@@ -147,7 +147,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			r.Get("/employees/export", empH.Export)
 			r.Post("/employees/import", empH.Import)
 
-			// Calcul fiscal (stateless — CGI 2025)
+			// Calcul fiscal (stateless - CGI 2025)
 			r.Post("/calcul", calcH.Calcul)
 			r.Post("/calcul/tva", calcH.TVA)
 			r.Post("/calcul/ras", calcH.RAS)
@@ -234,7 +234,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			r.Put("/exercice/{id}", exerciceH.Update)
 			r.Put("/exercice/{id}/cloturer", exerciceH.Cloturer)
 
-			// IRF — Revenus Fonciers [Plan: Pro+]
+			// IRF - Revenus Fonciers [Plan: Pro+]
 			r.Get("/irf", irfH.List)
 			r.Post("/irf", irfH.Create)
 			r.Get("/irf/{id}", irfH.Get)
@@ -242,7 +242,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			r.Delete("/irf/{id}", irfH.Delete)
 			r.Get("/irf/{id}/export", irfH.Export)
 
-			// IRCM — Capitaux Mobiliers [Plan: Pro+]
+			// IRCM - Capitaux Mobiliers [Plan: Pro+]
 			r.Get("/ircm", ircmH.List)
 			r.Post("/ircm", ircmH.Create)
 			r.Get("/ircm/{id}", ircmH.Get)
@@ -250,7 +250,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			r.Delete("/ircm/{id}", ircmH.Delete)
 			r.Get("/ircm/{id}/export", ircmH.Export)
 
-			// IS / MFP — Impôt Sociétés [Plan: Enterprise]
+			// IS / MFP - Impôt Sociétés [Plan: Enterprise]
 			r.Get("/is", isH.List)
 			r.Post("/is", isH.Create)
 			r.Get("/is/{id}", isH.Get)
@@ -258,7 +258,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			r.Delete("/is/{id}", isH.Delete)
 			r.Get("/is/{id}/export", isH.Export)
 
-			// CME — Micro-Entreprises [Plan: Enterprise]
+			// CME - Micro-Entreprises [Plan: Enterprise]
 			r.Get("/cme", cmeH.List)
 			r.Post("/cme", cmeH.Create)
 			r.Get("/cme/{id}", cmeH.Get)
@@ -278,7 +278,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			r.Get("/bilan", bilanH.Get)
 		})
 
-		// Routes Organisation — JWT requis + org_role=org_admin
+		// Routes Organisation - JWT requis + org_role=org_admin
 		r.Group(func(r chi.Router) {
 			r.Use(mw.Authenticate)
 			r.Use(mw.RequireOrgAdmin)
@@ -299,7 +299,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			r.Get("/org/info/me", orgH.GetInfo)
 		})
 
-		// Routes Super Admin — JWT requis + role=super_admin
+		// Routes Super Admin - JWT requis + role=super_admin
 		r.Group(func(r chi.Router) {
 			r.Use(mw.Authenticate)
 			r.Use(mw.RequireSuperAdmin)

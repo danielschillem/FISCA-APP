@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cmeApi, companyApi } from '../lib/api';
 import { calcCME, fmt, fmtN, CME_CA_PLAFOND } from '../lib/fiscalCalc';
@@ -19,13 +19,13 @@ const ZONES: { value: Zone; label: string; desc: string }[] = [
 
 // Correspond aux tranches CME CGI 2025 Art. 533-542 (CA ≤ 15 M FCFA)
 const CLASSES = [
-    { label: 'Classe 1 : CA 13–15 M FCFA' },
-    { label: 'Classe 2 : CA 11–13 M FCFA' },
-    { label: 'Classe 3 : CA 9–11 M FCFA' },
-    { label: 'Classe 4 : CA 7–9 M FCFA' },
-    { label: 'Classe 5 : CA 5–7 M FCFA' },
-    { label: 'Classe 6 : CA 3–5 M FCFA' },
-    { label: 'Classe 7 : CA 1,5–3 M FCFA' },
+    { label: 'Classe 1 : CA 13-15 M FCFA' },
+    { label: 'Classe 2 : CA 11-13 M FCFA' },
+    { label: 'Classe 3 : CA 9-11 M FCFA' },
+    { label: 'Classe 4 : CA 7-9 M FCFA' },
+    { label: 'Classe 5 : CA 5-7 M FCFA' },
+    { label: 'Classe 6 : CA 3-5 M FCFA' },
+    { label: 'Classe 7 : CA 1,5-3 M FCFA' },
     { label: 'Classe 8 : CA ≤ 1,5 M FCFA' },
 ];
 
@@ -87,7 +87,7 @@ function CMEContent() {
         <div className="max-w-3xl space-y-6">
             {PaymentModalComponent}
             <Card title="CME : Contribution des Micro-Entreprises">
-                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 533-542 · Régime simplifié pour CA ≤ 150 M FCFA</p>
+                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 533-542 - Régime simplifié pour CA ≤ 150 M FCFA</p>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -105,7 +105,7 @@ function CMEContent() {
                                 <p className="text-xs text-red-700 leading-snug">
                                     <strong>CA hors régime CME.</strong> Le plafond légal est de {fmtN(CME_CA_PLAFOND)} FCFA
                                     (CGI 2025 Art. 533). Au-delà, votre entreprise relève du régime RSI/RNI
-                                    — utilisez le module <strong>IS / MFP</strong> pour votre déclaration.
+                                  - utilisez le module <strong>IS / MFP</strong> pour votre déclaration.
                                 </p>
                             </div>
                         )}
@@ -167,7 +167,7 @@ function CMEContent() {
                             <span className="font-bold text-xl text-red-700">{fmt(result.cmeNet)}</span>
                         </div>
                     </div>
-                    <p className="text-xs text-gray-400 mt-2">Zone {result.zone} · CA : {fmtN(result.ca)} FCFA</p>
+                    <p className="text-xs text-gray-400 mt-2">Zone {result.zone} - CA : {fmtN(result.ca)} FCFA</p>
                 </Card>
             )}
 
@@ -240,10 +240,10 @@ function CMEContent() {
 
             <Card title="Base légale">
                 <ul className="text-xs text-gray-500 space-y-1">
-                    <li>• Art. 533 CGI 2025 : CME applicable aux micro-entreprises (CA ≤ 150 M)</li>
-                    <li>• 8 classes tarifaires selon CA et zone géographique (A, B, C, D)</li>
-                    <li>• Art. 537 : Réduction de 25 % pour les adhérents d'un CGA agréé</li>
-                    <li>• Paiement annuel avant le 30 avril</li>
+                    <li>- Art. 533 CGI 2025 : CME applicable aux micro-entreprises (CA ≤ 150 M)</li>
+                    <li>- 8 classes tarifaires selon CA et zone géographique (A, B, C, D)</li>
+                    <li>- Art. 537 : Réduction de 25 % pour les adhérents d'un CGA agréé</li>
+                    <li>- Paiement annuel avant le 30 avril</li>
                 </ul>
             </Card>
         </div>

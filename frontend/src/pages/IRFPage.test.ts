@@ -1,5 +1,5 @@
 ﻿// Tests logique pure : IRFPage (sans rendu React)
-// CGI 2025 Art. 121-126 · Abattement 50 % · Tranches 18 % / 25 %
+// CGI 2025 Art. 121-126 - Abattement 50 % - Tranches 18 % / 25 %
 import { describe, it, expect } from 'vitest'
 import { calcIRF } from '../lib/fiscalCalc'
 

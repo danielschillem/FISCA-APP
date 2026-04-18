@@ -15,11 +15,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Taux de retenue à la source BF — CGI 2025
+// Taux de retenue à la source BF - CGI 2025
 // Les clés CGI 2025 (majuscules) correspondent au calculateur stateless /api/calcul/ras.
 // Les clés légacy (minuscules) sont conservées pour compatibilité avec les enregistrements existants.
 var TauxRetenue = map[string]float64{
-	// ── CGI 2025 Art. 206-226 (clés canoniques) ──────────────────────────
+	// -- CGI 2025 Art. 206-226 (clés canoniques) --------------------------
 	"RESIDENT_IFU":        5.0,  // résident avec IFU : 5 %
 	"RESIDENT_IFU_IMMO":   1.0,  // résident IFU immo/TP : 1 %
 	"RESIDENT_SANS_IFU":   25.0, // résident sans IFU : 25 %
@@ -31,7 +31,7 @@ var TauxRetenue = map[string]float64{
 	"NONDETER_SALARIE":    10.0, // non-déterminé salarié/intellectuel : 10 %
 	"COMMANDE_PUBLIQUE":   5.0,  // commande publique : 5 %
 	"COMMANDE_PUB_BIENS":  1.0,  // commande pub. biens/TP : 1 %
-	// ── Clés légacy (rétro-compat enregistrements existants) ─────────────
+	// -- Clés légacy (rétro-compat enregistrements existants) -------------
 	// IRF CGI 2025 Art. 121-126 : taux effectif minimum 9 % (loyer ≤ 200k FCFA/mois).
 	// Pour loyers importants, utiliser le module IRF dédié (/api/irf).
 	"services":   5.0,  // → RESIDENT_IFU
@@ -179,7 +179,7 @@ func (h *RetenueHandler) Create(w http.ResponseWriter, r *http.Request) {
 		taux = *req.TauxCustom
 	}
 
-	// Arrondi au FCFA entier (FCFA est indivisible — pas de centimes)
+	// Arrondi au FCFA entier (FCFA est indivisible - pas de centimes)
 	montantRetenue := math.Round(req.MontantBrut * taux / 100)
 	montantNet := req.MontantBrut - montantRetenue
 	periode := fmt.Sprintf("%s %d", moisLabel(req.Mois), req.Annee)
@@ -279,7 +279,7 @@ func (h *RetenueHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// GET /api/retenues/{id}/export — CSV DGI-BF
+// GET /api/retenues/{id}/export - CSV DGI-BF
 func (h *RetenueHandler) Export(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	companyID, err := h.companyID(r)
@@ -306,7 +306,7 @@ func (h *RetenueHandler) Export(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte{0xEF, 0xBB, 0xBF}) //nolint:errcheck
 
 	rows := [][]string{
-		{"DÉCLARATION RETENUE À LA SOURCE — DGI BURKINA FASO"},
+		{"DÉCLARATION RETENUE À LA SOURCE - DGI BURKINA FASO"},
 		{"Société", nomSoc, "IFU", ifu},
 		{"Période", d.Periode},
 		{"Date export", time.Now().Format("02/01/2006")},
@@ -324,7 +324,7 @@ func (h *RetenueHandler) Export(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GET /api/retenues/taux — taux par type
+// GET /api/retenues/taux - taux par type
 func (h *RetenueHandler) Taux(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, TauxRetenue)
 }

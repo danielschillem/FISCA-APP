@@ -16,7 +16,7 @@ func SecurityHeaders(next http.Handler) http.Handler {
 		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		// Désactiver les API sensibles non utilisées
 		h.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-		// HSTS — ignoré par les navigateurs sur HTTP, actif uniquement sur HTTPS
+		// HSTS - ignoré par les navigateurs sur HTTP, actif uniquement sur HTTPS
 		h.Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
 		// CSP minimal pour une API JSON
 		h.Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")

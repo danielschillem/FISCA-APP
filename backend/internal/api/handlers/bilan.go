@@ -47,7 +47,7 @@ func (h *BilanHandler) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	b := BilanData{Annee: annee}
 
-	// IUTS / TPA / CSS — déclarations mensuelles IUTS
+	// IUTS / TPA / CSS - déclarations mensuelles IUTS
 	h.DB.QueryRow(ctx, //nolint:errcheck
 		`SELECT COALESCE(SUM(iuts_total),0), COALESCE(SUM(tpa_total),0), COALESCE(SUM(css_total),0)
 		 FROM declarations WHERE company_id=$1 AND annee=$2`,
@@ -68,22 +68,22 @@ func (h *BilanHandler) Get(w http.ResponseWriter, r *http.Request) {
 		`SELECT COALESCE(SUM(total_general),0) FROM cnss_patronal WHERE company_id=$1 AND annee=$2`,
 		companyID, annee).Scan(&b.CNSSPatronal)
 
-	// IRF — Revenus Fonciers
+	// IRF - Revenus Fonciers
 	h.DB.QueryRow(ctx, //nolint:errcheck
 		`SELECT COALESCE(SUM(irf_total),0) FROM irf_declarations WHERE company_id=$1 AND annee=$2`,
 		companyID, annee).Scan(&b.IRF)
 
-	// IRCM — Capitaux Mobiliers
+	// IRCM - Capitaux Mobiliers
 	h.DB.QueryRow(ctx, //nolint:errcheck
 		`SELECT COALESCE(SUM(ircm_total),0) FROM ircm_declarations WHERE company_id=$1 AND annee=$2`,
 		companyID, annee).Scan(&b.IRCM)
 
-	// IS — Impôt sur les Sociétés
+	// IS - Impôt sur les Sociétés
 	h.DB.QueryRow(ctx, //nolint:errcheck
 		`SELECT COALESCE(SUM(is_du),0) FROM is_declarations WHERE company_id=$1 AND annee=$2`,
 		companyID, annee).Scan(&b.IS)
 
-	// CME — Contribution Micro-Entreprises
+	// CME - Contribution Micro-Entreprises
 	h.DB.QueryRow(ctx, //nolint:errcheck
 		`SELECT COALESCE(SUM(cme_net),0) FROM cme_declarations WHERE company_id=$1 AND annee=$2`,
 		companyID, annee).Scan(&b.CME)

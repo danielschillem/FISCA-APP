@@ -106,7 +106,7 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, map[string]string{"message": "Mot de passe modifié avec succès."})
 }
 
-// PATCH /api/me/plan — upgrade plan (protégé par ADMIN_SECRET header)
+// PATCH /api/me/plan - upgrade plan (protégé par ADMIN_SECRET header)
 func (h *UserHandler) SetPlan(w http.ResponseWriter, r *http.Request) {
 	// Vérifie le secret admin
 	adminSecret := strings.TrimSpace(r.Header.Get("X-Admin-Secret"))

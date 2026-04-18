@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { bulletinApi, employeeApi, companyApi } from '../lib/api';
 import { Card, Btn, Spinner, Badge } from '../components/ui';
@@ -170,7 +170,7 @@ function BulletinCard({ bulletin: b, company }: { bulletin: Bulletin; company?: 
             <div className="flex items-center justify-between mb-4">
                 <div>
                     <p className="font-semibold text-gray-900">{b.nom_employe}</p>
-                    <p className="text-xs text-gray-500">{b.periode} · {b.categorie}</p>
+                    <p className="text-xs text-gray-500">{b.periode} - {b.categorie}</p>
                 </div>
                 <div className="flex gap-2">
                     <Btn size="sm" variant="outline" onClick={() => requestPayment('bulletin', b.id, () => exportBulletinPDF(b, company))}>

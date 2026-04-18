@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useAuthStore, useAppStore } from '../lib/store';
 import { usePermissions } from '../lib/permissions';
 import { Card } from '../components/ui';
@@ -7,7 +7,7 @@ import {
     Smartphone, CreditCard, Copy, CheckCircle2,
 } from 'lucide-react';
 
-// ─── Plan definitions ─────────────────────────────────────────
+// --- Plan definitions -----------------------------------------
 
 const PHYSIQUE_PLANS = [
     {
@@ -36,7 +36,7 @@ const PHYSIQUE_PLANS = [
         id: 'physique_pro',
         label: 'Solo Pro',
         price: '10 000 FCFA',
-        priceDetail: '/ mois · engagement mensuel',
+        priceDetail: '/ mois - engagement mensuel',
         color: '#16a34a',
         accent: 'border-green-400',
         icon: Zap,
@@ -62,7 +62,7 @@ const MORAL_PLANS = [
         id: 'moral_team',
         label: 'Équipe',
         price: '25 000 FCFA',
-        priceDetail: '/ mois · jusqu\'à 5 utilisateurs',
+        priceDetail: '/ mois - jusqu\'à 5 utilisateurs',
         color: '#2563eb',
         accent: 'border-blue-400',
         icon: Users,
@@ -84,7 +84,7 @@ const MORAL_PLANS = [
         id: 'moral_enterprise',
         label: 'Entreprise',
         price: 'Sur devis',
-        priceDetail: 'engagement annuel · SLA garanti',
+        priceDetail: 'engagement annuel - SLA garanti',
         color: '#ea580c',
         accent: 'border-orange-400',
         icon: Building2,
@@ -244,7 +244,7 @@ export default function AbonnementPage() {
                                         {copied === 'orange' ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                                     </button>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-1">Nom : FISCA SARL · Motif : <strong>{payModal.planId} – {user?.email}</strong></p>
+                                <p className="text-xs text-gray-500 mt-1">Nom : FISCA SARL - Motif : <strong>{payModal.planId} - {user?.email}</strong></p>
                             </div>
 
                             {/* Moov Money */}
@@ -260,7 +260,7 @@ export default function AbonnementPage() {
                                         {copied === 'moov' ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                                     </button>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-1">Nom : FISCA SARL · Motif : <strong>{payModal.planId} – {user?.email}</strong></p>
+                                <p className="text-xs text-gray-500 mt-1">Nom : FISCA SARL - Motif : <strong>{payModal.planId} - {user?.email}</strong></p>
                             </div>
 
                             {/* Virement */}
@@ -330,7 +330,7 @@ export default function AbonnementPage() {
             <div>
                 <div className="flex items-center gap-3 mb-4">
                     <User className="w-5 h-5 text-gray-400" />
-                    <h2 className="text-base font-bold text-gray-900">Personne Physique — Solo</h2>
+                    <h2 className="text-base font-bold text-gray-900">Personne Physique - Solo</h2>
                     <span className="text-xs text-gray-400 hidden sm:block">Auto-entrepreneur, indépendant</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -344,7 +344,7 @@ export default function AbonnementPage() {
             <div>
                 <div className="flex items-center gap-3 mb-4">
                     <Building2 className="w-5 h-5 text-gray-400" />
-                    <h2 className="text-base font-bold text-gray-900">Personne Morale — Organisation</h2>
+                    <h2 className="text-base font-bold text-gray-900">Personne Morale - Organisation</h2>
                     <span className="text-xs text-gray-400 hidden sm:block">Entreprise, cabinet, groupe multi-entités</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

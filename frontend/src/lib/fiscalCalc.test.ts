@@ -1,4 +1,4 @@
-﻿// ─── Tests unitaires fiscalCalc.ts : CGI 2025 ─────────────────
+// --- Tests unitaires fiscalCalc.ts : CGI 2025 -----------------
 // Miroir exact des tests Go (iuts_test.go / cgi2025_test.go)
 
 import { describe, it, expect } from 'vitest'
@@ -19,7 +19,7 @@ import {
     HEURES_MOIS_STANDARD,
 } from './fiscalCalc'
 
-// ─── calcIUTS ─────────────────────────────────────────────────
+// --- calcIUTS -------------------------------------------------
 
 describe('calcIUTS : barème CGI 2025 (9 tranches)', () => {
     it('base 0 → IUTS = 0', () => {
@@ -78,7 +78,7 @@ describe('calcIUTS : barème CGI 2025 (9 tranches)', () => {
     })
 })
 
-// ─── calcEmploye ──────────────────────────────────────────────
+// --- calcEmploye ----------------------------------------------
 
 describe('calcEmploye : bulletin salarial', () => {
     it('salaire de base 95 000 + ancienneté 4 750 + logement 20 000 + transport 15 000', () => {
@@ -193,7 +193,7 @@ describe('calcEmploye : bulletin salarial', () => {
     })
 })
 
-// ─── calcTVA ─────────────────────────────────────────────────
+// --- calcTVA -------------------------------------------------
 
 describe('calcTVA : CGI 2025 Art. 317', () => {
     it('taux standard 18 % sur 1 000 000 → TVA 180 000, TTC 1 180 000', () => {
@@ -225,7 +225,7 @@ describe('calcTVA : CGI 2025 Art. 317', () => {
     })
 })
 
-// ─── calcIRF ─────────────────────────────────────────────────
+// --- calcIRF -------------------------------------------------
 
 describe('calcIRF : Impôt sur les Revenus Fonciers', () => {
     it('loyer 400 000 → abattement 200 000, base 200 000, IRF 43 000', () => {
@@ -258,7 +258,7 @@ describe('calcIRF : Impôt sur les Revenus Fonciers', () => {
     })
 })
 
-// ─── calcIRCM ────────────────────────────────────────────────
+// --- calcIRCM ------------------------------------------------
 
 describe('calcIRCM : Revenus de Capitaux Mobiliers', () => {
     it('CREANCES 1 000 000 → IRCM 250 000 (25 %)', () => {
@@ -292,7 +292,7 @@ describe('calcIRCM : Revenus de Capitaux Mobiliers', () => {
     })
 })
 
-// ─── calcRAS ─────────────────────────────────────────────────
+// --- calcRAS -------------------------------------------------
 
 describe('calcRAS : Retenue à la source', () => {
     it('RESIDENT_IFU 1 000 000 → 5 %, RAS 50 000', () => {
@@ -325,7 +325,7 @@ describe('calcRAS : Retenue à la source', () => {
     })
 })
 
-// ─── calcCME ─────────────────────────────────────────────────
+// --- calcCME -------------------------------------------------
 
 describe('calcCME : Contribution Micro-Entreprises', () => {
     it('Zone A CA 1 000 000 → Classe 8, CME 10 000', () => {
@@ -369,14 +369,14 @@ describe('calcCME : Contribution Micro-Entreprises', () => {
     })
 })
 
-// ─── calcHeuresSup : Code du Travail BF Art. 151 ─────────────
+// --- calcHeuresSup : Code du Travail BF Art. 151 -------------
 
 describe('calcHeuresSup : heures supplémentaires', () => {
     // salaire_base 200 000 FCFA → tauxHoraire brut = 200000/173.33 = 1153.868...
     // Math.round → 1154 FCFA/h retourné, mais calculs internes sur le flottant brut.
     const salaire = 200_000
 
-    it('heures normales (+25 %) — taux horaire retourné = 1 154 FCFA/h', () => {
+    it('heures normales (+25 %) - taux horaire retourné = 1 154 FCFA/h', () => {
         const r = calcHeuresSup(salaire, 8, 'normale')
         expect(r.tauxHoraire).toBe(1154)
         expect(r.majoration).toBe(0.25)
@@ -410,7 +410,7 @@ describe('calcHeuresSup : heures supplémentaires', () => {
     })
 })
 
-// ─── calcPenalite : CGI 2025 Art. 607 ─────────────────────────
+// --- calcPenalite : CGI 2025 Art. 607 -------------------------
 
 describe('calcPenalite : pénalités de retard', () => {
     it('0 mois → 0', () => {
@@ -449,7 +449,7 @@ describe('calcPenalite : pénalités de retard', () => {
     })
 })
 
-// ─── calcIS : IS/IBICA CGI 2025 Art. 42 ──────────────────────
+// --- calcIS : IS/IBICA CGI 2025 Art. 42 ----------------------
 
 describe('calcIS : impôt sur les sociétés', () => {
     it('taux 27.5 % sans CGA', () => {
@@ -477,7 +477,7 @@ describe('calcIS : impôt sur les sociétés', () => {
     })
 })
 
-// ─── calcMFP : minimum forfaitaire de perception ──────────────
+// --- calcMFP : minimum forfaitaire de perception --------------
 
 describe('calcMFP : minimum forfaitaire de perception', () => {
     it('CA faible → minimum 1 M (régime réel)', () => {
@@ -516,7 +516,7 @@ describe('calcMFP : minimum forfaitaire de perception', () => {
     })
 })
 
-// ─── calcPatente : contribution des patentes ──────────────────
+// --- calcPatente : contribution des patentes ------------------
 
 describe('calcPatente : droits fixes et proportionnels', () => {
     it('CA ≤ 5M → droit fixe 10 000', () => {

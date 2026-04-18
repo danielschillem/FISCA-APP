@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Bulletin de paie - CGI 2025 / Code du Travail Burkina Faso
  * Fond BLANC PUR - traits horizontaux uniquement entre rubriques
  */
@@ -305,7 +305,7 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
     doc.setFontSize(6.5);
     doc.setTextColor(...MID);
     doc.text(
-        `dont IUTS ${amt(b.iuts_net)} FCFA  -  ${b.cotisation} salariale ${amt(b.cotisation_sociale)} FCFA  -  FSP ${amt(fsp)} FCFA  -  TPA employeur ${amt(b.tpa ?? 0)} FCFA`,
+        `dont IUTS ${amt(b.iuts_net)} FCFA - ${b.cotisation} salariale ${amt(b.cotisation_sociale)} FCFA - FSP ${amt(fsp)} FCFA - TPA employeur ${amt(b.tpa ?? 0)} FCFA`,
         ML, netY + 19,
     );
 

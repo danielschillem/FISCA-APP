@@ -9,7 +9,7 @@ import {
     CGU_DATE, POLITIQUE_CONFIDENTIALITE_DATE, EULA_DATE,
 } from '../lib/version';
 
-// ─── Composants internes ────────────────────────────────────────────────────
+// --- Composants internes ----------------------------------------------------
 
 function Section({ id, icon: Icon, title, badge, children }: {
     id: string; icon: React.ElementType; title: string; badge?: string; children: React.ReactNode;
@@ -63,7 +63,7 @@ function Dl({ items }: { items: [string, string][] }) {
     );
 }
 
-// ─── Navigation latérale ────────────────────────────────────────────────────
+// --- Navigation latérale ----------------------------------------------------
 const SECTIONS = [
     { id: 'identification', label: 'Identification' },
     { id: 'mentions', label: 'Mentions légales' },
@@ -74,7 +74,7 @@ const SECTIONS = [
     { id: 'droit', label: 'Droit applicable' },
 ];
 
-// ─── Page principale ────────────────────────────────────────────────────────
+// --- Page principale --------------------------------------------------------
 export default function MentionsLegalesPage() {
     return (
         <div className="max-w-4xl space-y-6">
@@ -120,10 +120,10 @@ export default function MentionsLegalesPage() {
                 </div>
             </div>
 
-            {/* ── 1. Identification ── */}
+            {/* -- 1. Identification -- */}
             <Section id="identification" icon={Info} title="Identification du logiciel et de l'éditeur">
                 <Dl items={[
-                    ['Nom du logiciel', `${APP_NAME} — v${APP_VERSION}`],
+                    ['Nom du logiciel', `${APP_NAME} - v${APP_VERSION}`],
                     ['Description', APP_DESCRIPTION],
                     ['Éditeur & développeur', DEVELOPER_NAME],
                     ['Contact', DEVELOPER_CONTACT],
@@ -133,11 +133,11 @@ export default function MentionsLegalesPage() {
                     ['Base de données', DB_PROVIDER],
                     ['Référence fiscale', LEGAL_REFERENCE],
                     ['Référence sociale', SOCIAL_REFERENCE],
-                    ['© Copyright', `${COPYRIGHT_YEAR_START}–${COPYRIGHT_YEAR_END} ${DEVELOPER_NAME}`],
+                    ['© Copyright', `${COPYRIGHT_YEAR_START}-${COPYRIGHT_YEAR_END} ${DEVELOPER_NAME}`],
                 ]} />
             </Section>
 
-            {/* ── 2. Mentions légales ── */}
+            {/* -- 2. Mentions légales -- */}
             <Section id="mentions" icon={FileText} title="Mentions légales" badge="Conformément aux lois en vigueur au Burkina Faso">
                 <Art n="1" title="Éditeur du logiciel">
                     <p>
@@ -166,8 +166,8 @@ export default function MentionsLegalesPage() {
 
                 <Art n="3" title="Propriété intellectuelle">
                     <p>
-                        L'intégralité du Logiciel — code source, interfaces graphiques, algorithmes de calcul fiscal,
-                        bases de données tarifaires, documentation et marques — est la propriété exclusive de
+                        L'intégralité du Logiciel - code source, interfaces graphiques, algorithmes de calcul fiscal,
+                        bases de données tarifaires, documentation et marques - est la propriété exclusive de
                         <strong> {DEVELOPER_NAME}</strong>, protégée par les lois burkinabè et internationales relatives
                         à la propriété intellectuelle, au droit d'auteur et aux droits voisins.
                     </p>
@@ -193,7 +193,7 @@ export default function MentionsLegalesPage() {
                 </Art>
             </Section>
 
-            {/* ── 3. Licence EULA ── */}
+            {/* -- 3. Licence EULA -- */}
             <Section id="licence" icon={Lock} title="Contrat de licence utilisateur final (EULA)" badge={`En vigueur depuis le ${EULA_DATE}`}>
                 <p className="text-sm text-gray-500 mt-4 italic">
                     En installant, téléchargeant, accédant ou utilisant le Logiciel {APP_NAME}, vous acceptez d'être
@@ -260,7 +260,7 @@ export default function MentionsLegalesPage() {
                 </Art>
             </Section>
 
-            {/* ── 4. CGU ── */}
+            {/* -- 4. CGU -- */}
             <Section id="cgu" icon={FileText} title="Conditions Générales d'Utilisation (CGU)" badge={`Version du ${CGU_DATE}`}>
                 <p className="text-sm text-gray-500 mt-4 italic">
                     Les présentes Conditions Générales d'Utilisation régissent l'accès et l'utilisation du service
@@ -276,7 +276,7 @@ export default function MentionsLegalesPage() {
                     </p>
                 </Art>
 
-                <Art n="2" title="Accès au service — Inscription">
+                <Art n="2" title="Accès au service - Inscription">
                     <p>L'accès au service est subordonné à :</p>
                     <ul className="list-disc ml-5 space-y-1 mt-2">
                         <li>La création d'un compte avec une adresse email valide ;</li>
@@ -351,7 +351,7 @@ export default function MentionsLegalesPage() {
                 </Art>
             </Section>
 
-            {/* ── 5. Politique de confidentialité ── */}
+            {/* -- 5. Politique de confidentialité -- */}
             <Section id="confidentialite" icon={Shield} title="Politique de confidentialité" badge={`Version du ${POLITIQUE_CONFIDENTIALITE_DATE}`}>
                 <Art n="1" title="Données collectées">
                     <p>Dans le cadre de l'utilisation du service, les données suivantes sont collectées :</p>
@@ -390,9 +390,9 @@ export default function MentionsLegalesPage() {
                         fourniture du service :
                     </p>
                     <ul className="list-disc ml-5 space-y-1 mt-2">
-                        <li><strong>Render.com</strong> — hébergement de l'application (USA, soumis au DPF EU-US) ;</li>
-                        <li><strong>Neon Technology</strong> — base de données PostgreSQL (EU, conforme RGPD) ;</li>
-                        <li><strong>Orange Money BF</strong> — traitement des paiements Mobile Money.</li>
+                        <li><strong>Render.com</strong> - hébergement de l'application (USA, soumis au DPF EU-US) ;</li>
+                        <li><strong>Neon Technology</strong> - base de données PostgreSQL (EU, conforme RGPD) ;</li>
+                        <li><strong>Orange Money BF</strong> - traitement des paiements Mobile Money.</li>
                     </ul>
                 </Art>
 
@@ -420,7 +420,7 @@ export default function MentionsLegalesPage() {
                 </Art>
             </Section>
 
-            {/* ── 6. Limitation de responsabilité ── */}
+            {/* -- 6. Limitation de responsabilité -- */}
             <Section id="responsabilite" icon={Shield} title="Limitation de responsabilité">
                 <Art n="1" title="Exclusion de garantie">
                     <p>
@@ -451,7 +451,7 @@ export default function MentionsLegalesPage() {
                 </Art>
             </Section>
 
-            {/* ── 7. Droit applicable ── */}
+            {/* -- 7. Droit applicable -- */}
             <Section id="droit" icon={Scale} title="Droit applicable et résolution des litiges">
                 <Art n="1" title="Loi applicable">
                     <p>
@@ -484,8 +484,8 @@ export default function MentionsLegalesPage() {
             {/* Pied de page */}
             <div className="text-center py-6 text-xs text-gray-400 space-y-1">
                 <p className="font-semibold text-gray-500">{COPYRIGHT_NOTICE}</p>
-                <p>{APP_FULL_NAME} &nbsp;·&nbsp; v{APP_VERSION}</p>
-                <p>Développé par <strong className="text-gray-600">{DEVELOPER_NAME}</strong> &nbsp;·&nbsp; {GOVERNING_LAW}</p>
+                <p>{APP_FULL_NAME} &nbsp;-&nbsp; v{APP_VERSION}</p>
+                <p>Développé par <strong className="text-gray-600">{DEVELOPER_NAME}</strong> &nbsp;-&nbsp; {GOVERNING_LAW}</p>
             </div>
         </div>
     );

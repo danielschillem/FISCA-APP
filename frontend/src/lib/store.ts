@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User, Plan } from '../types';
 
@@ -52,7 +52,7 @@ export const useAuthStore = create<AuthState>()(
     )
 );
 
-// ─── App state (plan demo, current view) ──────────────────────
+// --- App state (plan demo, current view) ----------------------
 
 interface AppState {
     plan: Plan;

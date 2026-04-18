@@ -1,5 +1,5 @@
 /**
- * PaymentModal — Barrière de paiement Orange Money avant génération PDF
+ * PaymentModal - Barrière de paiement Orange Money avant génération PDF
  *
  * Usage :
  *   const { requestPayment, PaymentModalComponent } = usePaymentGate();
@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { api } from '../lib/api';
 import { X, Smartphone, CheckCircle2, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// --- Types --------------------------------------------------------------------
 
 export type DocumentType =
   | 'iuts' | 'tva' | 'retenues' | 'is' | 'ircm'
@@ -26,7 +26,7 @@ const DOC_LABELS: Record<DocumentType, string> = {
   tva: 'Déclaration TVA',
   retenues: 'Retenues à la source (RAS)',
   is: 'Impôt sur les Sociétés (IS)',
-  ircm: 'IRCM — Capitaux Mobiliers',
+  ircm: 'IRCM - Capitaux Mobiliers',
   cme: 'Contribution Micro-Entreprise',
   irf: 'Impôt sur les Revenus Fonciers',
   bulletin: 'Bulletin de paie',
@@ -48,7 +48,7 @@ interface PaymentModalProps {
   onClose: () => void;
 }
 
-// ─── Modal ────────────────────────────────────────────────────────────────────
+// --- Modal --------------------------------------------------------------------
 
 export function PaymentModal({ documentType, documentId, onSuccess, onClose }: PaymentModalProps) {
   const [phone, setPhone] = useState('');
@@ -111,7 +111,7 @@ export function PaymentModal({ documentType, documentId, onSuccess, onClose }: P
         telephone: cleaned,
       });
 
-      // Mode mock (OM_API_URL non configuré) — paiement auto-approuvé
+      // Mode mock (OM_API_URL non configuré) - paiement auto-approuvé
       if (data.mock || data.statut === 'completed') {
         setStep('success');
         setTimeout(onSuccess, 1200);
@@ -192,7 +192,7 @@ export function PaymentModal({ documentType, documentId, onSuccess, onClose }: P
             </div>
           </div>
 
-          {/* ─── Étape : formulaire ─── */}
+          {/* --- Étape : formulaire --- */}
           {step === 'form' && (
             <>
               <div className="mb-4">
@@ -243,7 +243,7 @@ export function PaymentModal({ documentType, documentId, onSuccess, onClose }: P
             </>
           )}
 
-          {/* ─── Étape : attente confirmation ─── */}
+          {/* --- Étape : attente confirmation --- */}
           {step === 'waiting' && (
             <div className="text-center py-4">
               <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -272,7 +272,7 @@ export function PaymentModal({ documentType, documentId, onSuccess, onClose }: P
             </div>
           )}
 
-          {/* ─── Étape : succès ─── */}
+          {/* --- Étape : succès --- */}
           {step === 'success' && (
             <div className="text-center py-4">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -283,7 +283,7 @@ export function PaymentModal({ documentType, documentId, onSuccess, onClose }: P
             </div>
           )}
 
-          {/* ─── Étape : erreur ─── */}
+          {/* --- Étape : erreur --- */}
           {step === 'error' && (
             <div className="text-center py-4">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -314,7 +314,7 @@ export function PaymentModal({ documentType, documentId, onSuccess, onClose }: P
   );
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
+// --- Hook ---------------------------------------------------------------------
 
 interface PaymentGateState {
   documentType: DocumentType;

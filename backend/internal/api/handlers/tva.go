@@ -350,11 +350,11 @@ func (h *TVAHandler) recalcTotaux(r *http.Request, declarationID string) {
 			tva_collectee  = COALESCE((SELECT SUM(montant_tva) FROM tva_lignes WHERE declaration_id=$1 AND type_op='vente'),0),
 			tva_deductible = COALESCE((SELECT SUM(montant_tva) FROM tva_lignes WHERE declaration_id=$1 AND type_op='achat'),0),
 			tva_nette      = COALESCE((SELECT SUM(montant_tva) FROM tva_lignes WHERE declaration_id=$1 AND type_op='vente'),0)
-			              - COALESCE((SELECT SUM(montant_tva) FROM tva_lignes WHERE declaration_id=$1 AND type_op='achat'),0)
+			            - COALESCE((SELECT SUM(montant_tva) FROM tva_lignes WHERE declaration_id=$1 AND type_op='achat'),0)
 		WHERE id=$1`, declarationID)
 }
 
-// GET /api/tva/{id}/export — Export CSV format DGI-BF
+// GET /api/tva/{id}/export - Export CSV format DGI-BF
 func (h *TVAHandler) Export(w http.ResponseWriter, r *http.Request) {
 	companyID, err := h.companyID(r)
 	if err != nil {

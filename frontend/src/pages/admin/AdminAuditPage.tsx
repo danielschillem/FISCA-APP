@@ -4,7 +4,7 @@ import { adminApi } from '../../lib/api';
 import type { AuditLog } from '../../types';
 import { ChevronLeft, ChevronRight, Shield, UserX, UserCheck, Key, CreditCard, Building, ScrollText } from 'lucide-react';
 
-// ─── Action config ─────────────────────────────────────────────────────────
+// --- Action config ---------------------------------------------------------
 const ACTION_CONFIG: Record<string, { icon: typeof Shield; dot: string; badge: string; label: string }> = {
     'user.suspend': { icon: UserX, dot: 'bg-red-400', badge: 'bg-red-50 text-red-700 border-red-200', label: 'Suspension' },
     'user.activate': { icon: UserCheck, dot: 'bg-green-400', badge: 'bg-green-50 text-green-700 border-green-200', label: 'Activation' },
@@ -55,7 +55,7 @@ export default function AdminAuditPage() {
                         <ChevronLeft className="w-4 h-4" />
                     </button>
                     <span className="text-xs text-gray-500 min-w-20 text-center">
-                        {logs.length > 0 ? `${offset + 1}–${offset + logs.length}` : '0 resultat'}
+                        {logs.length > 0 ? `${offset + 1}-${offset + logs.length}` : '0 resultat'}
                     </span>
                     <button
                         onClick={() => setOffset(o => o + limit)}

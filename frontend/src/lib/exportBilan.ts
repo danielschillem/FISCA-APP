@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Export Récapitulatif fiscal & Bilan annuel
  * Formats : PDF (jsPDF), XLSX (xlsx), DOCX (docx)
  * CGI 2025 - Burkina Faso
@@ -14,25 +14,25 @@ import {
 import type { BilanData, Company } from '../types';
 import { fmt, fmtN } from './fiscalCalc';
 
-// ─── Libellés ────────────────────────────────────────────────────────────────
+// --- Libellés ----------------------------------------------------------------
 const LIGNES: { label: string; key: keyof Omit<BilanData, 'annee' | 'total'> }[] = [
-    { label: 'IUTS – Impôt Unique sur les Traitements et Salaires', key: 'iuts' },
-    { label: 'TPA – Taxe Patronale et d\'Apprentissage', key: 'tpa' },
-    { label: 'CSS – Cotisations Salariales (CNSS/CARFO)', key: 'css' },
+    { label: 'IUTS - Impôt Unique sur les Traitements et Salaires', key: 'iuts' },
+    { label: 'TPA - Taxe Patronale et d\'Apprentissage', key: 'tpa' },
+    { label: 'CSS - Cotisations Salariales (CNSS/CARFO)', key: 'css' },
     { label: 'CNSS Patronal', key: 'cnss_patronal' },
-    { label: 'TVA – Taxe sur la Valeur Ajoutée (nette)', key: 'tva' },
-    { label: 'RAS – Retenues à la Source', key: 'ras' },
-    { label: 'IRF – Impôt sur les Revenus Fonciers', key: 'irf' },
-    { label: 'IRCM – Impôt sur les Revenus des Capitaux Mobiliers', key: 'ircm' },
-    { label: 'IS – Impôt sur les Sociétés', key: 'is' },
-    { label: 'CME – Contribution des Micro-Entreprises', key: 'cme' },
+    { label: 'TVA - Taxe sur la Valeur Ajoutée (nette)', key: 'tva' },
+    { label: 'RAS - Retenues à la Source', key: 'ras' },
+    { label: 'IRF - Impôt sur les Revenus Fonciers', key: 'irf' },
+    { label: 'IRCM - Impôt sur les Revenus des Capitaux Mobiliers', key: 'ircm' },
+    { label: 'IS - Impôt sur les Sociétés', key: 'is' },
+    { label: 'CME - Contribution des Micro-Entreprises', key: 'cme' },
     { label: 'Patente Professionnelle', key: 'patente' },
 ];
 
 const pct = (v: number, total: number): string =>
-    total > 0 ? ((v / total) * 100).toFixed(1) + ' %' : '—';
+    total > 0 ? ((v / total) * 100).toFixed(1) + ' %' : ' - ';
 
-// ─── PDF ─────────────────────────────────────────────────────────────────────
+// --- PDF ---------------------------------------------------------------------
 export function exportBilanPDF(b: BilanData, company?: Company) {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const W = doc.internal.pageSize.getWidth();
@@ -43,7 +43,7 @@ export function exportBilanPDF(b: BilanData, company?: Company) {
     const LGRAY: [number, number, number] = [200, 200, 200];
     const BGGRAY: [number, number, number] = [245, 245, 245];
 
-    // ── En-tête ──
+    // -- En-tête --
     doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...MGRAY);
     doc.text('ENTREPRISE', M, 12);
     doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.setTextColor(...BLACK);
@@ -61,12 +61,12 @@ export function exportBilanPDF(b: BilanData, company?: Company) {
     doc.setFontSize(14); doc.setFont('helvetica', 'bold'); doc.setTextColor(...BLACK);
     doc.text(`EXERCICE ${b.annee}`, W - M, 20, { align: 'right' });
     doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MGRAY);
-    doc.text('Bilan annuel des obligations fiscales – CGI 2025 Burkina Faso', W - M, 25.5, { align: 'right' });
+    doc.text('Bilan annuel des obligations fiscales - CGI 2025 Burkina Faso', W - M, 25.5, { align: 'right' });
 
     doc.setDrawColor(...LGRAY); doc.setLineWidth(0.4);
     doc.line(M, 32, W - M, 32);
 
-    // ── KPI 4 cases ──
+    // -- KPI 4 cases --
     const kpiW = (W - M * 2) / 4;
     const kpiY = 35;
     const kpiH = 18;
@@ -85,7 +85,7 @@ export function exportBilanPDF(b: BilanData, company?: Company) {
         doc.text(k.value, M + i * kpiW + 3, kpiY + 13);
     });
 
-    // ── Tableau détail ──
+    // -- Tableau détail --
     const rows = LIGNES.map(({ label, key }) => {
         const v = b[key] ?? 0;
         return [label, fmtN(v) + ' FCFA', pct(v, b.total)];
@@ -126,20 +126,20 @@ export function exportBilanPDF(b: BilanData, company?: Company) {
         },
     });
 
-    // ── Pied de page ──
+    // -- Pied de page --
     const pH = doc.internal.pageSize.getHeight();
     doc.setDrawColor(...LGRAY); doc.setLineWidth(0.3);
     doc.line(M, pH - 12, W - M, pH - 12);
     doc.setFontSize(6.5); doc.setFont('helvetica', 'italic'); doc.setTextColor(...MGRAY);
     doc.text(
-        `Généré par FISCA · ${new Date().toLocaleDateString('fr-FR')} · Document de synthèse fiscale – CGI 2025 Burkina Faso`,
+        `Généré par FISCA - ${new Date().toLocaleDateString('fr-FR')} - Document de synthèse fiscale - CGI 2025 Burkina Faso`,
         W / 2, pH - 6, { align: 'center' },
     );
 
     doc.save(`Bilan-Fiscal-${b.annee}-${(company?.nom ?? 'entreprise').replace(/\s+/g, '_')}.pdf`);
 }
 
-// ─── XLSX ────────────────────────────────────────────────────────────────────
+// --- XLSX --------------------------------------------------------------------
 export function exportBilanXLSX(b: BilanData, company?: Company) {
     const wb = XLSX.utils.book_new();
 
@@ -204,7 +204,7 @@ export function exportBilanXLSX(b: BilanData, company?: Company) {
     XLSX.writeFile(wb, `Bilan-Fiscal-${b.annee}-${(company?.nom ?? 'entreprise').replace(/\s+/g, '_')}.xlsx`);
 }
 
-// ─── DOCX ────────────────────────────────────────────────────────────────────
+// --- DOCX --------------------------------------------------------------------
 const border = {
     top: { style: BorderStyle.SINGLE, size: 4, color: 'CCCCCC' },
     bottom: { style: BorderStyle.SINGLE, size: 4, color: 'CCCCCC' },
@@ -270,7 +270,7 @@ export async function exportBilanDOCX(b: BilanData, company?: Company) {
     const infoLines: Paragraph[] = [
         new Paragraph({
             heading: HeadingLevel.HEADING_1,
-            children: [new TextRun({ text: `Récapitulatif Fiscal – Exercice ${b.annee}`, bold: true, font: 'Arial', size: 28, color: '000000' })],
+            children: [new TextRun({ text: `Récapitulatif Fiscal - Exercice ${b.annee}`, bold: true, font: 'Arial', size: 28, color: '000000' })],
             spacing: { after: 120 },
         }),
     ];
@@ -299,7 +299,7 @@ export async function exportBilanDOCX(b: BilanData, company?: Company) {
         alignment: AlignmentType.CENTER,
         spacing: { before: 400 },
         children: [new TextRun({
-            text: `Document généré par FISCA · ${new Date().toLocaleDateString('fr-FR')} · CGI 2025 Burkina Faso`,
+            text: `Document généré par FISCA - ${new Date().toLocaleDateString('fr-FR')} - CGI 2025 Burkina Faso`,
             italics: true, color: '888888', font: 'Arial', size: 16,
         })],
     });
@@ -307,8 +307,8 @@ export async function exportBilanDOCX(b: BilanData, company?: Company) {
     const doc = new Document({
         sections: [{
             properties: { page: { orientation: PageOrientation.PORTRAIT } },
-            headers: { default: new Header({ children: [new Paragraph({ children: [new TextRun({ text: `FISCA · Bilan Fiscal ${b.annee}`, color: '888888', font: 'Arial', size: 16 })] })] }) },
-            footers: { default: new Footer({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'CGI 2025 Burkina Faso – Document confidentiel', color: '888888', font: 'Arial', size: 16, italics: true })] })] }) },
+            headers: { default: new Header({ children: [new Paragraph({ children: [new TextRun({ text: `FISCA - Bilan Fiscal ${b.annee}`, color: '888888', font: 'Arial', size: 16 })] })] }) },
+            footers: { default: new Footer({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'CGI 2025 Burkina Faso - Document confidentiel', color: '888888', font: 'Arial', size: 16, italics: true })] })] }) },
             children: [...infoLines, table, footer],
         }],
     });

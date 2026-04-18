@@ -359,7 +359,7 @@ func (h *AdminHandler) logAudit(ctx context.Context, adminID, action, targetType
 	)
 }
 
-// POST /api/admin/users/{id}/impersonate — génère un JWT court (1h) au nom de l'utilisateur
+// POST /api/admin/users/{id}/impersonate - génère un JWT court (1h) au nom de l'utilisateur
 // avec le claim "impersonated_by" pour traçabilité. Lecture seule côté frontend.
 func (h *AdminHandler) Impersonate(w http.ResponseWriter, r *http.Request) {
 	targetID := chi.URLParam(r, "id")

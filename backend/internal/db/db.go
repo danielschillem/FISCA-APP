@@ -25,7 +25,7 @@ func Connect() (*pgxpool.Pool, error) {
 	// Timeout par connexion (critique pour Neon free tier qui peut dormir)
 	config.ConnConfig.ConnectTimeout = 15 * time.Second
 
-	// Pool tuning — réduit pour Neon free tier (max 20 connexions au total)
+	// Pool tuning - réduit pour Neon free tier (max 20 connexions au total)
 	config.MaxConns = 5
 	config.MinConns = 1
 	config.MaxConnLifetime = 30 * time.Minute
@@ -294,7 +294,7 @@ func RunMigrations(pool *pgxpool.Pool) error {
 	CREATE UNIQUE INDEX IF NOT EXISTS idx_declarations_unique_period
 	    ON declarations(company_id, mois, annee);
 
-	-- ─── Modules fiscaux annuels (Sprint 1) ─────────────────────────────────
+	-- --- Modules fiscaux annuels (Sprint 1) ---------------------------------
 
 	CREATE TABLE IF NOT EXISTS irf_declarations (
 		id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -377,7 +377,7 @@ func RunMigrations(pool *pgxpool.Pool) error {
 	CREATE INDEX IF NOT EXISTS idx_cme_company_id     ON cme_declarations(company_id);
 	CREATE INDEX IF NOT EXISTS idx_patente_company_id ON patente_declarations(company_id);
 
-	-- ─── Sprint 2 : suivi lectures notifications ─────────────────────────────
+	-- --- Sprint 2 : suivi lectures notifications -----------------------------
 
 	CREATE TABLE IF NOT EXISTS user_notif_reads (
 		user_id  UUID NOT NULL,
@@ -386,7 +386,7 @@ func RunMigrations(pool *pgxpool.Pool) error {
 		PRIMARY KEY (user_id, notif_id)
 	);
 
-	-- ─── Super Admin (idempotent) ─────────────────────────────────────────────
+	-- --- Super Admin (idempotent) ---------------------------------------------
 
 	ALTER TABLE users ADD COLUMN IF NOT EXISTS role      TEXT    NOT NULL DEFAULT 'user';
 	ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
@@ -421,7 +421,7 @@ func RunMigrations(pool *pgxpool.Pool) error {
 	CREATE INDEX IF NOT EXISTS idx_audit_logs_admin    ON audit_logs(admin_id);
 	CREATE INDEX IF NOT EXISTS idx_audit_logs_created  ON audit_logs(created_at DESC);
 
-	-- ─── Multi-tenant : Organisations (Personne Morale) ──────────────────────
+	-- --- Multi-tenant : Organisations (Personne Morale) ----------------------
 
 	CREATE TABLE IF NOT EXISTS organizations (
 		id            UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -461,7 +461,7 @@ func RunMigrations(pool *pgxpool.Pool) error {
 	CREATE INDEX IF NOT EXISTS idx_oca_user          ON org_company_access(user_id);
 	CREATE INDEX IF NOT EXISTS idx_oca_company       ON org_company_access(company_id);
 
-	-- ─── Checklist fiscale (état coché par utilisateur) ──────────────────────
+	-- --- Checklist fiscale (état coché par utilisateur) ----------------------
 
 	CREATE TABLE IF NOT EXISTS checklist_state (
 		user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -471,7 +471,7 @@ func RunMigrations(pool *pgxpool.Pool) error {
 		PRIMARY KEY (user_id, item_id)
 	);
 
-	-- ─── Paiements Orange Money (génération PDF) ──────────────────────────────
+	-- --- Paiements Orange Money (génération PDF) ------------------------------
 	CREATE TABLE IF NOT EXISTS payments (
 		id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 		company_id       UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
@@ -511,7 +511,7 @@ func seedSuperAdmin(pool *pgxpool.Pool) error {
 	email := os.Getenv("SUPERADMIN_EMAIL")
 	password := os.Getenv("SUPERADMIN_PASSWORD")
 	if email == "" || password == "" {
-		return nil // Super admin non configuré — OK en dev
+		return nil // Super admin non configuré - OK en dev
 	}
 
 	var exists bool

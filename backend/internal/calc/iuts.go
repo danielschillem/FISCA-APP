@@ -2,7 +2,7 @@ package calc
 
 import "math"
 
-// ─── BARÈME IUTS MENSUEL — CGI 2025 (Art. 112) ───────────────
+// --- BARÈME IUTS MENSUEL - CGI 2025 (Art. 112) ---------------
 // 9 tranches progressives, taux max 30 %
 
 type tranche struct {
@@ -32,7 +32,7 @@ const (
 	abattForfaitNonCadre = 0.25 // autres employés
 )
 
-// Abattement familial CGI 2025 Art. 113 — % de réduction sur IUTS brut
+// Abattement familial CGI 2025 Art. 113 - % de réduction sur IUTS brut
 var abattFamilialTaux = map[int]float64{
 	0: 0.00,
 	1: 0.08, // 8 %
@@ -51,7 +51,7 @@ const (
 	exoLogement  = 75000
 	exoTransport = 30000
 	exoFonction  = 50000
-	// FSP — Fonds de Soutien Patriotique (décret présidentiel BF 2023)
+	// FSP - Fonds de Soutien Patriotique (décret présidentiel BF 2023)
 	// 1 % prélevé sur le salaire net (brute − IUTS − CNSS) de tout salarié BF.
 	// Non codifié dans le CGI mais obligatoire et à faire figurer sur le bulletin.
 	fspTaux    = 0.01
@@ -87,7 +87,7 @@ func getTauxAbattForfait(categorie string) float64 {
 	return abattForfaitNonCadre
 }
 
-// calcAbattFamilial — réduction en % sur IUTS brut (CGI 2025 Art. 113).
+// calcAbattFamilial - réduction en % sur IUTS brut (CGI 2025 Art. 113).
 func calcAbattFamilial(iutsBrut float64, charges int) float64 {
 	n := charges
 	if n > maxCharges {
@@ -128,7 +128,7 @@ type SalarieResult struct {
 	IUTSBrut  float64
 	AbattFam  float64
 	IUTSNet   float64
-	// FSP — Fonds de Soutien Patriotique (1 % du salaire net avant FSP)
+	// FSP - Fonds de Soutien Patriotique (1 % du salaire net avant FSP)
 	FSP       float64
 	NetAPayer float64
 	// Compat anciens champs
@@ -161,7 +161,7 @@ func CalcSalarie(e SalarieInput) SalarieResult {
 	exoTrans := math.Min(e.Transport, exoTransport)
 	exoFonct := math.Min(e.Fonction, exoFonction)
 
-	// 5. Abattement forfaitaire (CGI 2025 Art. 111) — sur salaire de base
+	// 5. Abattement forfaitaire (CGI 2025 Art. 111) - sur salaire de base
 	tauxForf := getTauxAbattForfait(e.Categorie)
 	abattForf := math.Round(e.SalaireBase * tauxForf)
 
@@ -178,8 +178,8 @@ func CalcSalarie(e SalarieInput) SalarieResult {
 	abattFam := calcAbattFamilial(iutsBrut, e.Charges)
 	iutsNet := math.Max(0, iutsBrut-abattFam)
 
-	// 10. FSP — Fonds de Soutien Patriotique : 1 % du salaire net avant FSP
-	// (décret présidentiel BF 2023 — obligatoire, figurant sur le bulletin de paie)
+	// 10. FSP - Fonds de Soutien Patriotique : 1 % du salaire net avant FSP
+	// (décret présidentiel BF 2023 - obligatoire, figurant sur le bulletin de paie)
 	netAvantFSP := remBrute - iutsNet - cotSoc
 	fsp := math.Round(netAvantFSP * fspTaux)
 	netAPayer := netAvantFSP - fsp

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { dashboardApi, declarationApi } from '../lib/api';
@@ -112,7 +112,7 @@ export default function DashboardPage() {
                     </span>
                     <div className="flex-1 min-w-0">
                         <span className="text-xs font-semibold" style={{ color: regimeInfo.color }}>{regimeInfo.label}</span>
-                        <span className="text-xs text-gray-500 ml-2">— {regimeInfo.obligations.slice(0, 3).join(' · ')}</span>
+                        <span className="text-xs text-gray-500 ml-2"> - {regimeInfo.obligations.slice(0, 3).join(' - ')}</span>
                     </div>
                     <button
                         onClick={() => navigate('/parametres')}
@@ -187,7 +187,7 @@ export default function DashboardPage() {
                 </div>
             )}
 
-            {/* KPI cards — ordre adapté selon le rôle */}
+            {/* KPI cards - ordre adapté selon le rôle */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 {isGestionnaireRH ? (
                     <>
@@ -209,7 +209,7 @@ export default function DashboardPage() {
             {/* Calendrier fiscal + Activité */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                 {/* Calendrier */}
-                <Card title="Calendrier fiscal 2025–2026">
+                <Card title="Calendrier fiscal 2025-2026">
                     <div className="grid grid-cols-6 gap-2">
                         {MOIS_COURT.map((m, idx) => {
                             const decl = declarations.find(
@@ -263,7 +263,7 @@ export default function DashboardPage() {
                                             {d.date_depot
                                                 ? new Date(d.date_depot).toLocaleDateString('fr-BF')
                                                 : 'En attente'}
-                                            {d.ref && ` · ${d.ref}`}
+                                            {d.ref && ` - ${d.ref}`}
                                         </p>
                                     </div>
                                     <Badge color={d.statut === 'ok' ? 'green' : d.statut === 'retard' ? 'red' : 'orange'}>

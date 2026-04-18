@@ -70,7 +70,7 @@ function IRCMContent() {
         <div className="max-w-3xl space-y-6">
             {PaymentModalComponent}
             <Card title="IRCM : Impôt sur les Revenus des Capitaux Mobiliers">
-                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 140-156 · Retenue libératoire à la source</p>
+                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 140-156 - Retenue libératoire à la source</p>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Année fiscale</label>
@@ -201,9 +201,9 @@ function IRCMContent() {
 
             <Card title="Base légale">
                 <ul className="text-xs text-gray-500 space-y-1">
-                    <li>• Art. 140 CGI 2025 : IRCM : retenue libératoire à la source</li>
-                    <li>• Créances &amp; dépôts : 25 % · Obligations &amp; bons : 6 % · Dividendes : 12,5 %</li>
-                    <li>• Art. 150 : Déclaration et versement mensuel (avant le 15 du mois suivant)</li>
+                    <li>- Art. 140 CGI 2025 : IRCM : retenue libératoire à la source</li>
+                    <li>- Créances &amp; dépôts : 25 % - Obligations &amp; bons : 6 % - Dividendes : 12,5 %</li>
+                    <li>- Art. 150 : Déclaration et versement mensuel (avant le 15 du mois suivant)</li>
                 </ul>
             </Card>
         </div>

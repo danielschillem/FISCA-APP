@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { orgApi } from '../../lib/api';
 import type { OrgMember, OrgCompany } from '../../types';
@@ -79,7 +79,7 @@ export default function OrgCompaniesPage() {
                                         <div className="text-left">
                                             <p className="font-semibold text-gray-900">{company.nom}</p>
                                             <p className="text-xs text-gray-400">
-                                                {company.ifu ? `IFU : ${company.ifu} · ` : ''}
+                                                {company.ifu ? `IFU : ${company.ifu} - ` : ''}
                                                 {company.members.length} membre{company.members.length > 1 ? 's' : ''} avec accès
                                             </p>
                                         </div>
@@ -105,7 +105,7 @@ export default function OrgCompaniesPage() {
                                                     <div key={m.user_id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-sm font-medium text-gray-700">{m.email}</span>
-                                                            <span className="text-xs text-gray-400">· {ROLE_LABELS[m.org_role] ?? m.org_role}</span>
+                                                            <span className="text-xs text-gray-400">- {ROLE_LABELS[m.org_role] ?? m.org_role}</span>
                                                         </div>
                                                         <button
                                                             onClick={() => revokeMut.mutate({ companyId: company.id, userId: m.user_id })}

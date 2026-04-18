@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     getEcheancesAnnee, getEcheancesParRegime, grouperParMois, TYPE_COLORS, nomMois,
     type Echeance, type EcheanceType,
@@ -7,7 +7,7 @@ import { useRegime } from '../lib/regime';
 import { CalendarDays, ChevronLeft, ChevronRight, AlertTriangle, Clock, CheckCircle2, Info, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// ─── Types filter ─────────────────────────────────────────────────────────────
+// --- Types filter -------------------------------------------------------------
 const ALL_TYPES: EcheanceType[] = ['IUTS', 'CNSS', 'TVA', 'IS_acompte', 'IS_solde', 'Patente', 'IRF', 'IRCM', 'RAS', 'CME', 'TP'];
 const TYPE_LABELS: Record<EcheanceType, string> = {
     IUTS: 'IUTS', CNSS: 'CNSS', TVA: 'TVA',
@@ -16,7 +16,7 @@ const TYPE_LABELS: Record<EcheanceType, string> = {
     RAS: 'Retenue', CME: 'CME', TP: 'Taxe Prof.',
 };
 
-// ─── Urgence badge ────────────────────────────────────────────────────────────
+// --- Urgence badge ------------------------------------------------------------
 function UrgenceBadge({ e }: { e: Echeance }) {
     if (e.urgence === 'passe') return (
         <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 font-medium">Passée</span>
@@ -36,7 +36,7 @@ function UrgenceBadge({ e }: { e: Echeance }) {
     );
 }
 
-// ─── Single échéance card ─────────────────────────────────────────────────────
+// --- Single échéance card -----------------------------------------------------
 function EcheanceCard({ e, today: _today }: { e: Echeance; today: Date }) {
     const [open, setOpen] = useState(false);
     const dot = TYPE_COLORS[e.type];
@@ -108,7 +108,7 @@ function EcheanceCard({ e, today: _today }: { e: Echeance; today: Date }) {
     );
 }
 
-// ─── Stats bar ────────────────────────────────────────────────────────────────
+// --- Stats bar ----------------------------------------------------------------
 function StatsBar({ echeances, today: _today }: { echeances: Echeance[]; today: Date }) {
     const critiques = echeances.filter(e => e.urgence === 'critique').length;
     const proches = echeances.filter(e => e.urgence === 'proche').length;
@@ -135,7 +135,7 @@ function StatsBar({ echeances, today: _today }: { echeances: Echeance[]; today: 
     );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// --- Main Page ----------------------------------------------------------------
 export default function CalendrierFiscalPage() {
     const today = useMemo(() => new Date(), []);
     const [annee, setAnnee] = useState(today.getFullYear());
@@ -197,7 +197,7 @@ export default function CalendrierFiscalPage() {
                     <div className="flex items-center gap-2">
                         <Filter className="w-4 h-4 text-amber-600" />
                         <p className="text-sm text-amber-700 font-medium">
-                            Régime fiscal non défini — toutes les échéances sont affichées.
+                            Régime fiscal non défini - toutes les échéances sont affichées.
                         </p>
                     </div>
                     <button
@@ -232,7 +232,7 @@ export default function CalendrierFiscalPage() {
                             }`}
                         style={filtreRegime ? { background: regimeInfo.color } : {}}
                     >
-                        {filtreRegime ? `Filtré – ${regimeInfo.shortLabel}` : 'Tout afficher'}
+                        {filtreRegime ? `Filtré - ${regimeInfo.shortLabel}` : 'Tout afficher'}
                     </button>
                 </div>
             )}

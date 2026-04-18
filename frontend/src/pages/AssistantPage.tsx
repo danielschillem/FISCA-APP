@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import { assistantApi } from '../lib/api';
 import { Btn } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Bot } from 'lucide-react';
 
-// ── Markdown renderer (sans dépendance externe) ──────────────────────────────
+// -- Markdown renderer (sans dépendance externe) ------------------------------
 function renderInline(text: string): React.ReactNode[] {
     const parts: React.ReactNode[] = [];
     const re = /\*\*(.+?)\*\*|\*(.+?)\*/g;
@@ -85,8 +85,8 @@ function MarkdownMsg({ content }: { content: string }) {
         flushTable(`table-${idx}`);
 
         // Listes
-        if (/^[-•]\s+/.test(line)) {
-            listItems.push(line.replace(/^[-•]\s+/, ''));
+        if (/^[--]\s+/.test(line)) {
+            listItems.push(line.replace(/^[--]\s+/, ''));
             return;
         }
         flushList(`list-${idx}`);

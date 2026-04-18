@@ -1,4 +1,4 @@
-// Tests unitaires Go — modules fiscaux manquants: IRF abattement, IS CGA, MFP, CME CGA/zone, Patente
+// Tests unitaires Go - modules fiscaux manquants: IRF abattement, IS CGA, MFP, CME CGA/zone, Patente
 package calc_test
 
 import (
@@ -7,7 +7,7 @@ import (
 	"github.com/fisca-app/backend/internal/calc"
 )
 
-// ─── IRF — tests complémentaires ─────────────────────────────
+// --- IRF - tests complémentaires -----------------------------
 
 func TestCalcIRF_Abattement50Pct(t *testing.T) {
 	r := calc.CalcIRF(1_000_000)
@@ -31,17 +31,17 @@ func TestCalcIRF_TrancheBasse_Seulement18(t *testing.T) {
 	}
 }
 
-// ─── IS — réduction CGA ───────────────────────────────────────
+// --- IS - réduction CGA ---------------------------------------
 
 func TestCalcIS_ReductionCGA30Pct(t *testing.T) {
-	// 100M × 27.5% = 27 500 000 · × 70% = 19 250 000
+	// 100M × 27.5% = 27 500 000 - × 70% = 19 250 000
 	r := calc.CalcIS(100_000_000, true)
 	if r.IS != 19_250_000 {
 		t.Errorf("CalcIS(100M, CGA).IS = %.0f, want 19250000", r.IS)
 	}
 }
 
-// ─── MFP — tests complets ─────────────────────────────────────
+// --- MFP - tests complets -------------------------------------
 
 func TestCalcMFP_ReelMinimum1M(t *testing.T) {
 	// CA=10M → 0.5%=50k < minimum 1M → MFPDu=1M
@@ -80,7 +80,7 @@ func TestCalcMFP_CalculeCoherent(t *testing.T) {
 	}
 }
 
-// ─── CME — réduction CGA + zones ─────────────────────────────
+// --- CME - réduction CGA + zones -----------------------------
 
 func TestCalcCME_ReductionCGA25Pct(t *testing.T) {
 	r := calc.CalcCME(15_000_000, "A", true)
@@ -105,7 +105,7 @@ func TestCalcCME_SansCGA_NetEgalBrut(t *testing.T) {
 	}
 }
 
-// ─── Patente — tests complets ─────────────────────────────────
+// --- Patente - tests complets ---------------------------------
 
 func TestCalcPatente_DroitFixe_CA5M(t *testing.T) {
 	r := calc.CalcPatente(5_000_000, 0)

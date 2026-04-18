@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// ─── PAYMENT ─────────────────────────────────────────────────
+// --- PAYMENT -------------------------------------------------
 
 type Payment struct {
 	ID              string     `json:"id"`
@@ -40,7 +40,7 @@ type PaymentStatusResponse struct {
 	Frais    float64 `json:"frais"`
 }
 
-// ─── COMPANY ────────────────────────────────────────────────
+// --- COMPANY ------------------------------------------------
 
 type Company struct {
 	ID      string `json:"id" db:"id"`
@@ -64,7 +64,7 @@ type Company struct {
 	Fax               string `json:"fax" db:"fax"`
 }
 
-// ─── EXERCICE FISCAL ─────────────────────────────────────────
+// --- EXERCICE FISCAL -----------------------------------------
 
 type ExerciceFiscal struct {
 	ID          string     `json:"id"`
@@ -78,7 +78,7 @@ type ExerciceFiscal struct {
 	CreatedAt   time.Time  `json:"created_at"`
 }
 
-// ─── EMPLOYEE ────────────────────────────────────────────────
+// --- EMPLOYEE ------------------------------------------------
 
 type Employee struct {
 	ID          string  `json:"id" db:"id"`
@@ -95,7 +95,7 @@ type Employee struct {
 	Fonction    float64 `json:"fonction" db:"fonction"`
 }
 
-// ─── DECLARATION ─────────────────────────────────────────────
+// --- DECLARATION ---------------------------------------------
 
 type Declaration struct {
 	ID        string     `json:"id" db:"id"`
@@ -115,7 +115,7 @@ type Declaration struct {
 	CreatedAt time.Time  `json:"created_at" db:"created_at"`
 }
 
-// ─── USER / AUTH ──────────────────────────────────────────────
+// --- USER / AUTH ----------------------------------------------
 
 type User struct {
 	ID           string    `json:"id" db:"id"`
@@ -149,7 +149,7 @@ type AuthResponse struct {
 	User         User   `json:"user"`
 }
 
-// ─── ORGANISATION (Personne Morale) ──────────────────────────
+// --- ORGANISATION (Personne Morale) --------------------------
 
 type Organization struct {
 	ID           string    `json:"id"`
@@ -187,7 +187,7 @@ type OrgInfo struct {
 	Stats        OrgStats     `json:"stats"`
 }
 
-// ─── CALCUL ───────────────────────────────────────────────────
+// --- CALCUL ---------------------------------------------------
 
 type CalculRequest struct {
 	SalaireBase float64 `json:"salaire_base"`
@@ -212,10 +212,10 @@ type CalculResult struct {
 	SalaireNet   float64 `json:"salaire_net"`
 	AbattForf    float64 `json:"abattement_forfaitaire"`
 	AbattFam     float64 `json:"abattement_familial"`
-	RetPersonnel float64 `json:"retenue_personnel"` // alias FSP — rétro-compat
+	RetPersonnel float64 `json:"retenue_personnel"` // alias FSP - rétro-compat
 }
 
-// ─── BULLETIN DE PAIE ─────────────────────────────────────────
+// --- BULLETIN DE PAIE -----------------------------------------
 
 type Bulletin struct {
 	ID          string    `json:"id"`
@@ -245,7 +245,7 @@ type Bulletin struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// ─── SIMULATION FISCALE ───────────────────────────────────────
+// --- SIMULATION FISCALE ---------------------------------------
 
 type Simulation struct {
 	ID         string          `json:"id"`
@@ -257,7 +257,7 @@ type Simulation struct {
 	CreatedAt  time.Time       `json:"created_at"`
 }
 
-// ─── TVA ─────────────────────────────────────────────────────
+// --- TVA -----------------------------------------------------
 
 type TVADeclaration struct {
 	ID            string     `json:"id"`
@@ -287,7 +287,7 @@ type TVALigne struct {
 	MontantTTC    float64 `json:"montant_ttc"`
 }
 
-// ─── WORKFLOW APPROBATION ─────────────────────────────────────
+// --- WORKFLOW APPROBATION -------------------------------------
 
 type WorkflowEtape struct {
 	ID            string    `json:"id"`
@@ -298,7 +298,7 @@ type WorkflowEtape struct {
 	CreatedAt     time.Time `json:"created_at"`
 }
 
-// ─── RETENUE À LA SOURCE ──────────────────────────────────────
+// --- RETENUE À LA SOURCE --------------------------------------
 
 type RetenueSource struct {
 	ID             string    `json:"id"`
@@ -317,7 +317,7 @@ type RetenueSource struct {
 	CreatedAt      time.Time `json:"created_at"`
 }
 
-// ─── CNSS PATRONAL ────────────────────────────────────────────
+// --- CNSS PATRONAL --------------------------------------------
 
 type CNSSPatronal struct {
 	ID                 string    `json:"id"`
@@ -340,7 +340,7 @@ type CNSSPatronal struct {
 	CreatedAt          time.Time `json:"created_at"`
 }
 
-// ─── HISTORIQUE FISCAL ────────────────────────────────────────
+// --- HISTORIQUE FISCAL ----------------------------------------
 
 type HistoriqueFiscalMois struct {
 	Mois         int     `json:"mois"`
@@ -366,7 +366,7 @@ type HistoriqueFiscalAnnee struct {
 	Mois         []HistoriqueFiscalMois `json:"mois"`
 }
 
-// ─── IRF — Revenus Fonciers (CGI 2025 Art. 121–126) ──────────
+// --- IRF - Revenus Fonciers (CGI 2025 Art. 121-126) ----------
 
 type IRFDeclaration struct {
 	ID         string    `json:"id"`
@@ -384,7 +384,7 @@ type IRFDeclaration struct {
 	CreatedAt  time.Time `json:"created_at"`
 }
 
-// ─── IRCM — Capitaux Mobiliers (CGI 2025 Art. 140) ───────────
+// --- IRCM - Capitaux Mobiliers (CGI 2025 Art. 140) -----------
 
 type IRCMDeclaration struct {
 	ID          string    `json:"id"`
@@ -400,7 +400,7 @@ type IRCMDeclaration struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// ─── IS / MFP (CGI 2025 Art. 42) ─────────────────────────────
+// --- IS / MFP (CGI 2025 Art. 42) -----------------------------
 
 type ISDeclaration struct {
 	ID          string    `json:"id"`
@@ -418,7 +418,7 @@ type ISDeclaration struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// ─── CME — Micro-Entreprises (CGI 2025 Art. 533) ─────────────
+// --- CME - Micro-Entreprises (CGI 2025 Art. 533) -------------
 
 type CMEDeclaration struct {
 	ID          string    `json:"id"`
@@ -435,7 +435,7 @@ type CMEDeclaration struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// ─── PATENTE (CGI 2025 Art. 237–240) ─────────────────────────
+// --- PATENTE (CGI 2025 Art. 237-240) -------------------------
 
 type PatenteDeclaration struct {
 	ID             string    `json:"id"`
@@ -451,7 +451,7 @@ type PatenteDeclaration struct {
 	CreatedAt      time.Time `json:"created_at"`
 }
 
-// ─── BILAN ANNUEL ─────────────────────────────────────────────
+// --- BILAN ANNUEL ---------------------------------------------
 
 type BilanAnnuel struct {
 	Annee          int     `json:"annee"`
@@ -472,7 +472,7 @@ type BilanAnnuel struct {
 	NbSalaries     int     `json:"nb_salaries"`
 }
 
-// ─── NOTIFICATION ─────────────────────────────────────────────
+// --- NOTIFICATION ---------------------------------------------
 
 type Notification struct {
 	ID        string    `json:"id"`
@@ -484,7 +484,7 @@ type Notification struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// ─── SUPER ADMIN ──────────────────────────────────────────────
+// --- SUPER ADMIN ----------------------------------------------
 
 type License struct {
 	ID           string     `json:"id"`

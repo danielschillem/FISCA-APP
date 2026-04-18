@@ -45,7 +45,7 @@ func (h *AssistantHandler) Chat(w http.ResponseWriter, r *http.Request) {
 	mistralKey := os.Getenv("MISTRAL_API_KEY")
 
 	if openaiKey == "" && mistralKey == "" {
-		// Aucune IA configurée — réponse de secours
+		// Aucune IA configurée - réponse de secours
 		jsonOK(w, map[string]string{
 			"reply": "L'assistant IA n'est pas encore configuré. Activez OPENAI_API_KEY (OpenAI) ou MISTRAL_API_KEY (Mistral, gratuit) dans les variables d'environnement.",
 		})
@@ -105,12 +105,12 @@ Règles de réponse STRICTES :
 2. N'utilise JAMAIS de markdown : pas de #, ##, ###, **, *, |, ---, ni aucun autre symbole de formatage.
 3. Structure tes réponses avec des numéros (1. 2. 3.) ou des tirets simples (-) pour les listes.
 4. Pour les tableaux, présente les données sous forme de liste numérotée ou de phrases claires.
-5. Ne fournis pas de conseils juridiques définitifs — recommande de consulter un expert-comptable pour les cas complexes.
+5. Ne fournis pas de conseils juridiques définitifs - recommande de consulter un expert-comptable pour les cas complexes.
 6. Sois précis sur les chiffres, taux et articles du CGI Burkina Faso.`,
 		nomEntreprise, ifu, nbEmployes, now.Year(), nbDecl, brutTotal, iutsTotal, tpaTotal)
 }
 
-// callMistral appelle l'API Mistral AI (compatible OpenAI) — modèle gratuit mistral-small-latest.
+// callMistral appelle l'API Mistral AI (compatible OpenAI) - modèle gratuit mistral-small-latest.
 func callMistral(apiKey, systemContext, userMessage string) (string, error) {
 	payload := map[string]any{
 		"model": "mistral-small-latest",

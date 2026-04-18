@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '../../lib/api';
 import { useAuthStore } from '../../lib/store';
@@ -14,7 +14,7 @@ const PHYSIQUE_PLANS = [
         label: 'Solo Starter',
         price: 'Gratuit 30 jours',
         description: 'Idéal pour démarrer',
-        limits: '1 société · 3 employés max',
+        limits: '1 société - 3 employés max',
         icon: Star,
         color: 'from-slate-500 to-slate-700',
         features: ['IUTS, Rapport mensuel', 'Calcul fiscal CGI 2025', 'Calendrier des échéances'],
@@ -24,7 +24,7 @@ const PHYSIQUE_PLANS = [
         label: 'Solo Pro',
         price: '9 900 FCFA / mois',
         description: 'Pour les auto-entrepreneurs actifs',
-        limits: '1 société · 10 employés max',
+        limits: '1 société - 10 employés max',
         icon: Zap,
         color: 'from-green-500 to-emerald-700',
         features: ['Tout Solo Starter', 'Bulletins de paie', 'TVA, IRF, IRCM', 'Assistant IA fiscal'],
@@ -37,7 +37,7 @@ const MORAL_PLANS = [
         label: 'Équipe',
         price: '29 900 FCFA / mois',
         description: 'Pour les PME et cabinets',
-        limits: '2 sociétés · 5 utilisateurs · 200 employés',
+        limits: '2 sociétés - 5 utilisateurs - 200 employés',
         icon: Users,
         color: 'from-blue-500 to-blue-700',
         features: ['Toutes les fonctionnalités', 'Rôles internes (comptable, RH…)', 'Gestion multi-sociétés', 'Workflow approbation'],
@@ -47,7 +47,7 @@ const MORAL_PLANS = [
         label: 'Entreprise',
         price: 'Sur devis',
         description: 'Pour les grandes structures',
-        limits: 'Illimité · API · Support dédié',
+        limits: 'Illimité - API - Support dédié',
         icon: Briefcase,
         color: 'from-orange-500 to-orange-700',
         features: ['Tout Équipe', 'Utilisateurs illimités', 'Sociétés illimitées', 'Intégration DGI (bêta)'],
@@ -129,17 +129,17 @@ export default function RegisterPage() {
                             Créez votre compte<br />et simplifiez<br />votre fiscalité
                         </h2>
                         <p className="text-white/75 text-sm leading-relaxed max-w-xs">
-                            Déclarations, calculs CGI 2025, bulletins de paie et gestion multi-sociétés — tout en un.
+                            Déclarations, calculs CGI 2025, bulletins de paie et gestion multi-sociétés - tout en un.
                         </p>
                     </div>
-                    <p className="text-white/50 text-xs">Plateforme fiscale · Burkina Faso · CGI 2025</p>
+                    <p className="text-white/50 text-xs">Plateforme fiscale - Burkina Faso - CGI 2025</p>
                 </div>
             </div>
 
             <div className="flex-1 flex flex-col items-center justify-start overflow-y-auto bg-gray-50 py-12 px-4 sm:px-8">
                 <div className="lg:hidden text-center mb-8">
                     <h1 style={{ fontFamily: '"Arial Black", "Arial Bold", Arial, sans-serif', fontWeight: 900 }} className="text-3xl text-green-700 tracking-widest mb-3">FISCA</h1>
-                    <p className="text-gray-500 text-sm mt-1">Plateforme Fiscale · Burkina Faso</p>
+                    <p className="text-gray-500 text-sm mt-1">Plateforme Fiscale - Burkina Faso</p>
                 </div>
 
                 <div className="w-full max-w-2xl">
@@ -189,7 +189,7 @@ export default function RegisterPage() {
                             </button>
                             <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Choisissez votre plan</h2>
                             <p className="text-gray-500 text-sm text-center mb-8">
-                                {userType === 'physique' ? 'Compte solo · personne physique' : 'Structure multi-utilisateurs · personne morale'}
+                                {userType === 'physique' ? 'Compte solo - personne physique' : 'Structure multi-utilisateurs - personne morale'}
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {(userType === 'physique' ? PHYSIQUE_PLANS : MORAL_PLANS).map((p) => {
@@ -228,7 +228,7 @@ export default function RegisterPage() {
                             <h2 className="text-lg font-semibold text-gray-900 mb-1">Créer votre compte</h2>
                             <p className="text-xs text-gray-400 mb-6">
                                 Plan : <span className="font-semibold text-green-700">{planLabel}</span>
-                                {' · '}
+                                {' - '}
                                 {userType === 'physique' ? 'Personne physique' : 'Personne morale'}
                             </p>
 

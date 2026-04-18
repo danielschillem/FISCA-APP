@@ -1,4 +1,4 @@
-﻿import { Outlet, Navigate } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 import { useAuthStore, useAppStore } from '../lib/store';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
@@ -13,26 +13,26 @@ const PAGE_META: Record<string, { title: string; subtitle?: string }> = {
     '/rapport': { title: 'Rapport du mois', subtitle: 'Aperçu et génération du document' },
     '/bulletins': { title: 'Bulletins de paie', subtitle: 'Export PDF individuel' },
     '/simulateur': { title: 'Simulateur fiscal', subtitle: 'Scénarios et comparaison A/B' },
-    '/tva': { title: 'Module TVA', subtitle: 'CGI 2025 · Art. 317 · 18 %' },
-    '/irf': { title: 'IRF : Revenus Fonciers', subtitle: 'CGI 2025 · Art. 121–126' },
-    '/ircm': { title: 'IRCM : Capitaux mobiliers', subtitle: 'CGI 2025 · Art. 140' },
+    '/tva': { title: 'Module TVA', subtitle: 'CGI 2025 - Art. 317 - 18 %' },
+    '/irf': { title: 'IRF : Revenus Fonciers', subtitle: 'CGI 2025 - Art. 121-126' },
+    '/ircm': { title: 'IRCM : Capitaux mobiliers', subtitle: 'CGI 2025 - Art. 140' },
     '/assistant': { title: 'Assistant IA Fiscal', subtitle: 'Conseils fiscaux intelligents' },
     '/societes': { title: 'Multi-Sociétés', subtitle: 'Gestion multi-entités' },
     '/workflow': { title: 'Workflow Approbation', subtitle: 'Validation des déclarations' },
-    '/retenues': { title: 'Retenue à la source', subtitle: 'CGI 2025 : Art. 206–226' },
+    '/retenues': { title: 'Retenue à la source', subtitle: 'CGI 2025 : Art. 206-226' },
     '/cnss-patronal': { title: 'CNSS Patronal', subtitle: 'Cotisations patronales complètes' },
-    '/cme': { title: 'CME : Micro-Entreprises', subtitle: 'CGI 2025 · Art. 533' },
-    '/is': { title: 'IS / MFP', subtitle: 'CGI 2025 · Art. 42 · 27,5 %' },
-    '/patente': { title: 'Patentes', subtitle: 'CGI 2025 · Art. 237–240' },
+    '/cme': { title: 'CME : Micro-Entreprises', subtitle: 'CGI 2025 - Art. 533' },
+    '/is': { title: 'IS / MFP', subtitle: 'CGI 2025 - Art. 42 - 27,5 %' },
+    '/patente': { title: 'Patentes', subtitle: 'CGI 2025 - Art. 237-240' },
     '/historique': { title: 'Historique Fiscal', subtitle: 'Toutes les déclarations' },
-    '/declarations': { title: 'Mes Déclarations', subtitle: 'IUTS · TPA · CSS · téléchargement DIPE' },
+    '/declarations': { title: 'Mes Déclarations', subtitle: 'IUTS - TPA - CSS - téléchargement DIPE' },
     '/bilan': { title: 'Bilan Annuel', subtitle: 'Synthèse de l\'exercice' },
     '/abonnement': { title: 'Mon Abonnement', subtitle: 'Plans & fonctionnalités' },
     '/parametres': { title: 'Paramètres', subtitle: 'Informations de l\'entreprise' },
     '/org/info': { title: 'Mon Organisation', subtitle: 'Vue d\'ensemble & quotas' },
     '/org/membres': { title: 'Membres & Rôles', subtitle: 'Gérer les accès de l\'organisation' },
     '/org/societes': { title: 'Accès Sociétés', subtitle: 'Permissions par entité' },
-    '/mentions-legales': { title: 'Mentions légales', subtitle: 'CGU · Licence · Confidentialité · Droit applicable' },
+    '/mentions-legales': { title: 'Mentions légales', subtitle: 'CGU - Licence - Confidentialité - Droit applicable' },
 };
 
 export default function AppLayout() {
@@ -52,7 +52,7 @@ export default function AppLayout() {
                 <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white flex items-center justify-between px-4 py-2 shadow-lg">
                     <div className="flex items-center gap-2 text-sm font-medium">
                         <Eye className="w-4 h-4" />
-                        <span>MODE INSPECTION — vous voyez l'app comme <strong>{user?.email}</strong> (lecture seule)</span>
+                        <span>MODE INSPECTION - vous voyez l'app comme <strong>{user?.email}</strong> (lecture seule)</span>
                     </div>
                     <button
                         onClick={stopImpersonate}

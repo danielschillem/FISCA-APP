@@ -1,5 +1,5 @@
 /**
- * importCsv.ts — Utilitaire import CSV/XLSX générique pour FISCA
+ * importCsv.ts - Utilitaire import CSV/XLSX générique pour FISCA
  * Supporte : .csv (séparateur ; ou ,) et .xlsx/.xls (via bibliothèque xlsx)
  */
 import * as XLSX from 'xlsx';

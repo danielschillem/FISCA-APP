@@ -20,7 +20,7 @@ func NewCompaniesHandler(db *pgxpool.Pool) *CompaniesHandler {
 	return &CompaniesHandler{DB: db}
 }
 
-// GET /api/companies — liste toutes les sociétés de l'utilisateur
+// GET /api/companies - liste toutes les sociétés de l'utilisateur
 func (h *CompaniesHandler) List(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
 	rows, err := h.DB.Query(r.Context(),
@@ -44,7 +44,7 @@ func (h *CompaniesHandler) List(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, items)
 }
 
-// POST /api/companies — créer une nouvelle société
+// POST /api/companies - créer une nouvelle société
 func (h *CompaniesHandler) Create(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
 	var req models.Company
@@ -125,7 +125,7 @@ func (h *CompaniesHandler) Update(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, c)
 }
 
-// DELETE /api/companies/{id} — refuse de supprimer la dernière société
+// DELETE /api/companies/{id} - refuse de supprimer la dernière société
 func (h *CompaniesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
 	id := chi.URLParam(r, "id")

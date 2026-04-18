@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { declarationApi, companyApi, bulletinApi, tvaApi, irfApi, ircmApi, isApi, cmeApi, patenteApi, retenueApi, cnssApi } from '../lib/api';
 import { fmtN } from '../lib/fiscalCalc';
@@ -120,7 +120,7 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
     t(company?.adresse ?? '', ML + 2, y + 6.5, 7.5, true, 'left', BLACK);
     y += lineH;
 
-    // BP — filled with actual company data
+    // BP - filled with actual company data
     const bpH = 6;
     const LGRAY: [number, number, number] = [110, 110, 110];
     box(ML, y, CW, bpH);
@@ -276,9 +276,9 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
         doc.setFontSize(6); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 80, 80);
         doc.text(
             'Periode : ' + MOIS_NOMS_FR[d.mois - 1] + ' ' + d.annee +
-            '  -  ' + (company?.nom ?? '') +
-            '  -  IFU : ' + (company?.ifu ?? '') +
-            '  -  RC : ' + (company?.rc ?? ''),
+            ' - ' + (company?.nom ?? '') +
+            ' - IFU : ' + (company?.ifu ?? '') +
+            ' - RC : ' + (company?.rc ?? ''),
             ML + 2, y2 + 4.5
         );
         y2 += 6;
@@ -342,7 +342,7 @@ function generateOfficialDGIPDF(d: Declaration, company?: Company, bulletins: Bu
     doc.save('DGI-IUTS-TPA-' + d.annee + '-' + String(d.mois).padStart(2, '0') + '-' + (company?.nom ?? 'declaration').replace(/\s+/g, '_') + '.pdf');
 }
 
-// ── Types unifiés ─────────────────────────────────────────────
+// -- Types unifiés ---------------------------------------------
 type TaxType = 'IUTS/TPA' | 'TVA' | 'IRF' | 'IRCM' | 'IS/MFP' | 'CME' | 'Patente' | 'RAS' | 'CNSS';
 
 interface UnifiedDecl {
@@ -400,7 +400,7 @@ export default function DeclarationsPage() {
         staleTime: Infinity,
     });
 
-    // ── Fetch all declaration types ──────────────────────────────────
+    // -- Fetch all declaration types ----------------------------------
     const { data: iutsDecls  = [] } = useQuery<Declaration[]>({
         queryKey: ['declarations', annee],
         queryFn: () => declarationApi.list(annee).then((r) => r.data ?? []),
@@ -438,7 +438,7 @@ export default function DeclarationsPage() {
         queryFn: () => cnssApi.list(undefined, annee).then((r) => r.data ?? []),
     });
 
-    // ── Helper to build normalized rows ─────────────────────────────
+    // -- Helper to build normalized rows -----------------------------
     const buildRows = (): UnifiedDecl[] => [
         ...iutsDecls.map(d   => ({ id: d.id, type: 'IUTS/TPA' as TaxType, annee: d.annee, mois: d.mois,  montant: d.total,                  statut: d.statut, ref: d.ref,  created_at: d.created_at, raw: d })),
         ...tvaDecls.map(d    => ({ id: d.id, type: 'TVA'      as TaxType, annee: d.annee, mois: d.mois,  montant: Math.max(0, d.tva_nette), statut: d.statut, ref: d.ref,  created_at: d.created_at, raw: d })),
@@ -459,14 +459,14 @@ export default function DeclarationsPage() {
     const totalMontant = all.reduce((s, d) => s + d.montant, 0);
     const typesPresents = (Object.keys(TYPE_CFG) as TaxType[]).filter(t => allDecls.some(d => d.type === t));
 
-    // ── Métriques récap ──────────────────────────────────────────────
+    // -- Métriques récap ----------------------------------------------
     const totalVerse   = allDecls.reduce((s, d) => s + d.montant, 0);
     const nbDeclare    = allDecls.filter(d => ['ok','declare','approuve','valide'].includes(d.statut)).length;
     const nbRetard     = allDecls.filter(d => d.statut === 'retard').length;
     const nbBrouillon  = allDecls.filter(d => !['ok','declare','approuve','valide','retard','soumis'].includes(d.statut)).length;
     const tauxConf     = allDecls.length > 0 ? Math.round((nbDeclare / allDecls.length) * 100) : 0;
 
-    // ── Delete handler ───────────────────────────────────────────────
+    // -- Delete handler -----------------------------------------------
     const handleDelete = async (d: UnifiedDecl) => {
         const apiMap: Record<TaxType, (id: string) => Promise<unknown>> = {
             'IUTS/TPA': declarationApi.delete,
@@ -486,7 +486,7 @@ export default function DeclarationsPage() {
         setDeleting(null);
     };
 
-    // ── PDF handler ──────────────────────────────────────────────────
+    // -- PDF handler --------------------------------------------------
     const handlePDF = async (d: UnifiedDecl) => {
         if (d.type === 'IUTS/TPA') {
             setDownloadingPDF(d.id);
@@ -555,7 +555,7 @@ export default function DeclarationsPage() {
                             <span className="text-xs text-gray-500 font-medium">À régulariser</span>
                         </div>
                         <p className="text-xl font-bold text-gray-900">{nbRetard + nbBrouillon}</p>
-                        <p className="text-[11px] text-gray-400 mt-0.5">{nbRetard} retard · {nbBrouillon} brouillon</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">{nbRetard} retard - {nbBrouillon} brouillon</p>
                     </div>
                 </div>
             )}
@@ -646,7 +646,7 @@ export default function DeclarationsPage() {
                                         </td>
                                         <td className="px-4 py-3 text-right font-bold text-gray-900">{fmtN(d.montant)}</td>
                                         <td className="px-4 py-3 text-center">{statutBadge(d.statut)}</td>
-                                        <td className="px-4 py-3 font-mono text-xs text-gray-400">{d.ref ?? '—'}</td>
+                                        <td className="px-4 py-3 font-mono text-xs text-gray-400">{d.ref ?? ' - '}</td>
                                         <td className="px-4 py-3 text-right">
                                             <div className="flex justify-end gap-1 items-center">
                                                 {d.type !== 'CNSS' && (
