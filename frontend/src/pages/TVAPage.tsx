@@ -1,14 +1,15 @@
-﻿import { useState } from 'react';
+﻿import { useState, useRef } from 'react';
 import type React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tvaApi, companyApi } from '../lib/api';
 import { calcTVA, fmt, fmtN } from '../lib/fiscalCalc';
+import { parseFile, downloadCsvTemplate, parseAmount, parseTaux } from '../lib/importCsv';
 import { Card, Btn, Spinner } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import type { TVADeclaration, Company } from '../types';
 import { generateTVAForm } from '../lib/pdfDGI';
 import { usePaymentGate } from '../components/PaymentModal';
-import { Save, X, Lock, FileText } from 'lucide-react';
+import { Save, X, Lock, FileText, Upload, Download } from 'lucide-react';
 
 type LigneLocal = { label: string; ht: number; taux: number; type_op: 'vente' | 'achat' };
 
@@ -249,6 +250,57 @@ function AmountInput({ value, onChange }: { value: number; onChange: (v: number)
 function LignesPanel({
     title, lignes, onChange, typeOp,
 }: { title: string; lignes: LigneLocal[]; onChange: (l: LigneLocal[]) => void; typeOp: 'vente' | 'achat' }) {
+    const importRef = useRef<HTMLInputElement>(null);
+    const [importErr, setImportErr] = useState('');
+
+    const handleDownloadTemplate = () => {
+        const filename = typeOp === 'vente' ? 'modele-tva-ventes.csv' : 'modele-tva-achats.csv';
+        downloadCsvTemplate(
+            filename,
+            ['Description', 'Montant HT', 'Taux TVA (%)'],
+            typeOp === 'vente'
+                ? [
+                    ['Ventes produits finis', '2500000', '18'],
+                    ['Prestations de services', '800000', '18'],
+                    ['Hebergement/restauration', '500000', '10'],
+                ]
+                : [
+                    ['Achats matieres premieres', '1200000', '18'],
+                    ['Charges locatives', '300000', '18'],
+                    ['Hotellerie/transport', '200000', '10'],
+                ]
+        );
+    };
+
+    const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setImportErr('');
+        try {
+            const rows = await parseFile(file);
+            const newLignes: LigneLocal[] = rows
+                .filter((r) => {
+                    const ht = parseAmount(r['Montant HT'] ?? r['montant_ht'] ?? r['HT'] ?? '');
+                    return ht > 0;
+                })
+                .map((r) => ({
+                    label: (r['Description'] ?? r['description'] ?? r['Libellé'] ?? '').trim() || 'Ligne importée',
+                    ht: parseAmount(r['Montant HT'] ?? r['montant_ht'] ?? r['HT'] ?? '0'),
+                    taux: parseTaux(r['Taux TVA (%)'] ?? r['Taux TVA'] ?? r['taux'] ?? r['Taux'] ?? '18'),
+                    type_op: typeOp,
+                }));
+            if (newLignes.length === 0) {
+                setImportErr('Aucune ligne valide trouvée. Vérifiez le modèle.');
+                return;
+            }
+            onChange([...lignes, ...newLignes]);
+        } catch (err: unknown) {
+            setImportErr((err as Error).message ?? 'Erreur import');
+        } finally {
+            if (importRef.current) importRef.current.value = '';
+        }
+    };
+
     return (
         <Card title={title}>
             {/* En-têtes colonnes */}
@@ -294,7 +346,7 @@ function LignesPanel({
                     );
                 })}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
                 <Btn size="sm" variant="outline"
                     onClick={() => onChange([...lignes, { label: '', ht: 0, taux: 0.18, type_op: typeOp }])}>
                     + Ajouter
@@ -303,7 +355,32 @@ function LignesPanel({
                     onClick={() => onChange([...lignes, { label: 'Hôtellerie/transport', ht: 0, taux: 0.10, type_op: typeOp }])}>
                     + 10 %
                 </Btn>
+                <div className="flex-1" />
+                {/* Import CSV/Excel */}
+                <button
+                    onClick={handleDownloadTemplate}
+                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 border border-blue-200 rounded-lg px-2 py-1.5 hover:bg-blue-50 transition-colors"
+                    title="Télécharger le modèle CSV"
+                >
+                    <Download className="w-3.5 h-3.5" /> Modèle CSV
+                </button>
+                <label
+                    className="flex items-center gap-1 text-xs text-green-700 hover:text-green-900 border border-green-200 rounded-lg px-2 py-1.5 hover:bg-green-50 cursor-pointer transition-colors"
+                    title="Importer un fichier CSV ou Excel"
+                >
+                    <Upload className="w-3.5 h-3.5" /> Importer
+                    <input
+                        ref={importRef}
+                        type="file"
+                        accept=".csv,.xlsx,.xls,.ods,.txt"
+                        className="hidden"
+                        onChange={handleImport}
+                    />
+                </label>
             </div>
+            {importErr && (
+                <p className="mt-2 text-xs text-red-600 bg-red-50 rounded px-2 py-1">{importErr}</p>
+            )}
         </Card>
     );
 }

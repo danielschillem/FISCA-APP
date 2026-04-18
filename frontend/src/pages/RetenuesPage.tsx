@@ -1,13 +1,15 @@
-﻿import { useState } from 'react';
+﻿import { useRef, useState } from 'react';
+import type React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { retenueApi, companyApi } from '../lib/api';
 import { fmt, fmtN } from '../lib/fiscalCalc';
+import { parseFile, downloadCsvTemplate, parseAmount } from '../lib/importCsv';
 import type { RetenueSource, Company } from '../types';
 import { Card, Btn, Spinner, Table } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { generateRetenuesForm } from '../lib/pdfDGI';
 import { usePaymentGate } from '../components/PaymentModal';
-import { X, Lock, FileText } from 'lucide-react';
+import { X, Lock, FileText, Upload, Download } from 'lucide-react';
 
 // Types retenue : CGI 2025 Art. 206-207 (RAS) et Art. 121-126/140 (IRF/IRCM)
 const RETENUE_TYPES: Record<string, { label: string; taux: number }> = {
@@ -39,6 +41,9 @@ function RetenuesContent() {
         montant_brut: 0,
         ref: '',
     });
+    const [importErr, setImportErr] = useState('');
+    const [importOk, setImportOk] = useState('');
+    const importRef = useRef<HTMLInputElement>(null);
 
     const { data: retenues = [], isLoading } = useQuery<RetenueSource[]>({
         queryKey: ['retenues', mois, annee],
@@ -59,6 +64,46 @@ function RetenuesContent() {
         mutationFn: (id: string) => retenueApi.delete(id),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['retenues', mois, annee] }),
     });
+
+    const handleDownloadTemplate = () => {
+        downloadCsvTemplate(
+            'modele-retenues-source.csv',
+            ['Beneficiaire', 'Type', 'Montant brut'],
+            [
+                ['SARL TECH Solutions', 'services', '500000'],
+                ['Immeuble Kaboré', 'loyer', '300000'],
+                ['Dividendes actionnaires', 'dividendes', '1000000'],
+                ['M. Ouedraogo consultant', 'autre', '250000'],
+            ]
+        );
+    };
+
+    const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setImportErr('');
+        setImportOk('');
+        try {
+            const rows = await parseFile(file);
+            let count = 0;
+            for (const r of rows) {
+                const beneficiaire = (r['Beneficiaire'] ?? r['Bénéficiaire'] ?? r['beneficiaire'] ?? '').trim();
+                const type_retenue = (r['Type'] ?? r['type_retenue'] ?? 'services').trim().toLowerCase();
+                const montant_brut = parseAmount(r['Montant brut'] ?? r['montant_brut'] ?? r['Montant'] ?? '0');
+                if (!beneficiaire || montant_brut <= 0) continue;
+                const typeKey = Object.keys(RETENUE_TYPES).find((k) => k === type_retenue) ?? 'services';
+                await retenueApi.create({ mois, annee, beneficiaire, type_retenue: typeKey, montant_brut });
+                count++;
+            }
+            if (count === 0) { setImportErr('Aucune ligne valide. Vérifiez le modèle.'); return; }
+            setImportOk(`${count} retenue(s) importée(s) avec succès.`);
+            qc.invalidateQueries({ queryKey: ['retenues', mois, annee] });
+        } catch (err: unknown) {
+            setImportErr((err as Error).message ?? 'Erreur import');
+        } finally {
+            if (importRef.current) importRef.current.value = '';
+        }
+    };
 
     const typeInfo = RETENUE_TYPES[form.type_retenue] ?? RETENUE_TYPES.services;
     const previewRas = Math.round(form.montant_brut * typeInfo.taux / 100);
@@ -98,14 +143,28 @@ function RetenuesContent() {
                 <div className="bg-green-50 rounded-xl p-4"><p className="text-xs text-gray-500">Net versé</p><p className="text-xl font-bold text-green-700">{fmt(totaux.net)}</p></div>
             </div>
 
-            <div className="flex justify-between">
+            <div className="flex justify-between flex-wrap gap-2">
                 {retenues.length > 0 && (
                     <Btn variant="outline" onClick={() => requestPayment('retenues', `${annee}-${mois}`, () => generateRetenuesForm(retenues, company, mois, annee))}>
                         <FileText className="w-4 h-4" /> Formulaire DGI RAS
                     </Btn>
                 )}
-                <Btn onClick={() => setShowAdd(!showAdd)}>+ Ajouter prestation</Btn>
+                <div className="flex gap-2 flex-wrap">
+                    <button
+                        onClick={handleDownloadTemplate}
+                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 border border-blue-200 rounded-lg px-3 py-2 hover:bg-blue-50 transition-colors"
+                    >
+                        <Download className="w-3.5 h-3.5" /> Modèle CSV
+                    </button>
+                    <label className="flex items-center gap-1 text-xs text-green-700 hover:text-green-900 border border-green-200 rounded-lg px-3 py-2 hover:bg-green-50 cursor-pointer transition-colors">
+                        <Upload className="w-3.5 h-3.5" /> Importer CSV/Excel
+                        <input ref={importRef} type="file" accept=".csv,.xlsx,.xls,.ods" className="hidden" onChange={handleImport} />
+                    </label>
+                    <Btn onClick={() => setShowAdd(!showAdd)}>+ Ajouter prestation</Btn>
+                </div>
             </div>
+            {importErr && <p className="text-xs text-red-600 bg-red-50 rounded px-3 py-2">{importErr}</p>}
+            {importOk && <p className="text-xs text-green-700 bg-green-50 rounded px-3 py-2">{importOk}</p>}
 
             {/* Add form */}
             {showAdd && (

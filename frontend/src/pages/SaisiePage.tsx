@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { employeeApi, declarationApi, bulletinApi } from '../lib/api';
 import { calcEmploye, fmtN } from '../lib/fiscalCalc';
+import { downloadCsvTemplate } from '../lib/importCsv';
 import type { Employee, Bulletin } from '../types';
 import { Card, Btn, Badge, Spinner, useAppStore, PLAN_FEATURES } from '../components/ui';
 import { usePermissions } from '../lib/permissions';
@@ -183,6 +184,13 @@ export default function SaisiePage() {
                         </select>
                     </div>
                     <div className="ml-auto flex gap-2">
+                        <Btn
+                            variant="outline"
+                            onClick={handleDownloadTemplate}
+                            title="Télécharger le modèle CSV à remplir"
+                        >
+                            <Download className="w-4 h-4" /> Modèle CSV
+                        </Btn>
                         <Btn
                             variant="outline"
                             onClick={handleExport}
