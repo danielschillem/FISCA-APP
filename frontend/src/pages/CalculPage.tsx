@@ -103,122 +103,122 @@ function IUTSCalc() {
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <div className="space-y-4">
-            <Card title="Paramètres salarié : CGI 2025">
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Catégorie</label>
-                        <div className="flex gap-2">
-                            {['Cadre', 'Non-cadre'].map((c) => (
-                                <button
-                                    key={c}
-                                    onClick={() => setForm((p) => ({ ...p, categorie: c }))}
-                                    className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${numForm.categorie === c
-                                        ? 'bg-green-600 text-white border-green-600'
-                                        : 'bg-white text-gray-700 border-gray-300'
-                                        }`}
-                                >
-                                    {c} : abatt. {c === 'Cadre' ? '20' : '25'} %
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="col-span-2">
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Régime cotisation</label>
-                        <div className="flex gap-2">
-                            {[['CNSS', '5,5 %'], ['CARFO', '6 %']].map(([v, l]) => (
-                                <button
-                                    key={v}
-                                    onClick={() => setForm((p) => ({ ...p, cotisation: v }))}
-                                    className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${numForm.cotisation === v
-                                        ? 'bg-blue-600 text-white border-blue-600'
-                                        : 'bg-white text-gray-700 border-gray-300'
-                                        }`}
-                                >
-                                    {v} : {l}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Charges familiales</label>
-                        <input
-                            type="number" min={0} max={4}
-                            value={form.charges}
-                            onChange={(e) => setForm((p) => ({ ...p, charges: Math.min(4, Math.max(0, +e.target.value)) }))}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-                        />
-                    </div>
-                    {f('salaire_base', 'Salaire de base')}
-                    {f('anciennete', 'Prime d\'ancienneté')}
-                    {f('heures_sup', 'Heures supp. (montant FCFA)')}
-                    {f('logement', 'Ind. logement')}
-                    {f('transport', 'Ind. transport')}
-                    {f('fonction', 'Ind. de fonction')}
-                </div>
-            </Card>
-
-            {/* ── Calculateur heures supplémentaires ── */}
-            <Card title="Calculateur heures supp. — Code du Travail BF Art. 151">
-                <button
-                    onClick={() => setShowHsCalc((v) => !v)}
-                    className="flex items-center gap-2 text-xs text-green-700 font-medium hover:text-green-900 mb-2"
-                >
-                    {showHsCalc ? '▾' : '▸'} {showHsCalc ? 'Masquer' : 'Afficher'} le calculateur de majoration
-                </button>
-                {showHsCalc && (
-                    <div className="space-y-3">
-                        <p className="text-[11px] text-gray-500">
-                            Taux horaire standard = salaire de base / {HEURES_MOIS_STANDARD} h (40 h/sem. × 52/12).
-                        </p>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Nombre d'heures supplémentaires</label>
-                            <input
-                                type="number" min={0} step={0.5}
-                                value={hsNbStr}
-                                onChange={(e) => setHsNbStr(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none"
-                                placeholder="ex. 8"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-2">Type d'heures (Art. 151)</label>
-                            <div className="grid grid-cols-1 gap-1.5">
-                                {([
-                                    ['normale', '+25 %', 'Heures normales (41e–48e heure)'],
-                                    ['nuit_dimanche', '+50 %', 'Nuit, dimanche, ou au-delà de 48 h/sem.'],
-                                    ['ferie', '+100 %', 'Jours fériés légaux'],
-                                ] as [TypeHeuresSup, string, string][]).map(([k, badge, desc]) => (
-                                    <label key={k} className={`flex items-center gap-2.5 p-2 rounded-lg border cursor-pointer ${hsType === k ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}>
-                                        <input type="radio" checked={hsType === k} onChange={() => setHsType(k)} className="accent-amber-500" />
-                                        <span className="text-xs font-semibold text-amber-700 w-12 flex-shrink-0">{badge}</span>
-                                        <span className="text-xs text-gray-600">{desc}</span>
-                                    </label>
+                <Card title="Paramètres salarié : CGI 2025">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Catégorie</label>
+                            <div className="flex gap-2">
+                                {['Cadre', 'Non-cadre'].map((c) => (
+                                    <button
+                                        key={c}
+                                        onClick={() => setForm((p) => ({ ...p, categorie: c }))}
+                                        className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${numForm.categorie === c
+                                            ? 'bg-green-600 text-white border-green-600'
+                                            : 'bg-white text-gray-700 border-gray-300'
+                                            }`}
+                                    >
+                                        {c} : abatt. {c === 'Cadre' ? '20' : '25'} %
+                                    </button>
                                 ))}
                             </div>
                         </div>
-                        {hsResult && (
-                            <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-1.5">
-                                <div className="flex justify-between text-xs"><span className="text-gray-600">Taux horaire de base</span><span className="font-semibold">{fmtN(hsResult.tauxHoraire)} FCFA/h</span></div>
-                                <div className="flex justify-between text-xs"><span className="text-gray-600">Montant brut ({hsNb} h)</span><span className="font-semibold">{fmtN(Math.round(hsResult.tauxHoraire * hsNb))} FCFA</span></div>
-                                <div className="flex justify-between text-xs"><span className="text-gray-600">Majoration ({(hsResult.majoration * 100).toFixed(0)} %)</span><span className="font-semibold text-amber-700">+ {fmtN(hsResult.montantMaj)} FCFA</span></div>
-                                <div className="flex justify-between text-sm border-t border-amber-200 pt-1.5">
-                                    <span className="font-bold text-gray-800">Total à saisir dans «Heures supp.»</span>
-                                    <span className="font-bold text-amber-800">{fmtN(hsResult.montantTotal)} FCFA</span>
-                                </div>
-                                <button
-                                    onClick={() => setFormStr((p) => ({ ...p, heures_sup: String(hsResult.montantTotal) }))}
-                                    className="w-full mt-1 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-colors"
-                                >
-                                    Appliquer ce montant → Heures supp.
-                                </button>
+                        <div className="col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Régime cotisation</label>
+                            <div className="flex gap-2">
+                                {[['CNSS', '5,5 %'], ['CARFO', '6 %']].map(([v, l]) => (
+                                    <button
+                                        key={v}
+                                        onClick={() => setForm((p) => ({ ...p, cotisation: v }))}
+                                        className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${numForm.cotisation === v
+                                            ? 'bg-blue-600 text-white border-blue-600'
+                                            : 'bg-white text-gray-700 border-gray-300'
+                                            }`}
+                                    >
+                                        {v} : {l}
+                                    </button>
+                                ))}
                             </div>
-                        )}
-                        {!hsResult && (
-                            <p className="text-xs text-gray-400 italic">Entrez un salaire de base et un nombre d'heures pour calculer.</p>
-                        )}
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Charges familiales</label>
+                            <input
+                                type="number" min={0} max={4}
+                                value={form.charges}
+                                onChange={(e) => setForm((p) => ({ ...p, charges: Math.min(4, Math.max(0, +e.target.value)) }))}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+                            />
+                        </div>
+                        {f('salaire_base', 'Salaire de base')}
+                        {f('anciennete', 'Prime d\'ancienneté')}
+                        {f('heures_sup', 'Heures supp. (montant FCFA)')}
+                        {f('logement', 'Ind. logement')}
+                        {f('transport', 'Ind. transport')}
+                        {f('fonction', 'Ind. de fonction')}
                     </div>
-                )}
-            </Card>
+                </Card>
+
+                {/* ── Calculateur heures supplémentaires ── */}
+                <Card title="Calculateur heures supp. — Code du Travail BF Art. 151">
+                    <button
+                        onClick={() => setShowHsCalc((v) => !v)}
+                        className="flex items-center gap-2 text-xs text-green-700 font-medium hover:text-green-900 mb-2"
+                    >
+                        {showHsCalc ? '▾' : '▸'} {showHsCalc ? 'Masquer' : 'Afficher'} le calculateur de majoration
+                    </button>
+                    {showHsCalc && (
+                        <div className="space-y-3">
+                            <p className="text-[11px] text-gray-500">
+                                Taux horaire standard = salaire de base / {HEURES_MOIS_STANDARD} h (40 h/sem. × 52/12).
+                            </p>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Nombre d'heures supplémentaires</label>
+                                <input
+                                    type="number" min={0} step={0.5}
+                                    value={hsNbStr}
+                                    onChange={(e) => setHsNbStr(e.target.value)}
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none"
+                                    placeholder="ex. 8"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-2">Type d'heures (Art. 151)</label>
+                                <div className="grid grid-cols-1 gap-1.5">
+                                    {([
+                                        ['normale', '+25 %', 'Heures normales (41e–48e heure)'],
+                                        ['nuit_dimanche', '+50 %', 'Nuit, dimanche, ou au-delà de 48 h/sem.'],
+                                        ['ferie', '+100 %', 'Jours fériés légaux'],
+                                    ] as [TypeHeuresSup, string, string][]).map(([k, badge, desc]) => (
+                                        <label key={k} className={`flex items-center gap-2.5 p-2 rounded-lg border cursor-pointer ${hsType === k ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}>
+                                            <input type="radio" checked={hsType === k} onChange={() => setHsType(k)} className="accent-amber-500" />
+                                            <span className="text-xs font-semibold text-amber-700 w-12 flex-shrink-0">{badge}</span>
+                                            <span className="text-xs text-gray-600">{desc}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                            {hsResult && (
+                                <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-1.5">
+                                    <div className="flex justify-between text-xs"><span className="text-gray-600">Taux horaire de base</span><span className="font-semibold">{fmtN(hsResult.tauxHoraire)} FCFA/h</span></div>
+                                    <div className="flex justify-between text-xs"><span className="text-gray-600">Montant brut ({hsNb} h)</span><span className="font-semibold">{fmtN(Math.round(hsResult.tauxHoraire * hsNb))} FCFA</span></div>
+                                    <div className="flex justify-between text-xs"><span className="text-gray-600">Majoration ({(hsResult.majoration * 100).toFixed(0)} %)</span><span className="font-semibold text-amber-700">+ {fmtN(hsResult.montantMaj)} FCFA</span></div>
+                                    <div className="flex justify-between text-sm border-t border-amber-200 pt-1.5">
+                                        <span className="font-bold text-gray-800">Total à saisir dans «Heures supp.»</span>
+                                        <span className="font-bold text-amber-800">{fmtN(hsResult.montantTotal)} FCFA</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setFormStr((p) => ({ ...p, heures_sup: String(hsResult.montantTotal) }))}
+                                        className="w-full mt-1 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-colors"
+                                    >
+                                        Appliquer ce montant → Heures supp.
+                                    </button>
+                                </div>
+                            )}
+                            {!hsResult && (
+                                <p className="text-xs text-gray-400 italic">Entrez un salaire de base et un nombre d'heures pour calculer.</p>
+                            )}
+                        </div>
+                    )}
+                </Card>
             </div>
 
             <Card title="Résultat : Détail fiscal CGI 2025">
