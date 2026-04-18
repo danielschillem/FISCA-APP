@@ -273,9 +273,8 @@ export function Toaster() {
             {toasts.map(t => (
                 <div
                     key={t.id}
-                    className={`flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white min-w-[220px] max-w-xs animate-pulse ${
-                        t.type === 'error' ? 'bg-red-600' : t.type === 'info' ? 'bg-blue-600' : 'bg-green-600'
-                    }`}
+                    className={`flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white min-w-[220px] max-w-xs animate-pulse ${t.type === 'error' ? 'bg-red-600' : t.type === 'info' ? 'bg-blue-600' : 'bg-green-600'
+                        }`}
                     style={{ animation: 'none' }}
                 >
                     {t.type === 'success' && <span className="shrink-0">&#10003;</span>}

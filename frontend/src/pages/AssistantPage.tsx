@@ -99,8 +99,8 @@ function MarkdownMsg({ content }: { content: string }) {
             const cls = level === 1
                 ? 'text-base font-bold text-gray-900 mt-3 mb-1'
                 : level === 2
-                ? 'text-sm font-bold text-gray-800 mt-2 mb-0.5'
-                : 'text-sm font-semibold text-gray-700 mt-2 mb-0.5';
+                    ? 'text-sm font-bold text-gray-800 mt-2 mb-0.5'
+                    : 'text-sm font-semibold text-gray-700 mt-2 mb-0.5';
             nodes.push(<p key={idx} className={cls}>{renderInline(text)}</p>);
             return;
         }
