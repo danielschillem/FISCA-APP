@@ -212,7 +212,7 @@ export function generateTVAForm(decl: TVADeclaration, company?: Company) {
         startY: y,
         head: [['Description', 'Montant HT (FCFA)', 'Taux TVA', 'Montant TVA (FCFA)']],
         body: lignesV.length > 0
-            ? lignesV.map(l => [l.description, fmtN(l.montant_ht), `${(l.taux_tva * 100).toFixed(0)} %`, fmtN(l.montant_tva)])
+            ? lignesV.map(l => [l.description, fmtN(l.montant_ht), `${l.taux_tva < 1 ? (l.taux_tva * 100).toFixed(0) : l.taux_tva.toFixed(0)} %`, fmtN(l.montant_tva)])
             : [['Ventes et prestations de services', fmtN(decl.ca_ht), '18 %', fmtN(decl.tva_collectee)]],
         foot: [['TOTAL TVA COLLECTEE', '', '', fmtN(decl.tva_collectee)]],
         styles: { fontSize: 7.5, textColor: BLACK, cellPadding: 2 },
@@ -234,7 +234,7 @@ export function generateTVAForm(decl: TVADeclaration, company?: Company) {
         startY: y,
         head: [['Description', 'Montant HT (FCFA)', 'Taux TVA', 'Montant TVA (FCFA)']],
         body: lignesA.length > 0
-            ? lignesA.map(l => [l.description, fmtN(l.montant_ht), `${(l.taux_tva * 100).toFixed(0)} %`, fmtN(l.montant_tva)])
+            ? lignesA.map(l => [l.description, fmtN(l.montant_ht), `${l.taux_tva < 1 ? (l.taux_tva * 100).toFixed(0) : l.taux_tva.toFixed(0)} %`, fmtN(l.montant_tva)])
             : [['Achats et charges deductibles', '', '18 %', fmtN(decl.tva_deductible)]],
         foot: [['TOTAL TVA DEDUCTIBLE', '', '', fmtN(decl.tva_deductible)]],
         styles: { fontSize: 7.5, textColor: BLACK, cellPadding: 2 },
