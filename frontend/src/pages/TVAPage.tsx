@@ -79,7 +79,7 @@ function TVAContent() {
                     const { tva, ttc } = calcTVA(l.ht, l.taux);
                     await tvaApi.addLigne(declId, {
                         type_op: l.type_op, description: l.label,
-                        montant_ht: l.ht, taux_tva: l.taux,
+                        montant_ht: l.ht, taux_tva: l.taux * 100,
                         montant_tva: tva, montant_ttc: ttc,
                     });
                 }
