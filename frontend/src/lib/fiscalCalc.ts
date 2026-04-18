@@ -214,7 +214,8 @@ export function calcIS(benefice: number, adhesionCGA: boolean) {
 }
 export function calcMFP(ca: number, regime: string, adhesionCGA: boolean) {
     const calc = Math.round(ca * 0.005);
-    const minimum = regime === 'RSI' ? 300_000 : 1_000_000;
+    // 'RSI' = clé interne, 'simplifie' = valeur stockée depuis ISPage
+    const minimum = (regime === 'RSI' || regime === 'simplifie') ? 300_000 : 1_000_000;
     let mfpDu = Math.max(calc, minimum);
     if (adhesionCGA) mfpDu = Math.round(mfpDu * 0.50);
     return { ca, mfpCalcule: calc, mfpMinimum: minimum, mfpDu };

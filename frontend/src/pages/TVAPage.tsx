@@ -26,12 +26,12 @@ function TVAContent() {
     const [annee, setAnnee] = useState(now.getFullYear());
     const [saving, setSaving] = useState(false);
     const [collectee, setCollectee] = useState<LigneLocal[]>([
-        { label: 'Ventes produits', ht: 2500000, taux: 0.18, type_op: 'vente' },
-        { label: 'Prestations services', ht: 800000, taux: 0.18, type_op: 'vente' },
+        { label: 'Ventes produits', ht: 0, taux: 0.18, type_op: 'vente' },
+        { label: 'Prestations services', ht: 0, taux: 0.18, type_op: 'vente' },
     ]);
     const [deductible, setDeductible] = useState<LigneLocal[]>([
-        { label: 'Achats matières premières', ht: 1200000, taux: 0.18, type_op: 'achat' },
-        { label: 'Charges locatives', ht: 300000, taux: 0.18, type_op: 'achat' },
+        { label: 'Achats matières premières', ht: 0, taux: 0.18, type_op: 'achat' },
+        { label: 'Charges locatives', ht: 0, taux: 0.18, type_op: 'achat' },
     ]);
 
     const { data: declarations = [], isLoading } = useQuery<TVADeclaration[]>({
@@ -207,11 +207,19 @@ function LignesPanel({
 }: { title: string; lignes: LigneLocal[]; onChange: (l: LigneLocal[]) => void; typeOp: 'vente' | 'achat' }) {
     return (
         <Card title={title}>
+            {/* En-têtes colonnes */}
+            <div className="grid grid-cols-6 gap-2 text-xs text-gray-400 font-medium mb-1 px-0.5">
+                <span className="col-span-2">Description</span>
+                <span>Base HT (FCFA)</span>
+                <span className="text-center">Taux</span>
+                <span className="text-right">TVA</span>
+                <span></span>
+            </div>
             <div className="space-y-2 mb-4">
                 {lignes.map((l, i) => {
                     const { tva } = calcTVA(l.ht, l.taux);
                     return (
-                        <div key={i} className="grid grid-cols-5 gap-2 items-center text-sm">
+                        <div key={i} className="grid grid-cols-6 gap-2 items-center text-sm">
                             <input
                                 className="col-span-2 border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
                                 value={l.label}
@@ -227,7 +235,10 @@ function LignesPanel({
                                     const arr = [...lignes]; arr[i] = { ...l, ht: +e.target.value }; onChange(arr);
                                 }}
                             />
-                            <span className="text-xs text-gray-500 text-right">{fmtN(tva)}</span>
+                            <span className="text-xs text-center bg-gray-100 text-gray-600 rounded px-1 py-0.5 font-medium">
+                                {(l.taux * 100).toFixed(0)} %
+                            </span>
+                            <span className="text-xs text-gray-700 font-mono text-right">{fmtN(tva)}</span>
                             <button
                                 onClick={() => onChange(lignes.filter((_, j) => j !== i))}
                                 className="text-gray-400 hover:text-red-500 text-xs text-right"
