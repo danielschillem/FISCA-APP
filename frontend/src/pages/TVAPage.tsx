@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import type React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tvaApi, companyApi } from '../lib/api';
@@ -9,11 +9,37 @@ import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import type { TVADeclaration, Company } from '../types';
 import { generateTVAForm } from '../lib/pdfDGI';
 import { usePaymentGate } from '../components/PaymentModal';
-import { Save, X, Lock, FileText, Upload, Download } from 'lucide-react';
+import { Save, X, Lock, FileText, Upload, Download, Clock } from 'lucide-react';
 
 type LigneLocal = { label: string; ht: number; taux: number; type_op: 'vente' | 'achat' };
 
 const now = new Date();
+
+// ── Brouillon localStorage ──────────────────────────────────────────────────
+const DEFAULT_COLLECTEE: LigneLocal[] = [
+    { label: 'Ventes produits', ht: 0, taux: 0.18, type_op: 'vente' },
+    { label: 'Prestations services', ht: 0, taux: 0.18, type_op: 'vente' },
+];
+const DEFAULT_DEDUCTIBLE: LigneLocal[] = [
+    { label: 'Achats matières premières', ht: 0, taux: 0.18, type_op: 'achat' },
+    { label: 'Charges locatives', ht: 0, taux: 0.18, type_op: 'achat' },
+];
+const draftKey = (m: number, a: number) => `fisca:tva:${a}-${String(m).padStart(2, '0')}`;
+function loadDraft(m: number, a: number) {
+    try {
+        const raw = localStorage.getItem(draftKey(m, a));
+        if (!raw) return null;
+        return JSON.parse(raw) as { collectee: LigneLocal[]; deductible: LigneLocal[]; savedAt: string };
+    } catch { return null; }
+}
+function saveDraft(m: number, a: number, c: LigneLocal[], d: LigneLocal[]) {
+    try {
+        localStorage.setItem(draftKey(m, a), JSON.stringify({ collectee: c, deductible: d, savedAt: new Date().toISOString() }));
+    } catch { /* localStorage plein */ }
+}
+function clearDraft(m: number, a: number) {
+    try { localStorage.removeItem(draftKey(m, a)); } catch { /* ignore */ }
+}
 
 export default function TVAPage() {
     const { plan } = useAppStore();
@@ -27,14 +53,51 @@ function TVAContent() {
     const [mois, setMois] = useState(now.getMonth() + 1);
     const [annee, setAnnee] = useState(now.getFullYear());
     const [saving, setSaving] = useState(false);
-    const [collectee, setCollectee] = useState<LigneLocal[]>([
-        { label: 'Ventes produits', ht: 0, taux: 0.18, type_op: 'vente' },
-        { label: 'Prestations services', ht: 0, taux: 0.18, type_op: 'vente' },
-    ]);
-    const [deductible, setDeductible] = useState<LigneLocal[]>([
-        { label: 'Achats matières premières', ht: 0, taux: 0.18, type_op: 'achat' },
-        { label: 'Charges locatives', ht: 0, taux: 0.18, type_op: 'achat' },
-    ]);
+
+    // Brouillon auto-sauvegardé par période (mois × année)
+    const userEdited = useRef(false);   // true dès que l'utilisateur modifie une ligne
+    const isFirstRender = useRef(true); // pour ne pas déclencher l'effet "période" au montage
+    const [draftInfo, setDraftInfo] = useState<{ savedAt: string } | null>(
+        () => { const d = loadDraft(now.getMonth() + 1, now.getFullYear()); return d ? { savedAt: d.savedAt } : null; }
+    );
+    const [collectee, setCollectee] = useState<LigneLocal[]>(
+        () => loadDraft(now.getMonth() + 1, now.getFullYear())?.collectee ?? DEFAULT_COLLECTEE
+    );
+    const [deductible, setDeductible] = useState<LigneLocal[]>(
+        () => loadDraft(now.getMonth() + 1, now.getFullYear())?.deductible ?? DEFAULT_DEDUCTIBLE
+    );
+
+    // Handlers : marquent les données comme "modifiées" avant de mettre à jour l'état
+    const handleCollecteeChange = (l: LigneLocal[]) => { userEdited.current = true; setCollectee(l); };
+    const handleDeductibleChange = (l: LigneLocal[]) => { userEdited.current = true; setDeductible(l); };
+
+    // Effet 1 : changement de période → charger le brouillon de la nouvelle période
+    useEffect(() => {
+        if (isFirstRender.current) { isFirstRender.current = false; return; } // État initial déjà chargé via lazy init
+        userEdited.current = false;
+        const draft = loadDraft(mois, annee);
+        if (draft) {
+            setCollectee(draft.collectee);
+            setDeductible(draft.deductible);
+            setDraftInfo({ savedAt: draft.savedAt });
+        } else {
+            setCollectee(DEFAULT_COLLECTEE);
+            setDeductible(DEFAULT_DEDUCTIBLE);
+            setDraftInfo(null);
+        }
+    }, [mois, annee]);
+
+    // Effet 2 : auto-save debounce 500 ms après toute modification utilisateur
+    useEffect(() => {
+        if (!userEdited.current) return;
+        const timer = setTimeout(() => {
+            const ts = new Date().toISOString();
+            saveDraft(mois, annee, collectee, deductible);
+            setDraftInfo({ savedAt: ts });
+        }, 500);
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [collectee, deductible]);
 
     const { data: declarations = [], isLoading } = useQuery<TVADeclaration[]>({
         queryKey: ['tva'],
@@ -87,6 +150,10 @@ function TVAContent() {
                 }
             }
             qc.invalidateQueries({ queryKey: ['tva'] });
+            // Brouillon purgé après enregistrement réussi
+            clearDraft(mois, annee);
+            setDraftInfo(null);
+            userEdited.current = false;
         } catch { /* ignore */ } finally { setSaving(false); }
     };
 
@@ -102,12 +169,35 @@ function TVAContent() {
     return (
         <div className="space-y-6">
             {PaymentModalComponent}
+
+            {/* Bannière brouillon auto-sauvegardé */}
+            {draftInfo && (
+                <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
+                    <Clock className="w-3.5 h-3.5 flex-shrink-0 text-amber-500" />
+                    <span>
+                        Brouillon en cours — dernière sauvegarde le{' '}
+                        {new Date(draftInfo.savedAt).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <button
+                        onClick={() => {
+                            clearDraft(mois, annee);
+                            setDraftInfo(null);
+                            setCollectee(DEFAULT_COLLECTEE);
+                            setDeductible(DEFAULT_DEDUCTIBLE);
+                            userEdited.current = false;
+                        }}
+                        className="ml-auto text-amber-600 hover:text-amber-800 underline whitespace-nowrap"
+                    >
+                        Effacer
+                    </button>
+                </div>
+            )}
+
             {/* Période + actions */}
-            <div className="flex items-center gap-3 flex-wrap">
-                <select value={mois} onChange={(e) => setMois(+e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
-                    {MOIS_FR.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-                </select>
+            <div className="flex items-center gap-3 flex-wrap">                <select value={mois} onChange={(e) => setMois(+e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+                {MOIS_FR.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+            </select>
                 <select value={annee} onChange={(e) => setAnnee(+e.target.value)}
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
                     {[2024, 2025, 2026].map((y) => <option key={y} value={y}>{y}</option>)}
@@ -135,13 +225,13 @@ function TVAContent() {
                 <LignesPanel
                     title="TVA collectée (ventes)"
                     lignes={collectee}
-                    onChange={setCollectee}
+                    onChange={handleCollecteeChange}
                     typeOp="vente"
                 />
                 <LignesPanel
                     title="TVA déductible (achats)"
                     lignes={deductible}
-                    onChange={setDeductible}
+                    onChange={handleDeductibleChange}
                     typeOp="achat"
                 />
             </div>
