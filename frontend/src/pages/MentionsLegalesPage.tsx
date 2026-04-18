@@ -45,7 +45,7 @@ function Art({ n, title, children }: { n: string; title: string; children: React
             <h3 className="text-sm font-semibold text-gray-800 mb-1.5">
                 <span className="text-green-700 font-bold mr-1">{n}.</span>{title}
             </h3>
-            <div className="text-sm text-gray-600 space-y-1.5 leading-relaxed">{children}</div>
+            <div className="text-sm text-gray-600 space-y-1.5 leading-relaxed text-justify">{children}</div>
         </div>
     );
 }
@@ -195,7 +195,7 @@ export default function MentionsLegalesPage() {
 
             {/* -- 3. Licence EULA -- */}
             <Section id="licence" icon={Lock} title="Contrat de licence utilisateur final (EULA)" badge={`En vigueur depuis le ${EULA_DATE}`}>
-                <p className="text-sm text-gray-500 mt-4 italic">
+                <p className="text-sm text-gray-500 mt-4 italic text-justify">
                     En installant, téléchargeant, accédant ou utilisant le Logiciel {APP_NAME}, vous acceptez d'être
                     lié par les termes du présent Contrat de licence. Si vous n'acceptez pas ces termes, vous ne
                     devez pas utiliser le Logiciel.
@@ -262,7 +262,7 @@ export default function MentionsLegalesPage() {
 
             {/* -- 4. CGU -- */}
             <Section id="cgu" icon={FileText} title="Conditions Générales d'Utilisation (CGU)" badge={`Version du ${CGU_DATE}`}>
-                <p className="text-sm text-gray-500 mt-4 italic">
+                <p className="text-sm text-gray-500 mt-4 italic text-justify">
                     Les présentes Conditions Générales d'Utilisation régissent l'accès et l'utilisation du service
                     {APP_NAME} accessible à l'adresse {DEVELOPER_WEBSITE} et ses sous-domaines associés.
                 </p>

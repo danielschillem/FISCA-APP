@@ -29,14 +29,14 @@ function makeDoc() {
 }
 
 /**
- * Sauvegarde le PDF de fa�on compatible mobile (iOS Safari, Android Chrome).
- * Sur iOS, doc.save() peut �chouer silencieusement apr�s un `await` car la
- * cha�ne du geste utilisateur est rompue. On utilise une blob URL + window.open
+ * Sauvegarde le PDF de fa�on compatible mobile (iOS Safari, Android Chrome).
+ * Sur iOS, doc.save() peut �chouer silencieusement apr�s un `await` car la
+ * cha�ne du geste utilisateur est rompue. On utilise une blob URL + window.open
  * comme fallback universel.
  */
 function savePdf(doc: jsPDF, filename: string) {
     try {
-        // M�thode standard (desktop Chrome/Firefox/Edge)
+        // M�thode standard (desktop Chrome/Firefox/Edge)
         doc.save(filename);
     } catch {
         // Fallback mobile : ouvrir dans un nouvel onglet via blob URL
@@ -233,10 +233,10 @@ export function generateTVAForm(decl: TVADeclaration, company?: Company) {
     secBar(doc, ML, y, CW, secH, 'III. TVA COLLECTEE SUR VENTES ET PRESTATIONS');
     y += secH;
 
-    // Normalise le taux : peut �tre stock� en d�cimal (0.18 ancienne version) ou en % (18 nouvelle version)
+    // Normalise le taux : peut �tre stock� en d�cimal (0.18 ancienne version) ou en % (18 nouvelle version)
     const normTaux = (t: number): number => t < 1 ? t * 100 : t;
-    // Recalcule la TVA depuis HT � taux pour garantir la coh�rence math�matique
-    // m�me pour les anciennes d�clarations dont montant_tva �tait incorrect en base
+    // Recalcule la TVA depuis HT � taux pour garantir la coh�rence math�matique
+    // m�me pour les anciennes d�clarations dont montant_tva �tait incorrect en base
     const recalcTVA = (ht: number, taux: number): number => Math.round(ht * normTaux(taux) / 100);
 
     const lignesV = (decl.lignes ?? []).filter(l => l.type_op === 'vente');
@@ -315,7 +315,7 @@ export function generateTVAForm(decl: TVADeclaration, company?: Company) {
     savePdf(doc, `DGI-TVA-${String(decl.mois).padStart(2, '0')}-${decl.annee}.pdf`);
 }
 
-// ── 2. Retenues �  la source ───────────────────────────────────
+// ── 2. Retenues �  la source ───────────────────────────────────
 export function generateRetenuesForm(
     retenues: RetenueSource[],
     company?: Company,
