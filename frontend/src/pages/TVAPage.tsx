@@ -1,4 +1,5 @@
 ﻿import { useState } from 'react';
+import type React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tvaApi, companyApi } from '../lib/api';
 import { calcTVA, fmt, fmtN } from '../lib/fiscalCalc';
@@ -205,46 +206,89 @@ function TVAContent() {
     );
 }
 
+// Champ montant HT : saisie libre, formatage automatique avec séparateurs de milliers
+function AmountInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+    const [focused, setFocused] = useState(false);
+    const [raw, setRaw] = useState('');
+
+    const handleFocus = () => {
+        setRaw(value === 0 ? '' : String(value));
+        setFocused(true);
+    };
+    const handleBlur = () => {
+        setFocused(false);
+        const n = parseInt(raw.replace(/\s/g, ''), 10);
+        onChange(isNaN(n) || n < 0 ? 0 : n);
+    };
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const cleaned = e.target.value.replace(/[^\d]/g, '');
+        setRaw(cleaned);
+        const n = parseInt(cleaned, 10);
+        onChange(isNaN(n) ? 0 : n);
+    };
+
+    // Formatage avec espaces comme séparateurs de milliers pendant l'affichage
+    const displayValue = focused
+        ? raw
+        : (value === 0 ? '' : value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0'));
+
+    return (
+        <input
+            type="text"
+            inputMode="numeric"
+            className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-mono text-right focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none"
+            value={displayValue}
+            placeholder="0"
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onChange={handleChange}
+        />
+    );
+}
+
 function LignesPanel({
     title, lignes, onChange, typeOp,
 }: { title: string; lignes: LigneLocal[]; onChange: (l: LigneLocal[]) => void; typeOp: 'vente' | 'achat' }) {
     return (
         <Card title={title}>
             {/* En-têtes colonnes */}
-            <div className="grid grid-cols-6 gap-2 text-xs text-gray-400 font-medium mb-1 px-0.5">
-                <span className="col-span-2">Description</span>
-                <span>Base HT (FCFA)</span>
-                <span className="text-center">Taux</span>
-                <span className="text-right">TVA</span>
-                <span></span>
+            <div className="grid grid-cols-12 gap-2 text-xs text-gray-400 font-medium mb-1 px-0.5">
+                <span className="col-span-4">Description</span>
+                <span className="col-span-4 text-right">Base HT (FCFA)</span>
+                <span className="col-span-2 text-center">Taux</span>
+                <span className="col-span-1 text-right">TVA</span>
+                <span className="col-span-1"></span>
             </div>
             <div className="space-y-2 mb-4">
                 {lignes.map((l, i) => {
                     const { tva } = calcTVA(l.ht, l.taux);
                     return (
-                        <div key={i} className="grid grid-cols-6 gap-2 items-center text-sm">
+                        <div key={i} className="grid grid-cols-12 gap-2 items-center text-sm">
                             <input
-                                className="col-span-2 border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
+                                className="col-span-4 border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none"
                                 value={l.label}
+                                placeholder="Description"
                                 onChange={(e) => {
                                     const arr = [...lignes]; arr[i] = { ...l, label: e.target.value }; onChange(arr);
                                 }}
                             />
-                            <input
-                                type="number"
-                                className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
-                                value={l.ht}
-                                onChange={(e) => {
-                                    const arr = [...lignes]; arr[i] = { ...l, ht: +e.target.value }; onChange(arr);
-                                }}
-                            />
-                            <span className="text-xs text-center bg-gray-100 text-gray-600 rounded px-1 py-0.5 font-medium">
+                            <div className="col-span-4">
+                                <AmountInput
+                                    value={l.ht}
+                                    onChange={(v) => {
+                                        const arr = [...lignes]; arr[i] = { ...l, ht: v }; onChange(arr);
+                                    }}
+                                />
+                            </div>
+                            <span className="col-span-2 text-xs text-center bg-gray-100 text-gray-600 rounded px-1 py-1 font-medium">
                                 {(l.taux * 100).toFixed(0)} %
                             </span>
-                            <span className="text-xs text-gray-700 font-mono text-right">{fmtN(tva)}</span>
+                            <span className="col-span-1 text-xs text-gray-700 font-mono text-right whitespace-nowrap">
+                                {tva > 0 ? fmtN(tva) : '—'}
+                            </span>
                             <button
                                 onClick={() => onChange(lignes.filter((_, j) => j !== i))}
-                                className="text-gray-400 hover:text-red-500 text-xs text-right"
+                                className="col-span-1 flex justify-end text-gray-400 hover:text-red-500"
                             ><X className="w-3.5 h-3.5" /></button>
                         </div>
                     );
@@ -252,7 +296,7 @@ function LignesPanel({
             </div>
             <div className="flex gap-2">
                 <Btn size="sm" variant="outline"
-                    onClick={() => onChange([...lignes, { label: 'Nouvelle ligne', ht: 0, taux: 0.18, type_op: typeOp }])}>
+                    onClick={() => onChange([...lignes, { label: '', ht: 0, taux: 0.18, type_op: typeOp }])}>
                     + Ajouter
                 </Btn>
                 <Btn size="sm" variant="outline"
