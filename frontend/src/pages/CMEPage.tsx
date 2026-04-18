@@ -1,10 +1,10 @@
 ﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cmeApi, companyApi } from '../lib/api';
-import { calcCME, fmt, fmtN } from '../lib/fiscalCalc';
+import { calcCME, fmt, fmtN, CME_CA_PLAFOND } from '../lib/fiscalCalc';
 import { Card, Btn, Spinner } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
-import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
+import { Save, Trash2, Download, Lock, CheckCircle, FileText, AlertTriangle } from 'lucide-react';
 import type { CMEDeclaration, Company } from '../types';
 import { generateCMEForm } from '../lib/pdfDGI';
 import { usePaymentGate } from '../components/PaymentModal';
@@ -39,10 +39,10 @@ function CMEContent() {
     const qc = useQueryClient();
     const { requestPayment, PaymentModalComponent } = usePaymentGate();
     const [annee, setAnnee] = useState(new Date().getFullYear());
-    const [ca, setCa] = useState(30_000_000);
+    const [ca, setCa] = useState(5_000_000);
     const [zone, setZone] = useState<Zone>('A');
     const [cga, setCga] = useState(false);
-    const [result, setResult] = useState<ReturnType<typeof calcCME> | null>(null);
+    const [result, setResult] = useState<NonNullable<ReturnType<typeof calcCME>> | null>(null);
 
     const { data: history = [], isLoading } = useQuery<CMEDeclaration[]>({
         queryKey: ['cme', annee],
@@ -69,7 +69,11 @@ function CMEContent() {
         onSuccess: () => qc.invalidateQueries({ queryKey: ['cme'] }),
     });
 
-    const calc = () => setResult(calcCME(ca, zone, cga));
+    const horsRegime = ca > CME_CA_PLAFOND;
+    const calc = () => {
+        if (horsRegime) return;
+        setResult(calcCME(ca, zone, cga));
+    };
 
     const exportCSV = (id: string, yr: number) =>
         cmeApi.export(id).then((r) => {
@@ -94,7 +98,17 @@ function CMEContent() {
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Chiffre d'affaires annuel HT (FCFA)</label>
                         <input type="number" value={ca} onChange={(e) => setCa(+e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
+                            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none ${horsRegime ? 'border-red-400 focus:ring-2 focus:ring-red-400' : 'border-gray-300 focus:ring-2 focus:ring-green-500'}`} />
+                        {horsRegime && (
+                            <div className="flex items-start gap-2 mt-1.5 p-2.5 bg-red-50 border border-red-200 rounded-lg">
+                                <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-red-700 leading-snug">
+                                    <strong>CA hors régime CME.</strong> Le plafond légal est de {fmtN(CME_CA_PLAFOND)} FCFA
+                                    (CGI 2025 Art. 533). Au-delà, votre entreprise relève du régime RSI/RNI
+                                    — utilisez le module <strong>IS / MFP</strong> pour votre déclaration.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="col-span-2">
@@ -120,8 +134,8 @@ function CMEContent() {
                 </div>
 
                 <div className="flex gap-2 mt-4">
-                    <Btn onClick={calc}>Calculer</Btn>
-                    {result && (
+                    <Btn onClick={calc} disabled={horsRegime}>Calculer</Btn>
+                    {result && !horsRegime && (
                         <Btn variant="outline" onClick={() => createMut.mutate()} disabled={createMut.isPending}>
                             {createMut.isPending ? 'Enregistrement…' : <><Save className="w-4 h-4" /> Enregistrer</>}
                         </Btn>

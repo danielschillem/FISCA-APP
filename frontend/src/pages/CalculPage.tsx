@@ -1,7 +1,7 @@
 ﻿import { useState } from 'react';
-import { calcEmploye, calcIRF, calcIRCM, calcCME, calcPatente, calcMFP, calcIS, fmt } from '../lib/fiscalCalc';
+import { calcEmploye, calcIRF, calcIRCM, calcCME, calcPatente, calcMFP, calcIS, calcHeuresSup, fmt, fmtN, CME_CA_PLAFOND, HEURES_MOIS_STANDARD, type TypeHeuresSup } from '../lib/fiscalCalc';
 import { Card, Input, Select } from '../components/ui';
-import { Briefcase, Home, TrendingUp, Store, Scroll, BookOpen, type LucideIcon } from 'lucide-react';
+import { Briefcase, Home, TrendingUp, Store, Scroll, BookOpen, AlertTriangle, type LucideIcon } from 'lucide-react';
 
 type Module = 'iuts' | 'irf' | 'ircm' | 'cme' | 'patente' | 'is';
 
@@ -67,6 +67,10 @@ function IUTSCalc() {
     const [form, setForm] = useState({
         charges: 2, categorie: 'Non-cadre', cotisation: 'CNSS',
     });
+    // Calculateur heures supplémentaires — Code du Travail BF Art. 151
+    const [hsNbStr, setHsNbStr] = useState('0');
+    const [hsType, setHsType] = useState<TypeHeuresSup>('normale');
+    const [showHsCalc, setShowHsCalc] = useState(false);
 
     const numForm = {
         ...form,
@@ -79,6 +83,11 @@ function IUTSCalc() {
     };
 
     const r = calcEmploye(numForm as Parameters<typeof calcEmploye>[0]);
+
+    const hsNb = parseFloat(hsNbStr) || 0;
+    const hsResult = numForm.salaire_base > 0 && hsNb > 0
+        ? calcHeuresSup(numForm.salaire_base, hsNb, hsType)
+        : null;
 
     const f = (key: string, label: string) => (
         <Input
@@ -93,6 +102,7 @@ function IUTSCalc() {
 
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div className="space-y-4">
             <Card title="Paramètres salarié : CGI 2025">
                 <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2">
@@ -140,12 +150,76 @@ function IUTSCalc() {
                     </div>
                     {f('salaire_base', 'Salaire de base')}
                     {f('anciennete', 'Prime d\'ancienneté')}
-                    {f('heures_sup', 'Heures supp.')}
+                    {f('heures_sup', 'Heures supp. (montant FCFA)')}
                     {f('logement', 'Ind. logement')}
                     {f('transport', 'Ind. transport')}
                     {f('fonction', 'Ind. de fonction')}
                 </div>
             </Card>
+
+            {/* ── Calculateur heures supplémentaires ── */}
+            <Card title="Calculateur heures supp. — Code du Travail BF Art. 151">
+                <button
+                    onClick={() => setShowHsCalc((v) => !v)}
+                    className="flex items-center gap-2 text-xs text-green-700 font-medium hover:text-green-900 mb-2"
+                >
+                    {showHsCalc ? '▾' : '▸'} {showHsCalc ? 'Masquer' : 'Afficher'} le calculateur de majoration
+                </button>
+                {showHsCalc && (
+                    <div className="space-y-3">
+                        <p className="text-[11px] text-gray-500">
+                            Taux horaire standard = salaire de base / {HEURES_MOIS_STANDARD} h (40 h/sem. × 52/12).
+                        </p>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Nombre d'heures supplémentaires</label>
+                            <input
+                                type="number" min={0} step={0.5}
+                                value={hsNbStr}
+                                onChange={(e) => setHsNbStr(e.target.value)}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none"
+                                placeholder="ex. 8"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-2">Type d'heures (Art. 151)</label>
+                            <div className="grid grid-cols-1 gap-1.5">
+                                {([
+                                    ['normale', '+25 %', 'Heures normales (41e–48e heure)'],
+                                    ['nuit_dimanche', '+50 %', 'Nuit, dimanche, ou au-delà de 48 h/sem.'],
+                                    ['ferie', '+100 %', 'Jours fériés légaux'],
+                                ] as [TypeHeuresSup, string, string][]).map(([k, badge, desc]) => (
+                                    <label key={k} className={`flex items-center gap-2.5 p-2 rounded-lg border cursor-pointer ${hsType === k ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}>
+                                        <input type="radio" checked={hsType === k} onChange={() => setHsType(k)} className="accent-amber-500" />
+                                        <span className="text-xs font-semibold text-amber-700 w-12 flex-shrink-0">{badge}</span>
+                                        <span className="text-xs text-gray-600">{desc}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                        {hsResult && (
+                            <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-1.5">
+                                <div className="flex justify-between text-xs"><span className="text-gray-600">Taux horaire de base</span><span className="font-semibold">{fmtN(hsResult.tauxHoraire)} FCFA/h</span></div>
+                                <div className="flex justify-between text-xs"><span className="text-gray-600">Montant brut ({hsNb} h)</span><span className="font-semibold">{fmtN(Math.round(hsResult.tauxHoraire * hsNb))} FCFA</span></div>
+                                <div className="flex justify-between text-xs"><span className="text-gray-600">Majoration ({(hsResult.majoration * 100).toFixed(0)} %)</span><span className="font-semibold text-amber-700">+ {fmtN(hsResult.montantMaj)} FCFA</span></div>
+                                <div className="flex justify-between text-sm border-t border-amber-200 pt-1.5">
+                                    <span className="font-bold text-gray-800">Total à saisir dans «Heures supp.»</span>
+                                    <span className="font-bold text-amber-800">{fmtN(hsResult.montantTotal)} FCFA</span>
+                                </div>
+                                <button
+                                    onClick={() => setFormStr((p) => ({ ...p, heures_sup: String(hsResult.montantTotal) }))}
+                                    className="w-full mt-1 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-colors"
+                                >
+                                    Appliquer ce montant → Heures supp.
+                                </button>
+                            </div>
+                        )}
+                        {!hsResult && (
+                            <p className="text-xs text-gray-400 italic">Entrez un salaire de base et un nombre d'heures pour calculer.</p>
+                        )}
+                    </div>
+                )}
+            </Card>
+            </div>
 
             <Card title="Résultat : Détail fiscal CGI 2025">
                 <ResultRow label="Rémunération brute totale" value={fmt(r.remBrute)} />
@@ -296,13 +370,23 @@ function CMECalc() {
     const [zone, setZone] = useState('A');
     const [cga, setCGA] = useState(false);
     const ca = parseFloat(caStr) || 0;
-    const r = calcCME(ca, zone, cga);
+    const horsRegime = ca > CME_CA_PLAFOND;
+    const r = horsRegime ? null : calcCME(ca, zone, cga);
 
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <Card title="CME : Micro-Entreprises (CGI 2025 Art. 533)">
                 <div className="space-y-3">
                     <Input label="Chiffre d'affaires annuel (FCFA)" type="text" inputMode="numeric" value={caStr} onChange={(e) => setCAStr(e.target.value)} suffix="FCFA" />
+                    {horsRegime && (
+                        <div className="flex items-start gap-2 p-2.5 bg-red-50 border border-red-200 rounded-lg">
+                            <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                            <p className="text-xs text-red-700 leading-snug">
+                                <strong>CA hors régime CME</strong> — plafond légal : {fmtN(CME_CA_PLAFOND)} FCFA
+                                (Art. 533 CGI 2025). Utilisez le module <strong>IS / MFP</strong> pour votre déclaration.
+                            </p>
+                        </div>
+                    )}
                     <Select label="Zone géographique" options={[
                         { value: 'A', label: 'Zone A : Ouagadougou / Bobo' }, { value: 'B', label: 'Zone B : Chef-lieu région' },
                         { value: 'C', label: 'Zone C : Chef-lieu province' }, { value: 'D', label: 'Zone D : Reste territoire' },
@@ -314,12 +398,20 @@ function CMECalc() {
                 </div>
             </Card>
             <Card title="Résultat CME">
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-50 rounded-xl p-4"><p className="text-xs text-gray-500">Zone</p><p className="text-2xl font-bold text-gray-900">{r.zone}</p></div>
-                    <div className="bg-blue-50 rounded-xl p-4"><p className="text-xs text-gray-500">Classe</p><p className="text-2xl font-bold text-blue-700">{r.classe}</p></div>
-                    <div className="bg-orange-50 rounded-xl p-4"><p className="text-xs text-gray-500">CME brute</p><p className="text-xl font-bold text-orange-700">{fmt(r.cme)}</p></div>
-                    <div className="bg-green-50 rounded-xl p-4"><p className="text-xs text-gray-500">CME nette {cga ? '(-25%)' : ''}</p><p className="text-xl font-bold text-green-700">{fmt(r.cmeNet)}</p></div>
-                </div>
+                {r ? (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-gray-50 rounded-xl p-4"><p className="text-xs text-gray-500">Zone</p><p className="text-2xl font-bold text-gray-900">{r.zone}</p></div>
+                        <div className="bg-blue-50 rounded-xl p-4"><p className="text-xs text-gray-500">Classe</p><p className="text-2xl font-bold text-blue-700">{r.classe}</p></div>
+                        <div className="bg-orange-50 rounded-xl p-4"><p className="text-xs text-gray-500">CME brute</p><p className="text-xl font-bold text-orange-700">{fmt(r.cme)}</p></div>
+                        <div className="bg-green-50 rounded-xl p-4"><p className="text-xs text-gray-500">CME nette {cga ? '(-25%)' : ''}</p><p className="text-xl font-bold text-green-700">{fmt(r.cmeNet)}</p></div>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                        <AlertTriangle className="w-10 h-10 text-red-400 mb-3" />
+                        <p className="text-sm font-semibold text-red-700">CA supérieur au plafond CME</p>
+                        <p className="text-xs text-gray-500 mt-1">Entrez un CA ≤ {fmtN(CME_CA_PLAFOND)} FCFA ou utilisez le module IS / MFP.</p>
+                    </div>
+                )}
             </Card>
         </div>
     );

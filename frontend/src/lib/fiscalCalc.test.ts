@@ -14,6 +14,9 @@ import {
     calcIS,
     calcMFP,
     calcPatente,
+    calcHeuresSup,
+    CME_CA_PLAFOND,
+    HEURES_MOIS_STANDARD,
 } from './fiscalCalc'
 
 // ─── calcIUTS ─────────────────────────────────────────────────
@@ -327,31 +330,83 @@ describe('calcRAS : Retenue à la source', () => {
 describe('calcCME : Contribution Micro-Entreprises', () => {
     it('Zone A CA 1 000 000 → Classe 8, CME 10 000', () => {
         const res = calcCME(1_000_000, 'A', false)
-        expect(res.classe).toBe(8)
-        expect(res.cme).toBe(10_000)
+        expect(res).not.toBeNull()
+        expect(res!.classe).toBe(8)
+        expect(res!.cme).toBe(10_000)
     })
 
-    it('Zone A CA > 13 000 000 → Classe 1, CME 200 000', () => {
+    it('Zone A CA 15 000 000 (plafond) → Classe 1, CME 200 000', () => {
         const res = calcCME(15_000_000, 'A', false)
-        expect(res.classe).toBe(1)
-        expect(res.cme).toBe(200_000)
+        expect(res).not.toBeNull()
+        expect(res!.classe).toBe(1)
+        expect(res!.cme).toBe(200_000)
+    })
+
+    it('CA > 15 000 000 (hors régime CME) → null', () => {
+        expect(calcCME(15_000_001, 'A', false)).toBeNull()
+        expect(calcCME(50_000_000, 'B', true)).toBeNull()
+    })
+
+    it('CME_CA_PLAFOND = 15 000 000', () => {
+        expect(CME_CA_PLAFOND).toBe(15_000_000)
     })
 
     it('Zone D CA 1 000 000 → CME 2 000', () => {
         const res = calcCME(1_000_000, 'D', false)
-        expect(res.cme).toBe(2_000)
+        expect(res!.cme).toBe(2_000)
     })
 
     it('CGA → réduction 25 %', () => {
         const resSans = calcCME(5_000_000, 'A', false)
         const resAvec = calcCME(5_000_000, 'A', true)
-        expect(resAvec.cmeNet).toBe(Math.round(resSans.cme * 0.75))
+        expect(resAvec!.cmeNet).toBe(Math.round(resSans!.cme * 0.75))
     })
 
     it('zone inconnue → fallback Zone A', () => {
         const res = calcCME(1_000_000, 'Z', false)
         const resA = calcCME(1_000_000, 'A', false)
-        expect(res.cme).toBe(resA.cme)
+        expect(res!.cme).toBe(resA!.cme)
+    })
+})
+
+// ─── calcHeuresSup : Code du Travail BF Art. 151 ─────────────
+
+describe('calcHeuresSup : heures supplémentaires', () => {
+    // salaire_base 200 000 FCFA → tauxHoraire brut = 200000/173.33 = 1153.868...
+    // Math.round → 1154 FCFA/h retourné, mais calculs internes sur le flottant brut.
+    const salaire = 200_000
+
+    it('heures normales (+25 %) — taux horaire retourné = 1 154 FCFA/h', () => {
+        const r = calcHeuresSup(salaire, 8, 'normale')
+        expect(r.tauxHoraire).toBe(1154)
+        expect(r.majoration).toBe(0.25)
+        // montantMaj = round(1153.868... * 8 * 0.25) = round(2307.74) = 2308
+        expect(r.montantMaj).toBe(2308)
+        // montantTotal = round(1153.868... * 8) + 2308 = round(9230.95) + 2308 = 9231 + 2308 = 11539
+        expect(r.montantTotal).toBe(11539)
+    })
+
+    it('heures nuit/dimanche (+50 %)', () => {
+        const r = calcHeuresSup(salaire, 4, 'nuit_dimanche')
+        expect(r.majoration).toBe(0.50)
+        // tauxHoraire brut = 1153.868..., montantMaj = round(1153.868 * 4 * 0.50) = round(2307.74) = 2308
+        expect(r.montantMaj).toBe(Math.round((salaire / HEURES_MOIS_STANDARD) * 4 * 0.50))
+    })
+
+    it('jours fériés (+100 %)', () => {
+        const r = calcHeuresSup(salaire, 8, 'ferie')
+        expect(r.majoration).toBe(1.00)
+        // montantMaj = round(1153.868... * 8 * 1.00) = round(9230.95) = 9231
+        expect(r.montantMaj).toBe(9231)
+    })
+
+    it('taux horaire standard = salaire_base / 173.33', () => {
+        const r = calcHeuresSup(300_000, 1, 'normale')
+        expect(r.tauxHoraire).toBe(Math.round(300_000 / HEURES_MOIS_STANDARD))
+    })
+
+    it('HEURES_MOIS_STANDARD = 173.33', () => {
+        expect(HEURES_MOIS_STANDARD).toBeCloseTo(173.33, 1)
     })
 })
 

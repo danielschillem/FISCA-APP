@@ -186,7 +186,11 @@ export const RAS_LABELS: Record<string, string> = {
     COMMANDE_PUB_BIENS: 'Commande pub. : biens/TP (1 %)',
 };
 
-// CME CGI 2025
+// CME CGI 2025 — Art. 533-542
+// Plafond légal : CA ≤ 15 000 000 FCFA pour le régime CME.
+// Au-delà, l'entreprise relève du RSI (IS/MFP, module distinct).
+export const CME_CA_PLAFOND = 15_000_000;
+
 const CME_TARIFS: Record<string, number[]> = {
     A: [200000, 160000, 120000, 80000, 60000, 30000, 20000, 10000],
     B: [160000, 120000, 80000, 60000, 42000, 20000, 12000, 6000],
@@ -199,11 +203,34 @@ const CME_TRANCHES = [
     { max: 13_000_000, classe: 2 }, { max: 15_000_000, classe: 1 },
 ];
 export function calcCME(ca: number, zone: string, adhesionCGA: boolean) {
+    if (ca > CME_CA_PLAFOND) return null; // hors régime CME → IS/MFP
     let classe = 1;
     for (const t of CME_TRANCHES) { if (ca <= t.max) { classe = t.classe; break; } }
     const tarifs = CME_TARIFS[zone] ?? CME_TARIFS.A;
     const cme = tarifs[classe - 1];
     return { ca, zone, classe, cme, cmeNet: adhesionCGA ? Math.round(cme * 0.75) : cme };
+}
+
+// Heures supplémentaires — Code du Travail BF Art. 151
+// La semaine légale est de 40 h (173,33 h/mois standard).
+// Majorations sur le taux horaire de base (salaire_base / 173,33) :
+//   • +25 % : heures normales supplémentaires (41e–48e heure)
+//   • +50 % : heures de nuit ou dimanche, ou au-delà de 48 h/semaine
+//   • +100 % : jours fériés légaux
+export const HEURES_MOIS_STANDARD = 173.33;
+
+export type TypeHeuresSup = 'normale' | 'nuit_dimanche' | 'ferie';
+
+export function calcHeuresSup(
+    salaireBase: number,
+    nbHeures: number,
+    type: TypeHeuresSup,
+): { tauxHoraire: number; majoration: number; montantMaj: number; montantTotal: number } {
+    const tauxHoraire = salaireBase / HEURES_MOIS_STANDARD;
+    const majoration = type === 'ferie' ? 1.00 : type === 'nuit_dimanche' ? 0.50 : 0.25;
+    const montantMaj = Math.round(tauxHoraire * nbHeures * majoration);
+    const montantTotal = Math.round(tauxHoraire * nbHeures) + montantMaj;
+    return { tauxHoraire: Math.round(tauxHoraire), majoration, montantMaj, montantTotal };
 }
 
 // IS / MFP CGI 2025
