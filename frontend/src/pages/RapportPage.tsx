@@ -117,7 +117,7 @@ export default function RapportPage() {
                 </select>
                 <select value={selectedAnnee} onChange={(e) => setSelectedAnnee(+e.target.value)}
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-green-500 focus:outline-none">
-                    {[2023, 2024, 2025, 2026].map((y) => <option key={y} value={y}>{y}</option>)}
+                    {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - 3 + i).map((y) => <option key={y} value={y}>{y}</option>)}
                 </select>
                 <div className="flex-1" />
                 <Btn variant="outline" size="sm" onClick={exportXLSX}><FileSpreadsheet className="w-4 h-4" /> Export XLSX</Btn>

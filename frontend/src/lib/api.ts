@@ -242,7 +242,8 @@ export const checklistApi = {
 export const workflowApi = {
     list: (statut?: string) => api.get('/workflow', { params: statut ? { statut } : undefined }),
     get: (id: string) => api.get(`/declarations/${id}/workflow`),
-    transition: (id: string, action: string) => api.post(`/declarations/${id}/${action}`),
+    transition: (id: string, action: string, body?: { commentaire?: string }) =>
+        api.post(`/declarations/${id}/${action}`, body ?? {}),
 };
 
 // -- Assistant IA ----------------------------------------------

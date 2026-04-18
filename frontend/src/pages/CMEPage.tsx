@@ -108,7 +108,7 @@ function CMEContent() {
                                 <p className="text-xs text-red-700 leading-snug">
                                     <strong>CA hors régime CME.</strong> Le plafond légal est de {fmtN(CME_CA_PLAFOND)} FCFA
                                     (CGI 2025 Art. 533). Au-delà, votre entreprise relève du régime RSI/RNI
-                                  - utilisez le module <strong>IS / MFP</strong> pour votre déclaration.
+                                    - utilisez le module <strong>IS / MFP</strong> pour votre déclaration.
                                 </p>
                             </div>
                         )}

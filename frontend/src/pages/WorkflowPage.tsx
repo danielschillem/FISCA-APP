@@ -24,6 +24,7 @@ export default function WorkflowPage() {
 function WorkflowContent() {
     const qc = useQueryClient();
     const [filterStatut, setFilterStatut] = useState('all');
+    const [rejectModal, setRejectModal] = useState<{ id: string; comment: string } | null>(null);
 
     const { data: etapes = [], isLoading } = useQuery<WorkflowEtape[]>({
         queryKey: ['workflow', filterStatut],
@@ -31,9 +32,12 @@ function WorkflowContent() {
     });
 
     const transition = useMutation({
-        mutationFn: ({ id, action }: { id: string; action: string }) =>
-            workflowApi.transition(id, action),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['workflow'] }),
+        mutationFn: ({ id, action, commentaire }: { id: string; action: string; commentaire?: string }) =>
+            workflowApi.transition(id, action, commentaire ? { commentaire } : undefined),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['workflow'] });
+            setRejectModal(null);
+        },
     });
 
     if (isLoading) return <Spinner />;
@@ -88,7 +92,7 @@ function WorkflowContent() {
                                         <Btn size="sm" onClick={() => transition.mutate({ id: e.id, action: 'approuver' })}>
                                             <Check className="w-4 h-4" /> Approuver
                                         </Btn>
-                                        <Btn size="sm" variant="outline" onClick={() => transition.mutate({ id: e.id, action: 'rejeter' })}>
+                                        <Btn size="sm" variant="outline" onClick={() => setRejectModal({ id: e.id, comment: '' })}>
                                             <X className="w-4 h-4" /> Rejeter
                                         </Btn>
                                     </>
@@ -109,10 +113,38 @@ function WorkflowContent() {
                 ))}
                 {etapes.length === 0 && (
                     <Card>
-                        <p className="text-center text-gray-400 py-8">Aucune déclaration dans ce statut</p>
+                        <p className="text-center text-gray-400 py-8">Aucune declaration dans ce statut</p>
                     </Card>
                 )}
             </div>
+
+            {/* Modal rejet */}
+            {rejectModal && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
+                        <h3 className="text-base font-bold text-gray-900 mb-1">Motif du rejet</h3>
+                        <p className="text-xs text-gray-500 mb-3">Ce commentaire sera visible par le declarant.</p>
+                        <textarea
+                            className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none focus:ring-2 focus:ring-red-400 focus:outline-none"
+                            rows={4}
+                            placeholder="Indiquer le motif du rejet..."
+                            value={rejectModal.comment}
+                            onChange={(e) => setRejectModal((prev) => prev ? { ...prev, comment: e.target.value } : null)}
+                            autoFocus
+                        />
+                        <div className="flex gap-2 mt-4 justify-end">
+                            <Btn size="sm" variant="outline" onClick={() => setRejectModal(null)}>Annuler</Btn>
+                            <Btn
+                                size="sm"
+                                disabled={!rejectModal.comment.trim() || transition.isPending}
+                                onClick={() => transition.mutate({ id: rejectModal.id, action: 'rejeter', commentaire: rejectModal.comment })}
+                            >
+                                <X className="w-4 h-4" /> Confirmer le rejet
+                            </Btn>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,281 +1,549 @@
-/**
- * Tests E2E — Déclarations fiscales (IRF, IRCM, CME, Patente, IS, TVA, RAS)
- * CGI 2025 Burkina Faso
- */
-import { test, expect, Page } from '@playwright/test';
+package models
 
-const EMAIL = process.env.E2E_EMAIL || 'test@fisca.bf';
-const PASSWORD = process.env.E2E_PASSWORD || 'TestPassword123!';
+import (
+	"encoding/json"
+	"time"
+)
 
-async function login(page: Page) {
-    await page.goto('/login');
-    await page.getByLabel(/email/i).fill(EMAIL);
-    await page.getByLabel(/mot de passe|password/i).fill(PASSWORD);
-    await page.getByRole('button', { name: /connexion|se connecter|login/i }).click();
-    await expect(page).toHaveURL(/dashboard/, { timeout: 10_000 });
+// --- PAYMENT -------------------------------------------------
+
+type Payment struct {
+	ID              string     `json:"id"`
+	CompanyID       string     `json:"company_id"`
+	UserID          string     `json:"user_id"`
+	DocumentType    string     `json:"document_type"`
+	DocumentID      string     `json:"document_id"`
+	MontantBase     float64    `json:"montant_base"`
+	TauxFrais       float64    `json:"taux_frais"`
+	Frais           float64    `json:"frais"`
+	Total           float64    `json:"total"`
+	Telephone       string     `json:"telephone"`
+	Statut          string     `json:"statut"` // pending | completed | failed | expired
+	OMReference     *string    `json:"om_reference,omitempty"`
+	OMOrderID       *string    `json:"om_order_id,omitempty"`
+	WebhookReceived bool       `json:"webhook_received"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
-test.beforeEach(async ({ page }) => {
-    await login(page);
-});
+type InitiatePaymentRequest struct {
+	DocumentType string  `json:"document_type"` // 'iuts','tva','retenues','is','ircm','cme','irf','bulletin','patente'
+	DocumentID   string  `json:"document_id"`
+	Telephone    string  `json:"telephone"`    // ex: "70123456" ou "+22670123456"
+	MontantBase  float64 `json:"montant_base"` // optionnel, défaut 2000
+}
 
-// ─── IRF ─────────────────────────────────────────────────────────────────────
-test.describe('IRF — Revenus Fonciers', () => {
-    test('page accessible depuis le menu', async ({ page }) => {
-        await page.goto('/dashboard/irf');
-        const heading = page.getByRole('heading', { name: /IRF|foncier|verrouill/i });
-        await expect(heading.first()).toBeVisible({ timeout: 8_000 });
-    });
+type PaymentStatusResponse struct {
+	ID       string  `json:"id"`
+	Statut   string  `json:"statut"`
+	Total    float64 `json:"total"`
+	Frais    float64 `json:"frais"`
+}
 
-    test('calcul IRF avec loyer 500 000 FCFA', async ({ page }) => {
-        await page.goto('/dashboard/irf');
-        const loyerInput = page.getByLabel(/loyer brut/i).first();
-        if (!(await loyerInput.isVisible())) return test.skip();
-        await loyerInput.fill('500000');
-        await page.getByRole('button', { name: /calculer/i }).first().click();
-        // Abattement 50 % → base 250 000 → IRF 18% sur 100k + 25% sur 150k = 55 500
-        await expect(page.getByText(/abattement/i)).toBeVisible({ timeout: 5_000 });
-        await expect(page.getByText(/250.000|250 000/i)).toBeVisible({ timeout: 5_000 });
-    });
+// --- COMPANY ------------------------------------------------
 
-    test('bouton Enregistrer visible après calcul', async ({ page }) => {
-        await page.goto('/dashboard/irf');
-        const loyerInput = page.getByLabel(/loyer brut/i).first();
-        if (!(await loyerInput.isVisible())) return test.skip();
-        await loyerInput.fill('300000');
-        await page.getByRole('button', { name: /calculer/i }).first().click();
-        await expect(page.getByRole('button', { name: /enregistrer|sauvegarder/i })).toBeVisible({ timeout: 5_000 });
-    });
+type Company struct {
+	ID      string `json:"id" db:"id"`
+	UserID  string `json:"user_id" db:"user_id"`
+	Nom     string `json:"nom" db:"nom"`
+	IFU     string `json:"ifu" db:"ifu"`
+	RC      string `json:"rc" db:"rc"`
+	Secteur string `json:"secteur" db:"secteur"`
+	Adresse string `json:"adresse" db:"adresse"`
+	Tel     string `json:"tel" db:"tel"`
+	// Champs DGI contribuable
+	FormeJuridique    string `json:"forme_juridique" db:"forme_juridique"`
+	Regime            string `json:"regime" db:"regime"`
+	CentreImpots      string `json:"centre_impots" db:"centre_impots"`
+	CodeActivite      string `json:"code_activite" db:"code_activite"`
+	DateDebutActivite string `json:"date_debut_activite" db:"date_debut_activite"`
+	EmailEntreprise   string `json:"email_entreprise" db:"email_entreprise"`
+	Ville             string `json:"ville" db:"ville"`
+	Quartier          string `json:"quartier" db:"quartier"`
+	BP                string `json:"bp" db:"bp"`
+	Fax               string `json:"fax" db:"fax"`
+}
 
-    test('historique IRF affiché (table ou message vide)', async ({ page }) => {
-        await page.goto('/dashboard/irf');
-        if (!(await page.getByLabel(/loyer brut/i).isVisible())) return test.skip();
-        const content = page.getByRole('table').or(page.getByText(/aucune déclaration|historique/i));
-        await expect(content.first()).toBeVisible({ timeout: 8_000 });
-    });
-});
+// --- EXERCICE FISCAL -----------------------------------------
 
-// ─── IRCM ─────────────────────────────────────────────────────────────────────
-test.describe('IRCM — Capitaux Mobiliers', () => {
-    test('page accessible', async ({ page }) => {
-        await page.goto('/dashboard/ircm');
-        const heading = page.getByRole('heading', { name: /IRCM|capitaux|verrouill/i });
-        await expect(heading.first()).toBeVisible({ timeout: 8_000 });
-    });
+type ExerciceFiscal struct {
+	ID          string     `json:"id"`
+	CompanyID   string     `json:"company_id"`
+	Annee       int        `json:"annee"`
+	DateDebut   string     `json:"date_debut"` // "2026-01-01"
+	DateFin     string     `json:"date_fin"`   // "2026-12-31"
+	Statut      string     `json:"statut"`     // "en_cours" | "cloture"
+	DateCloture *time.Time `json:"date_cloture"`
+	Note        string     `json:"note"`
+	CreatedAt   time.Time  `json:"created_at"`
+}
 
-    test('calcul IRCM dividendes 1 000 000 → IRCM 125 000', async ({ page }) => {
-        await page.goto('/dashboard/ircm');
-        const montantInput = page.getByLabel(/montant brut/i).first();
-        if (!(await montantInput.isVisible())) return test.skip();
-        await montantInput.fill('1000000');
-        // Sélectionner DIVIDENDES si disponible
-        const divLabel = page.getByText(/dividende/i).first();
-        if (await divLabel.isVisible()) await divLabel.click();
-        await page.getByRole('button', { name: /calculer/i }).first().click();
-        await expect(page.getByText(/125.000|125 000/i)).toBeVisible({ timeout: 5_000 });
-    });
-});
+// --- EMPLOYEE ------------------------------------------------
 
-// ─── CME ─────────────────────────────────────────────────────────────────────
-test.describe('CME — Micro-Entreprises', () => {
-    test('page accessible', async ({ page }) => {
-        await page.goto('/dashboard/cme');
-        const heading = page.getByRole('heading', { name: /CME|micro|verrouill/i });
-        await expect(heading.first()).toBeVisible({ timeout: 8_000 });
-    });
+type Employee struct {
+	ID          string  `json:"id" db:"id"`
+	CompanyID   string  `json:"company_id" db:"company_id"`
+	Nom         string  `json:"nom" db:"nom"`
+	Categorie   string  `json:"categorie" db:"categorie"`   // "Cadre" | "Non-cadre"
+	Cotisation  string  `json:"cotisation" db:"cotisation"` // "CNSS" | "CARFO"
+	Charges     int     `json:"charges" db:"charges"`
+	SalaireBase float64 `json:"salaire_base" db:"salaire_base"`
+	Anciennete  float64 `json:"anciennete" db:"anciennete"`
+	HeuresSup   float64 `json:"heures_sup" db:"heures_sup"`
+	Logement    float64 `json:"logement" db:"logement"`
+	Transport   float64 `json:"transport" db:"transport"`
+	Fonction    float64 `json:"fonction" db:"fonction"`
+}
 
-    test('calcul CME Zone A CA 5 000 000 → Classe 6', async ({ page }) => {
-        await page.goto('/dashboard/cme');
-        const caInput = page.getByLabel(/chiffre d.affaires/i).first();
-        if (!(await caInput.isVisible())) return test.skip();
-        await caInput.fill('5000000');
-        await page.getByRole('button', { name: /calculer/i }).first().click();
-        await expect(page.getByText(/classe 6|30.000|30 000/i)).toBeVisible({ timeout: 5_000 });
-    });
-});
+// --- DECLARATION ---------------------------------------------
 
-// ─── Patente ─────────────────────────────────────────────────────────────────
-test.describe('Patente Professionnelle', () => {
-    test('page accessible', async ({ page }) => {
-        await page.goto('/dashboard/patente');
-        const heading = page.getByRole('heading', { name: /patente|brevet|verrouill/i });
-        await expect(heading.first()).toBeVisible({ timeout: 8_000 });
-    });
+type Declaration struct {
+	ID        string     `json:"id" db:"id"`
+	CompanyID string     `json:"company_id" db:"company_id"`
+	Periode   string     `json:"periode" db:"periode"` // "Avril 2026"
+	Mois      int        `json:"mois" db:"mois"`
+	Annee     int        `json:"annee" db:"annee"`
+	NbSalarie int        `json:"nb_salaries" db:"nb_salaries"`
+	BrutTotal float64    `json:"brut_total" db:"brut_total"`
+	IUTSTotal float64    `json:"iuts_total" db:"iuts_total"`
+	TPATotal  float64    `json:"tpa_total" db:"tpa_total"`
+	CSSTotal  float64    `json:"css_total" db:"css_total"` // CNSS ou CARFO
+	Total     float64    `json:"total" db:"total"`
+	Statut    string     `json:"statut" db:"statut"` // "ok" | "retard" | "en_cours"
+	Ref       *string    `json:"ref" db:"ref"`
+	DateDepot *time.Time `json:"date_depot" db:"date_depot"`
+	CreatedAt time.Time  `json:"created_at" db:"created_at"`
+}
 
-    test('calcul patente CA 20M → droit fixe 60 000', async ({ page }) => {
-        await page.goto('/dashboard/patente');
-        const caInput = page.getByLabel(/chiffre d.affaires/i).first();
-        if (!(await caInput.isVisible())) return test.skip();
-        await caInput.fill('20000000');
-        await page.getByRole('button', { name: /calculer/i }).first().click();
-        await expect(page.getByText(/60.000|60 000/i)).toBeVisible({ timeout: 5_000 });
-    });
-});
+// --- USER / AUTH ----------------------------------------------
 
-// ─── IS / MFP ────────────────────────────────────────────────────────────────
-test.describe('IS / MFP — Impôt Sociétés', () => {
-    test('page accessible', async ({ page }) => {
-        await page.goto('/dashboard/is');
-        const heading = page.getByRole('heading', { name: /IS|impôt.soci|MFP|verrouill/i });
-        await expect(heading.first()).toBeVisible({ timeout: 8_000 });
-    });
+type User struct {
+	ID           string    `json:"id" db:"id"`
+	Email        string    `json:"email" db:"email"`
+	PasswordHash string    `json:"-" db:"password_hash"`
+	Plan         string    `json:"plan" db:"plan"` // "physique_starter"|"physique_pro"|"moral_team"|"moral_enterprise"
+	Role         string    `json:"role" db:"role"` // "user" | "super_admin"
+	UserType     string    `json:"user_type"`      // "physique" | "morale"
+	OrgID        *string   `json:"org_id"`         // nil pour les personnes physiques
+	OrgRole      *string   `json:"org_role"`       // "org_admin"|"comptable"|"gestionnaire_rh"|"auditeur"
+	IsActive     bool      `json:"is_active" db:"is_active"`
+	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+}
 
-    test('calcul IS bénéfice 50M → IS théorique 13 750 000', async ({ page }) => {
-        await page.goto('/dashboard/is');
-        const benefInput = page.getByLabel(/bénéfice/i).first();
-        if (!(await benefInput.isVisible())) return test.skip();
-        await benefInput.fill('50000000');
-        await page.getByRole('button', { name: /calculer/i }).first().click();
-        await expect(page.getByText(/13.750|13 750/i)).toBeVisible({ timeout: 5_000 });
-    });
-});
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
 
-// ─── TVA ─────────────────────────────────────────────────────────────────────
-test.describe('TVA — Déclarations périodiques', () => {
-    test('page TVA accessible', async ({ page }) => {
-        await page.goto('/dashboard/tva');
-        const heading = page.getByRole('heading', { name: /TVA|taxe.valeur|verrouill/i });
-        await expect(heading.first()).toBeVisible({ timeout: 8_000 });
-    });
+type RegisterRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Nom      string `json:"nom"`       // nom de l'entreprise (physique) ou de la structure (morale)
+	Plan     string `json:"plan"`      // physique_starter | physique_pro | moral_team | moral_enterprise
+	UserType string `json:"user_type"` // "physique" | "morale"
+}
 
-    test('calcul TVA affiche solde collecté vs déductible', async ({ page }) => {
-        await page.goto('/dashboard/tva');
-        if (!(await page.getByText(/collectée|déductible/i).isVisible())) return test.skip();
-        await expect(page.getByText(/collectée/i)).toBeVisible();
-        await expect(page.getByText(/déductible/i)).toBeVisible();
-        await expect(page.getByText(/solde|net|dû/i).first()).toBeVisible();
-    });
+type AuthResponse struct {
+	Token        string `json:"token"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+	User         User   `json:"user"`
+}
 
-    test('historique TVA affiché (table ou message vide)', async ({ page }) => {
-        await page.goto('/dashboard/tva');
-        if (!(await page.getByText(/collectée|verrouill/i).isVisible())) return test.skip();
-        const content = page.getByRole('table').or(page.getByText(/aucune|vide|déclaration/i));
-        await expect(content.first()).toBeVisible({ timeout: 8_000 });
-    });
-});
+// --- ORGANISATION (Personne Morale) --------------------------
 
-// ─── RAS — Retenues à la source ──────────────────────────────────────────────
-test.describe('RAS — Retenues à la source', () => {
-    test('page RAS accessible', async ({ page }) => {
-        await page.goto('/dashboard/retenues');
-        const heading = page.getByRole('heading', { name: /retenue|RAS|source|verrouill/i });
-        await expect(heading.first()).toBeVisible({ timeout: 8_000 });
-    });
+type Organization struct {
+	ID           string    `json:"id"`
+	Nom          string    `json:"nom"`
+	IFU          string    `json:"ifu"`
+	RCCM         string    `json:"rccm"`
+	Secteur      string    `json:"secteur"`
+	Plan         string    `json:"plan"`
+	MaxUsers     int       `json:"max_users"`
+	MaxCompanies int       `json:"max_companies"`
+	MaxEmployees int       `json:"max_employees"`
+	OwnerID      *string   `json:"owner_id"`
+	IsActive     bool      `json:"is_active"`
+	CreatedAt    time.Time `json:"created_at"`
+}
 
-    test('formulaire ajout retenue visible', async ({ page }) => {
-        await page.goto('/dashboard/retenues');
-        if (!(await page.getByText(/bénéficiaire|retenue/i).isVisible())) return test.skip();
-        // Le bouton Ajouter ou le formulaire doit exister
-        const addBtn = page.getByRole('button', { name: /ajouter|nouveau|créer/i });
-        if (await addBtn.isVisible()) {
-            await addBtn.click();
-            await expect(page.getByLabel(/bénéficiaire/i)).toBeVisible({ timeout: 5_000 });
-        }
-    });
+type OrgMember struct {
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	OrgRole   string    `json:"org_role"`
+	IsActive  bool      `json:"is_active"`
+	CreatedAt time.Time `json:"created_at"`
+}
 
-    test('liste retenues ou message vide', async ({ page }) => {
-        await page.goto('/dashboard/retenues');
-        if (!(await page.getByText(/retenue|verrouill/i).isVisible())) return test.skip();
-        const content = page.getByRole('table').or(page.getByText(/aucune|vide/i));
-        await expect(content.first()).toBeVisible({ timeout: 8_000 });
-    });
-});
+type OrgStats struct {
+	MemberCount  int `json:"member_count"`
+	CompanyCount int `json:"company_count"`
+	MaxUsers     int `json:"max_users"`
+	MaxCompanies int `json:"max_companies"`
+	MaxEmployees int `json:"max_employees"`
+}
 
-// ─── Workflow ─────────────────────────────────────────────────────────────────
-test.describe('Workflow — Validation déclarations', () => {
-    test('page workflow accessible', async ({ page }) => {
-        await page.goto('/dashboard/workflow');
-        const heading = page.getByRole('heading', { name: /workflow|validation|approbation|verrouill/i });
-        await expect(heading.first()).toBeVisible({ timeout: 8_000 });
-    });
+type OrgInfo struct {
+	Organization Organization `json:"organization"`
+	Stats        OrgStats     `json:"stats"`
+}
 
-    test('filtres statut affichés', async ({ page }) => {
-        await page.goto('/dashboard/workflow');
-        if (!(await page.getByText(/soumis|révision|approuv/i).first().isVisible({ timeout: 6_000 }).catch(() => false))) return test.skip();
-        await expect(page.getByText(/soumis|à réviser/i).first()).toBeVisible();
-    });
-});
+// --- CALCUL ---------------------------------------------------
 
-// ─── Bulletins ────────────────────────────────────────────────────────────────
-test.describe('Bulletins de paie', () => {
-    test('génération bulletins accessible', async ({ page }) => {
-        await page.goto('/dashboard/bulletins');
-        const heading = page.getByRole('heading', { name: /bulletin|paie|verrouill/i });
-        await expect(heading.first()).toBeVisible({ timeout: 8_000 });
-    });
+type CalculRequest struct {
+	SalaireBase float64 `json:"salaire_base"`
+	Anciennete  float64 `json:"anciennete"`
+	HeuresSup   float64 `json:"heures_sup"`
+	Logement    float64 `json:"logement"`
+	Transport   float64 `json:"transport"`
+	Fonction    float64 `json:"fonction"`
+	Charges     int     `json:"charges"`
+	Categorie   string  `json:"categorie"`  // "Cadre" | "Non-cadre"
+	Cotisation  string  `json:"cotisation"` // "CNSS" | "CARFO"
+}
 
-    test('export XLSX disponible si bulletins présents', async ({ page }) => {
-        await page.goto('/dashboard/bulletins');
-        if (!(await page.getByText(/bulletin|verrouill/i).isVisible())) return test.skip();
-        // Le bouton export XLSX doit exister dans la page
-        const exportBtn = page.getByRole('button', { name: /xlsx|export/i });
-        if (await exportBtn.isVisible()) {
-            await expect(exportBtn).toBeEnabled();
-        }
-    });
-});
+type CalculResult struct {
+	BrutTotal    float64 `json:"brut_total"`
+	BaseImp      float64 `json:"base_imposable"`
+	IUTSBrut     float64 `json:"iuts_brut"`
+	IUTSNet      float64 `json:"iuts_net"`
+	CotSoc       float64 `json:"cotisation_sociale"`
+	TPA          float64 `json:"tpa"`
+	FSP          float64 `json:"fsp"` // Fonds de Soutien Patriotique 1 %
+	SalaireNet   float64 `json:"salaire_net"`
+	AbattForf    float64 `json:"abattement_forfaitaire"`
+	AbattFam     float64 `json:"abattement_familial"`
+	RetPersonnel float64 `json:"retenue_personnel"` // alias FSP - rétro-compat
+}
 
-// ─── Historique fiscal ────────────────────────────────────────────────────────
-test.describe('Historique fiscal complet', () => {
-    test('page historique accessible', async ({ page }) => {
-        await page.goto('/dashboard/historique');
-        const heading = page.getByRole('heading', { name: /historique|fiscal|exercice/i });
-        await expect(heading.first()).toBeVisible({ timeout: 8_000 });
-    });
+// --- BULLETIN DE PAIE -----------------------------------------
 
-    test('sélecteur année et tableau mois/taxes', async ({ page }) => {
-        await page.goto('/dashboard/historique');
-        await expect(page.getByRole('combobox').first()).toBeVisible({ timeout: 5_000 });
-        const content = page.getByRole('table').or(page.getByText(/IUTS|aucune|obligations/i));
-        await expect(content.first()).toBeVisible({ timeout: 8_000 });
-    });
+type Bulletin struct {
+	ID          string    `json:"id"`
+	CompanyID   string    `json:"company_id"`
+	EmployeeID  string    `json:"employee_id"`
+	Mois        int       `json:"mois"`
+	Annee       int       `json:"annee"`
+	Periode     string    `json:"periode"`
+	NomEmploye  string    `json:"nom_employe"`
+	Categorie   string    `json:"categorie"`
+	SalaireBase float64   `json:"salaire_base"`
+	Anciennete  float64   `json:"anciennete"`
+	HeuresSup   float64   `json:"heures_sup"`
+	Logement    float64   `json:"logement"`
+	Transport   float64   `json:"transport"`
+	Fonction    float64   `json:"fonction"`
+	Charges     int       `json:"charges"`
+	Cotisation  string    `json:"cotisation"`
+	BrutTotal   float64   `json:"brut_total"`
+	BaseImp     float64   `json:"base_imposable"`
+	IUTSBrut    float64   `json:"iuts_brut"`
+	IUTSNet     float64   `json:"iuts_net"`
+	CotSoc      float64   `json:"cotisation_sociale"`
+	TPA         float64   `json:"tpa"`
+	FSP         float64   `json:"fsp"` // Fonds de Soutien Patriotique 1 %
+	SalaireNet  float64   `json:"salaire_net"`
+	CreatedAt   time.Time `json:"created_at"`
+}
 
-    test('export XLSX historique fiscal', async ({ page }) => {
-        await page.goto('/dashboard/historique');
-        const exportBtn = page.getByRole('button', { name: /xlsx|export/i });
-        if (await exportBtn.isVisible()) {
-            await expect(exportBtn).toBeEnabled();
-        }
-    });
-});
+// --- SIMULATION FISCALE ---------------------------------------
 
-// ─── Assistant IA ─────────────────────────────────────────────────────────────
-test.describe('Assistant IA fiscal', () => {
-    test('page assistant accessible', async ({ page }) => {
-        await page.goto('/dashboard/assistant');
-        const heading = page.getByRole('heading', { name: /assistant|IA|fiscal|verrouill/i });
-        await expect(heading.first()).toBeVisible({ timeout: 8_000 });
-    });
+type Simulation struct {
+	ID         string          `json:"id"`
+	CompanyID  string          `json:"company_id"`
+	Label      string          `json:"label"`
+	Cotisation string          `json:"cotisation"`
+	InputData  json.RawMessage `json:"input_data"`
+	ResultData json.RawMessage `json:"result_data"`
+	CreatedAt  time.Time       `json:"created_at"`
+}
 
-    test('zone de chat visible (Pro+)', async ({ page }) => {
-        await page.goto('/dashboard/assistant');
-        const chat = page.getByPlaceholder(/question|message|posez/i);
-        const locked = page.getByText(/pro|verrouill/i);
-        const isVisible = await chat.isVisible().catch(() => false);
-        const isLocked = await locked.isVisible().catch(() => false);
-        expect(isVisible || isLocked).toBeTruthy();
-    });
-});
+// --- TVA -----------------------------------------------------
 
-// ─── Multi-sociétés ───────────────────────────────────────────────────────────
-test.describe('Multi-sociétés', () => {
-    test('page sociétés accessible', async ({ page }) => {
-        await page.goto('/dashboard/societes');
-        const heading = page.getByRole('heading', { name: /soci[eé]t[eé]|entreprise|verrouill/i });
-        await expect(heading.first()).toBeVisible({ timeout: 8_000 });
-    });
-});
+type TVADeclaration struct {
+	ID            string     `json:"id"`
+	CompanyID     string     `json:"company_id"`
+	Periode       string     `json:"periode"`
+	Mois          int        `json:"mois"`
+	Annee         int        `json:"annee"`
+	CaTTC         float64    `json:"ca_ttc"`
+	CaHT          float64    `json:"ca_ht"`
+	TVACollectee  float64    `json:"tva_collectee"`
+	TVADeductible float64    `json:"tva_deductible"`
+	TVANette      float64    `json:"tva_nette"`
+	Statut        string     `json:"statut"`
+	Ref           *string    `json:"ref"`
+	CreatedAt     time.Time  `json:"created_at"`
+	Lignes        []TVALigne `json:"lignes,omitempty"`
+}
 
-// ─── Notifications ────────────────────────────────────────────────────────────
-test.describe('Notifications', () => {
-    test('icône cloche visible dans la topbar', async ({ page }) => {
-        await page.goto('/dashboard');
-        await expect(page.getByLabel(/notification/i)).toBeVisible({ timeout: 5_000 });
-    });
+type TVALigne struct {
+	ID            string  `json:"id"`
+	DeclarationID string  `json:"declaration_id"`
+	TypeOp        string  `json:"type_op"` // "vente" | "achat"
+	Description   string  `json:"description"`
+	MontantHT     float64 `json:"montant_ht"`
+	TauxTVA       float64 `json:"taux_tva"` // 18.00 par défaut
+	MontantTVA    float64 `json:"montant_tva"`
+	MontantTTC    float64 `json:"montant_ttc"`
+}
 
-    test('panneau notifications s\'ouvre au clic', async ({ page }) => {
-        await page.goto('/dashboard');
-        await page.getByLabel(/notification/i).click();
-        await expect(page.getByText(/notification/i).first()).toBeVisible({ timeout: 5_000 });
-    });
-});
+// --- WORKFLOW APPROBATION -------------------------------------
+
+type WorkflowEtape struct {
+	ID            string    `json:"id"`
+	DeclarationID string    `json:"declaration_id"`
+	Etape         string    `json:"etape"` // "soumis"|"en_revision"|"approuve"|"rejete"
+	Commentaire   string    `json:"commentaire"`
+	UserID        string    `json:"user_id"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+// --- RETENUE À LA SOURCE --------------------------------------
+
+type RetenueSource struct {
+	ID             string    `json:"id"`
+	CompanyID      string    `json:"company_id"`
+	Periode        string    `json:"periode"`
+	Mois           int       `json:"mois"`
+	Annee          int       `json:"annee"`
+	Beneficiaire   string    `json:"beneficiaire"`
+	TypeRetenue    string    `json:"type_retenue"` // "services"|"loyer"|"dividendes"|"interets"|"autre"
+	MontantBrut    float64   `json:"montant_brut"`
+	TauxRetenue    float64   `json:"taux_retenue"` // en %
+	MontantRetenue float64   `json:"montant_retenue"`
+	MontantNet     float64   `json:"montant_net"`
+	Statut         string    `json:"statut"` // "en_cours"|"declare"
+	Ref            *string   `json:"ref"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
+// --- CNSS PATRONAL --------------------------------------------
+
+type CNSSPatronal struct {
+	ID                 string    `json:"id"`
+	CompanyID          string    `json:"company_id"`
+	Periode            string    `json:"periode"`
+	Mois               int       `json:"mois"`
+	Annee              int       `json:"annee"`
+	NbSalariesCNSS     int       `json:"nb_salaries_cnss"`
+	NbSalariesCARFO    int       `json:"nb_salaries_carfo"`
+	BaseCNSS           float64   `json:"base_cnss"`
+	BaseCARFO          float64   `json:"base_carfo"`
+	CotisationPatCNSS  float64   `json:"cotisation_pat_cnss"`  // 16% de BaseCNSS
+	CotisationSalCNSS  float64   `json:"cotisation_sal_cnss"`  // 5.5% de BaseCNSS
+	CotisationPatCARFO float64   `json:"cotisation_pat_carfo"` // 7% de BaseCARFO
+	CotisationSalCARFO float64   `json:"cotisation_sal_carfo"` // 6% de BaseCARFO
+	TotalCNSS          float64   `json:"total_cnss"`
+	TotalCARFO         float64   `json:"total_carfo"`
+	TotalGeneral       float64   `json:"total_general"`
+	Statut             string    `json:"statut"` // "brouillon"|"valide"
+	CreatedAt          time.Time `json:"created_at"`
+}
+
+// --- HISTORIQUE FISCAL ----------------------------------------
+
+type HistoriqueFiscalMois struct {
+	Mois         int     `json:"mois"`
+	Periode      string  `json:"periode"`
+	IUTSTotal    float64 `json:"iuts_total"`
+	TPATotal     float64 `json:"tpa_total"`
+	CSSTotal     float64 `json:"css_total"`
+	CNSSPatronal float64 `json:"cnss_patronal"`
+	TVANette     float64 `json:"tva_nette"`
+	RetenueTotal float64 `json:"retenue_total"`
+	TotalOblig   float64 `json:"total_obligations"`
+}
+
+type HistoriqueFiscalAnnee struct {
+	Annee        int                    `json:"annee"`
+	IUTSTotal    float64                `json:"iuts_total"`
+	TPATotal     float64                `json:"tpa_total"`
+	CSSTotal     float64                `json:"css_total"`
+	CNSSPatronal float64                `json:"cnss_patronal"`
+	TVANette     float64                `json:"tva_nette"`
+	RetenueTotal float64                `json:"retenue_total"`
+	TotalOblig   float64                `json:"total_obligations"`
+	Mois         []HistoriqueFiscalMois `json:"mois"`
+}
+
+// --- IRF - Revenus Fonciers (CGI 2025 Art. 121-126) ----------
+
+type IRFDeclaration struct {
+	ID         string    `json:"id"`
+	CompanyID  string    `json:"company_id"`
+	Annee      int       `json:"annee"`
+	LoyerBrut  float64   `json:"loyer_brut"`
+	Abattement float64   `json:"abattement"`
+	BaseNette  float64   `json:"base_nette"`
+	IRF1       float64   `json:"irf1"` // tranche 18 %
+	IRF2       float64   `json:"irf2"` // tranche 25 %
+	IRFTotal   float64   `json:"irf_total"`
+	LoyerNet   float64   `json:"loyer_net"`
+	Statut     string    `json:"statut"`
+	Ref        *string   `json:"ref"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
+// --- IRCM - Capitaux Mobiliers (CGI 2025 Art. 140) -----------
+
+type IRCMDeclaration struct {
+	ID          string    `json:"id"`
+	CompanyID   string    `json:"company_id"`
+	Annee       int       `json:"annee"`
+	MontantBrut float64   `json:"montant_brut"`
+	TypeRevenu  string    `json:"type_revenu"` // "CREANCES"|"OBLIGATIONS"|"DIVIDENDES"
+	Taux        float64   `json:"taux"`
+	IRCMTotal   float64   `json:"ircm_total"`
+	MontantNet  float64   `json:"montant_net"`
+	Statut      string    `json:"statut"`
+	Ref         *string   `json:"ref"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+// --- IS / MFP (CGI 2025 Art. 42) -----------------------------
+
+type ISDeclaration struct {
+	ID          string    `json:"id"`
+	CompanyID   string    `json:"company_id"`
+	Annee       int       `json:"annee"`
+	CA          float64   `json:"ca"`
+	Benefice    float64   `json:"benefice"`
+	Regime      string    `json:"regime"` // "reel"|"simplifie"
+	AdhesionCGA bool      `json:"adhesion_cga"`
+	ISTheorique float64   `json:"is_theorique"`
+	MFPDu       float64   `json:"mfp_du"`
+	ISDu        float64   `json:"is_du"` // max(ISTheorique, MFPDu)
+	Statut      string    `json:"statut"`
+	Ref         *string   `json:"ref"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+// --- CME - Micro-Entreprises (CGI 2025 Art. 533) -------------
+
+type CMEDeclaration struct {
+	ID          string    `json:"id"`
+	CompanyID   string    `json:"company_id"`
+	Annee       int       `json:"annee"`
+	CA          float64   `json:"ca"`
+	Zone        string    `json:"zone"` // "A"|"B"|"C"|"D"
+	AdhesionCGA bool      `json:"adhesion_cga"`
+	Classe      int       `json:"classe"`
+	CME         float64   `json:"cme"`
+	CMENet      float64   `json:"cme_net"`
+	Statut      string    `json:"statut"`
+	Ref         *string   `json:"ref"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+// --- PATENTE (CGI 2025 Art. 237-240) -------------------------
+
+type PatenteDeclaration struct {
+	ID             string    `json:"id"`
+	CompanyID      string    `json:"company_id"`
+	Annee          int       `json:"annee"`
+	CA             float64   `json:"ca"`
+	ValeurLocative float64   `json:"valeur_locative"`
+	DroitFixe      float64   `json:"droit_fixe"`
+	DroitProp      float64   `json:"droit_prop"`
+	TotalPatente   float64   `json:"total_patente"`
+	Statut         string    `json:"statut"`
+	Ref            *string   `json:"ref"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
+// --- BILAN ANNUEL ---------------------------------------------
+
+type BilanAnnuel struct {
+	Annee          int     `json:"annee"`
+	IUTSTotal      float64 `json:"iuts_total"`
+	TPATotal       float64 `json:"tpa_total"`
+	CSSTotal       float64 `json:"css_total"`
+	CNSSPatTotal   float64 `json:"cnss_patronal_total"`
+	TVANette       float64 `json:"tva_nette_total"`
+	RASTotal       float64 `json:"ras_total"`
+	IRFTotal       float64 `json:"irf_total"`
+	IRCMTotal      float64 `json:"ircm_total"`
+	ISTotal        float64 `json:"is_total"`
+	MFPTotal       float64 `json:"mfp_total"`
+	CMETotal       float64 `json:"cme_total"`
+	PatenteTotal   float64 `json:"patente_total"`
+	GrandTotal     float64 `json:"grand_total"`
+	NbDeclarations int     `json:"nb_declarations"`
+	NbSalaries     int     `json:"nb_salaries"`
+}
+
+// --- NOTIFICATION ---------------------------------------------
+
+type Notification struct {
+	ID        string    `json:"id"`
+	CompanyID string    `json:"company_id"`
+	Type      string    `json:"type"` // "alerte"|"info"|"succes"|"retard"
+	Titre     string    `json:"titre"`
+	Message   string    `json:"message"`
+	Lu        bool      `json:"lu"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// --- SUPER ADMIN ----------------------------------------------
+
+type License struct {
+	ID           string     `json:"id"`
+	UserID       string     `json:"user_id"`
+	Plan         string     `json:"plan"`   // "starter"|"pro"|"enterprise"|"custom"
+	Status       string     `json:"status"` // "trial"|"active"|"suspended"|"expired"
+	TrialEndsAt  *time.Time `json:"trial_ends_at"`
+	ExpiresAt    *time.Time `json:"expires_at"`
+	MaxCompanies int        `json:"max_companies"`
+	MaxEmployees int        `json:"max_employees"`
+	Notes        string     `json:"notes"`
+	CreatedBy    *string    `json:"created_by"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+}
+
+type AuditLog struct {
+	ID         string          `json:"id"`
+	AdminID    string          `json:"admin_id"`
+	AdminEmail string          `json:"admin_email,omitempty"`
+	Action     string          `json:"action"`
+	TargetType string          `json:"target_type"`
+	TargetID   *string         `json:"target_id"`
+	Details    json.RawMessage `json:"details"`
+	CreatedAt  time.Time       `json:"created_at"`
+}
+
+type AdminStats struct {
+	TotalUsers      int     `json:"total_users"`
+	ActiveUsers     int     `json:"active_users"`
+	SuspendedUsers  int     `json:"suspended_users"`
+	TrialUsers      int     `json:"trial_users"`
+	PlanStarter     int     `json:"plan_starter"`
+	PlanPro         int     `json:"plan_pro"`
+	PlanEnterprise  int     `json:"plan_enterprise"`
+	TotalCompanies  int     `json:"total_companies"`
+	ActiveCompanies int     `json:"active_companies"`
+	NewUsersLast30d int     `json:"new_users_last30d"`
+	EstimatedMRR    float64 `json:"estimated_mrr"`
+}
+
+type AdminUser struct {
+	ID           string    `json:"id"`
+	Email        string    `json:"email"`
+	Plan         string    `json:"plan"`
+	Role         string    `json:"role"`
+	IsActive     bool      `json:"is_active"`
+	CompanyCount int       `json:"company_count"`
+	CreatedAt    time.Time `json:"created_at"`
+	License      *License  `json:"license,omitempty"`
+}
+
+type AdminCompany struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`
+	UserEmail string    `json:"user_email"`
+	Nom       string    `json:"nom"`
+	IFU       string    `json:"ifu"`
+	Secteur   string    `json:"secteur"`
+	IsActive  bool      `json:"is_active"`
+	CreatedAt time.Time `json:"created_at"`
+}
