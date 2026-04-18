@@ -207,14 +207,30 @@ export function generateTVAForm(decl: TVADeclaration, company?: Company) {
     secBar(doc, ML, y, CW, secH, 'III. TVA COLLECTEE SUR VENTES ET PRESTATIONS');
     y += secH;
 
+    // Normalise le taux : peut être stocké en décimal (0.18 ancienne version) ou en % (18 nouvelle version)
+    const normTaux = (t: number): number => t < 1 ? t * 100 : t;
+    // Recalcule la TVA depuis HT × taux pour garantir la cohérence mathématique
+    // même pour les anciennes déclarations dont montant_tva était incorrect en base
+    const recalcTVA = (ht: number, taux: number): number => Math.round(ht * normTaux(taux) / 100);
+
     const lignesV = (decl.lignes ?? []).filter(l => l.type_op === 'vente');
+    const lignesA = (decl.lignes ?? []).filter(l => l.type_op === 'achat');
+
+    const ventesCalc = lignesV.map(l => ({ ...l, taux_pct: normTaux(l.taux_tva), tva_corr: recalcTVA(l.montant_ht, l.taux_tva) }));
+    const achatsCalc = lignesA.map(l => ({ ...l, taux_pct: normTaux(l.taux_tva), tva_corr: recalcTVA(l.montant_ht, l.taux_tva) }));
+
+    const pdfTVAC = ventesCalc.length > 0 ? ventesCalc.reduce((s, l) => s + l.tva_corr, 0) : decl.tva_collectee;
+    const pdfTVAD = achatsCalc.length > 0 ? achatsCalc.reduce((s, l) => s + l.tva_corr, 0) : decl.tva_deductible;
+    const pdfNette = pdfTVAC - pdfTVAD;
+    const pdfCredit = pdfNette < 0;
+
     autoTable(doc, {
         startY: y,
         head: [['Description', 'Montant HT (FCFA)', 'Taux TVA', 'Montant TVA (FCFA)']],
-        body: lignesV.length > 0
-            ? lignesV.map(l => [l.description, fmtN(l.montant_ht), `${l.taux_tva < 1 ? (l.taux_tva * 100).toFixed(0) : l.taux_tva.toFixed(0)} %`, fmtN(l.montant_tva)])
-            : [['Ventes et prestations de services', fmtN(decl.ca_ht), '18 %', fmtN(decl.tva_collectee)]],
-        foot: [['TOTAL TVA COLLECTEE', '', '', fmtN(decl.tva_collectee)]],
+        body: ventesCalc.length > 0
+            ? ventesCalc.map(l => [l.description, fmtN(l.montant_ht), `${l.taux_pct.toFixed(0)} %`, fmtN(l.tva_corr)])
+            : [['Ventes et prestations de services', fmtN(decl.ca_ht), '18 %', fmtN(pdfTVAC)]],
+        foot: [['TOTAL TVA COLLECTEE', '', '', fmtN(pdfTVAC)]],
         styles: { fontSize: 7.5, textColor: BLACK, cellPadding: 2 },
         headStyles: { fillColor: [220, 220, 220] as RGB, textColor: BLACK, fontStyle: 'bold' },
         footStyles: { fillColor: [220, 220, 220] as RGB, fontStyle: 'bold', textColor: BLACK },
@@ -229,14 +245,13 @@ export function generateTVAForm(decl: TVADeclaration, company?: Company) {
     // Section IV : TVA DÃ©ductible
     secBar(doc, ML, y, CW, secH, 'IV. TVA DEDUCTIBLE SUR ACHATS ET CHARGES');
     y += secH;
-    const lignesA = (decl.lignes ?? []).filter(l => l.type_op === 'achat');
     autoTable(doc, {
         startY: y,
         head: [['Description', 'Montant HT (FCFA)', 'Taux TVA', 'Montant TVA (FCFA)']],
-        body: lignesA.length > 0
-            ? lignesA.map(l => [l.description, fmtN(l.montant_ht), `${l.taux_tva < 1 ? (l.taux_tva * 100).toFixed(0) : l.taux_tva.toFixed(0)} %`, fmtN(l.montant_tva)])
-            : [['Achats et charges deductibles', '', '18 %', fmtN(decl.tva_deductible)]],
-        foot: [['TOTAL TVA DEDUCTIBLE', '', '', fmtN(decl.tva_deductible)]],
+        body: achatsCalc.length > 0
+            ? achatsCalc.map(l => [l.description, fmtN(l.montant_ht), `${l.taux_pct.toFixed(0)} %`, fmtN(l.tva_corr)])
+            : [['Achats et charges deductibles', '', '18 %', fmtN(pdfTVAD)]],
+        foot: [['TOTAL TVA DEDUCTIBLE', '', '', fmtN(pdfTVAD)]],
         styles: { fontSize: 7.5, textColor: BLACK, cellPadding: 2 },
         headStyles: { fillColor: [220, 220, 220] as RGB, textColor: BLACK, fontStyle: 'bold' },
         footStyles: { fillColor: [220, 220, 220] as RGB, fontStyle: 'bold', textColor: BLACK },
@@ -251,13 +266,12 @@ export function generateTVAForm(decl: TVADeclaration, company?: Company) {
     // Section V : TVA nette
     secBar(doc, ML, y, CW, secH, 'V. RESULTAT : TVA NETTE DUE OU CREDIT DE TVA');
     y += secH;
-    const credit = decl.tva_nette < 0;
     autoTable(doc, {
         startY: y,
         body: [
-            ['TVA collectee (A)', fmtN(decl.tva_collectee) + ' FCFA'],
-            ['TVA deductible (B)', fmtN(decl.tva_deductible) + ' FCFA'],
-            [credit ? 'CREDIT DE TVA (B - A)' : 'TVA NETTE DUE (A - B)', fmtN(Math.abs(decl.tva_nette)) + ' FCFA'],
+            ['TVA collectee (A)', fmtN(pdfTVAC) + ' FCFA'],
+            ['TVA deductible (B)', fmtN(pdfTVAD) + ' FCFA'],
+            [pdfCredit ? 'CREDIT DE TVA (B - A)' : 'TVA NETTE DUE (A - B)', fmtN(Math.abs(pdfNette)) + ' FCFA'],
         ],
         styles: { fontSize: 8.5, textColor: BLACK, cellPadding: 3 },
         columnStyles: {
@@ -269,7 +283,7 @@ export function generateTVAForm(decl: TVADeclaration, company?: Company) {
     });
     y = (doc as DocWithTable).lastAutoTable.finalY + 3;
 
-    y = dgiReglement(doc, ML, CW, y, Math.max(0, decl.tva_nette));
+    y = dgiReglement(doc, ML, CW, y, Math.max(0, pdfNette));
     dgiSignatures(doc, ML, CW, y);
     dgiFooter(doc);
     doc.save(`DGI-TVA-${String(decl.mois).padStart(2, '0')}-${decl.annee}.pdf`);

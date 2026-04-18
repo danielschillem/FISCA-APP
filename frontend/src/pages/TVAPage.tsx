@@ -172,7 +172,10 @@ function TVAContent() {
                                             <td className="py-2 px-3 text-right">
                                                 <div className="flex justify-end gap-1">
                                                     <button
-                                                        onClick={() => requestPayment('tva', d.id, () => generateTVAForm(d, company))}
+                                                        onClick={() => requestPayment('tva', d.id, async () => {
+                                                            const full = await tvaApi.get(d.id);
+                                                            generateTVAForm(full.data as TVADeclaration, company);
+                                                        })}
                                                         title="Formulaire DGI"
                                                         className="p-1 text-orange-500 hover:bg-orange-50 rounded">
                                                         <FileText className="w-3.5 h-3.5" />
