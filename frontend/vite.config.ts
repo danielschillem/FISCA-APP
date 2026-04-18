@@ -40,12 +40,15 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
+            // Lecture offline : NetworkFirst avec fallback rapide (4s) vers le cache
+            // maxAgeSeconds: 86400 = 24h → données lisibles même sans connexion le lendemain
             urlPattern: /^https:\/\/fisca-backend\.onrender\.com\/api\//,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
-              expiration: { maxEntries: 50, maxAgeSeconds: 300 },
-              networkTimeoutSeconds: 10,
+              expiration: { maxEntries: 100, maxAgeSeconds: 86400 },
+              networkTimeoutSeconds: 4,         // 4s max → bascule cache immédiatement
+              cacheableResponse: { statuses: [200] }, // Ne jamais cacher 401/403/500
             },
           },
         ],

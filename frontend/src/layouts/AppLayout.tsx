@@ -4,7 +4,8 @@ import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import NotifPanel from '../components/NotifPanel';
 import { useLocation } from 'react-router-dom';
-import { Eye, X } from 'lucide-react';
+import { Eye, X, WifiOff } from 'lucide-react';
+import { useOnlineStatus } from '../lib/useOnlineStatus';
 
 const PAGE_META: Record<string, { title: string; subtitle?: string }> = {
     '/dashboard': { title: 'Tableau de bord', subtitle: 'Exercice fiscal en cours' },
@@ -39,6 +40,7 @@ export default function AppLayout() {
     const { token, user, impersonating, stopImpersonate } = useAuthStore();
     const { sidebarOpen } = useAppStore();
     const location = useLocation();
+    const online = useOnlineStatus();
 
     if (!token) return <Navigate to="/login" replace />;
     if (user?.role === 'super_admin' && !impersonating) return <Navigate to="/admin" replace />;
@@ -47,6 +49,13 @@ export default function AppLayout() {
 
     return (
         <div className="flex h-screen overflow-hidden bg-slate-50">
+            {/* Bannière mode hors-ligne */}
+            {!online && (
+                <div className="fixed top-0 left-0 right-0 z-50 bg-gray-800 text-white flex items-center justify-center gap-2 px-4 py-2 text-xs font-medium shadow-lg">
+                    <WifiOff className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>Vous êtes hors-ligne — les données affichées proviennent du cache local (lecture seule)</span>
+                </div>
+            )}
             {/* Bannière MODE INSPECTION (impersonation super_admin) */}
             {impersonating && (
                 <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white flex items-center justify-between px-4 py-2 shadow-lg">
@@ -64,7 +73,7 @@ export default function AppLayout() {
             )}
             <Sidebar />
             <div
-                className={`flex-1 flex flex-col min-w-0 overflow-y-auto transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'ml-0'} ${impersonating ? 'pt-10' : ''}`}
+                className={`flex-1 flex flex-col min-w-0 overflow-y-auto transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'ml-0'} ${!online && impersonating ? 'pt-20' : !online || impersonating ? 'pt-10' : ''}`}
             >
                 <Topbar title={meta.title} subtitle={meta.subtitle} />
                 <main className="flex-1 p-4 sm:p-6">
