@@ -21,6 +21,10 @@
     X-Content-Type-Options  = "nosniff"
     Referrer-Policy         = "strict-origin-when-cross-origin"
     Permissions-Policy      = "geolocation=(), microphone=(), camera=()"
+    # CSP : self + API backend uniquement
+    # unsafe-inline requis par Vite (module preloading) + Tailwind (styles inline)
+    # blob: et data: requis par jsPDF (génération PDF) et xlsx (export Excel)
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://fisca-backend.onrender.com; img-src 'self' data: blob:; font-src 'self' data:; worker-src blob: 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
 
 # Cache long pour les assets Vite (hash dans le nom du fichier)
 [[headers]]
