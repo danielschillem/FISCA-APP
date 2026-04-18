@@ -1,10 +1,10 @@
 ﻿import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { calcEmploye, fmt, fmtN } from '../lib/fiscalCalc';
+import { calcEmploye, calcIS, calcMFP, calcCME, calcPatente, CME_CA_PLAFOND, fmt, fmtN } from '../lib/fiscalCalc';
 import { simulationApi } from '../lib/api';
 import { Card, Input, Select, Btn, NumericInput } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
-import { Lock, TrendingUp, BarChart2, Save, FolderOpen, Trash2 } from 'lucide-react';
+import { Lock, TrendingUp, BarChart2, Save, FolderOpen, Trash2, Layers } from 'lucide-react';
 
 const MOIS_PROJ = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 
@@ -31,7 +31,7 @@ const defaultInput = (label: string): ScenInput => ({
 
 function SimContent() {
     const qc = useQueryClient();
-    const [mode, setMode] = useState<'simulateur' | 'projection'>('simulateur');
+    const [mode, setMode] = useState<'simulateur' | 'projection' | 'regimes'>('simulateur');
     const [a, setA] = useState<ScenInput>(defaultInput('Scénario A'));
     const [b, setB] = useState<ScenInput>({ ...defaultInput('Scénario B'), categorie: 'Cadre', salaire_base: 350000 });
     const [showAB, setShowAB] = useState(false);
@@ -94,10 +94,16 @@ function SimContent() {
                 >
                     <TrendingUp className="w-4 h-4" /> Projection 12 mois
                 </button>
+                <button
+                    onClick={() => setMode('regimes')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'regimes' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                    <Layers className="w-4 h-4" /> Régimes fiscaux
+                </button>
             </div>
 
             {mode === 'simulateur' ? (
-                <>
+                <> {/* simulateur block */}
                     <div className="flex items-center gap-2 flex-wrap justify-end">
                         <Btn variant="outline" onClick={() => setShowSaved(!showSaved)}>
                             <FolderOpen className="w-4 h-4" /> {showSaved ? 'Masquer sauvegardes' : `Sauvegardes (${savedSims.length})`}
@@ -188,7 +194,7 @@ function SimContent() {
                         </Card>
                     )}
                 </>
-            ) : (
+            ) : mode === 'projection' ? (
                 /* Projection annuelle */
                 <>
                     <div className="max-w-2xl">
@@ -248,6 +254,9 @@ function SimContent() {
                         <p className="text-[11px] text-gray-400 mt-3">Projection basée sur un salaire fixe sans variation annuelle.</p>
                     </Card>
                 </>
+            ) : (
+                /* Régimes fiscaux */
+                <RegimesFiscauxPanel />
             )}
         </div>
     );
@@ -312,6 +321,179 @@ function ScenarioPanel({ label, s, setS, r }: {
                             <p className="text-base font-bold">{str ? v : fmt(v as number)}</p>
                         </div>
                     ))}
+                </div>
+            </Card>
+        </div>
+    );
+}
+
+function RegimesFiscauxPanel() {
+    const [ca, setCa] = useState(10_000_000);
+    const [benefice, setBenefice] = useState(2_000_000);
+    const [valeurLocative, setValeurLocative] = useState(600_000);
+    const [zone, setZone] = useState<'A' | 'B' | 'C' | 'D'>('A');
+    const [cga, setCga] = useState(false);
+
+    const cmeResult = calcCME(ca, zone, cga);
+    const isResult = calcIS(benefice, cga);
+    const mfpRNI = calcMFP(ca, 'reel', cga);
+    const mfpRSI = calcMFP(ca, 'simplifie', cga);
+    const patente = calcPatente(ca, valeurLocative);
+
+    // Totaux par régime
+    const totalCME = cmeResult ? cmeResult.cmeNet : null;
+    const totalRNI = Math.max(isResult.is, mfpRNI.mfpDu) + patente.totalPatente;
+    const totalRSI = mfpRSI.mfpDu + patente.totalPatente;
+
+    const minimum = Math.min(
+        ...[totalCME, totalRNI, totalRSI].filter((v): v is number => v !== null)
+    );
+
+    const highlight = (val: number | null) =>
+        val !== null && val === minimum
+            ? 'bg-green-50 text-green-800 font-bold ring-2 ring-green-400 ring-inset rounded-lg'
+            : 'text-gray-700';
+
+    return (
+        <div className="space-y-6">
+            {/* Inputs */}
+            <Card title="Paramètres de l'entreprise">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                        <label className="block text-xs font-medium text-gray-700">Chiffre d'affaires HT</label>
+                        <div className="relative">
+                            <NumericInput value={ca} onChange={setCa} className="pr-14" />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">FCFA</span>
+                        </div>
+                        {ca > CME_CA_PLAFOND && (
+                            <p className="text-[11px] text-amber-600">CA &gt; 15 M — régime CME inaccessible</p>
+                        )}
+                    </div>
+                    <div className="space-y-1">
+                        <label className="block text-xs font-medium text-gray-700">Bénéfice imposable</label>
+                        <div className="relative">
+                            <NumericInput value={benefice} onChange={setBenefice} className="pr-14" />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">FCFA</span>
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="block text-xs font-medium text-gray-700">Valeur locative annuelle</label>
+                        <div className="relative">
+                            <NumericInput value={valeurLocative} onChange={setValeurLocative} className="pr-14" />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">FCFA</span>
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="block text-xs font-medium text-gray-700">Zone CME</label>
+                        <div className="flex gap-2">
+                            {(['A', 'B', 'C', 'D'] as const).map((z) => (
+                                <button
+                                    key={z}
+                                    onClick={() => setZone(z)}
+                                    className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-all ${zone === z ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-200 hover:border-green-400'}`}
+                                >
+                                    {z}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 pt-5">
+                        <input
+                            id="cga-toggle"
+                            type="checkbox"
+                            checked={cga}
+                            onChange={(e) => setCga(e.target.checked)}
+                            className="w-4 h-4 accent-green-600"
+                        />
+                        <label htmlFor="cga-toggle" className="text-sm font-medium text-gray-700 select-none cursor-pointer">
+                            Adhésion CGA (réduction fiscale)
+                        </label>
+                    </div>
+                </div>
+            </Card>
+
+            {/* Tableau comparatif */}
+            <Card title="Comparaison des régimes fiscaux">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="text-xs font-semibold text-gray-500 border-b border-gray-200">
+                                <th className="text-left py-3 px-4">Composante</th>
+                                <th className="text-right py-3 px-4">
+                                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${totalCME === minimum && totalCME !== null ? 'bg-green-600 text-white' : 'bg-purple-100 text-purple-700'}`}>
+                                        CME {ca <= CME_CA_PLAFOND ? '' : '✕'}
+                                    </span>
+                                </th>
+                                <th className="text-right py-3 px-4">
+                                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${totalRNI === minimum ? 'bg-green-600 text-white' : 'bg-blue-100 text-blue-700'}`}>
+                                        RNI (IS/MFP)
+                                    </span>
+                                </th>
+                                <th className="text-right py-3 px-4">
+                                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${totalRSI === minimum ? 'bg-green-600 text-white' : 'bg-orange-100 text-orange-700'}`}>
+                                        RSI (simplifié)
+                                    </span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            <tr className="hover:bg-gray-50">
+                                <td className="py-2.5 px-4 text-gray-600">Impôt principal</td>
+                                <td className="py-2.5 px-4 text-right font-mono text-xs">
+                                    {totalCME !== null ? fmtN(cmeResult!.cmeNet) : <span className="text-gray-400">N/A</span>}
+                                </td>
+                                <td className="py-2.5 px-4 text-right font-mono text-xs">{fmtN(Math.max(isResult.is, mfpRNI.mfpDu))}</td>
+                                <td className="py-2.5 px-4 text-right font-mono text-xs">{fmtN(mfpRSI.mfpDu)}</td>
+                            </tr>
+                            <tr className="hover:bg-gray-50">
+                                <td className="py-2.5 px-4 text-gray-600">Patente</td>
+                                <td className="py-2.5 px-4 text-right font-mono text-xs text-gray-400">—</td>
+                                <td className="py-2.5 px-4 text-right font-mono text-xs">{fmtN(patente.totalPatente)}</td>
+                                <td className="py-2.5 px-4 text-right font-mono text-xs">{fmtN(patente.totalPatente)}</td>
+                            </tr>
+                            <tr className="border-t-2 border-gray-200 font-semibold">
+                                <td className="py-3 px-4 text-gray-900">Total fiscal estimé</td>
+                                <td className={`py-3 px-4 text-right font-mono text-sm ${highlight(totalCME)}`}>
+                                    {totalCME !== null ? fmtN(totalCME) : <span className="text-gray-400 text-xs font-normal">Hors plafond</span>}
+                                </td>
+                                <td className={`py-3 px-4 text-right font-mono text-sm ${highlight(totalRNI)}`}>{fmtN(totalRNI)}</td>
+                                <td className={`py-3 px-4 text-right font-mono text-sm ${highlight(totalRSI)}`}>{fmtN(totalRSI)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                {minimum !== Infinity && (
+                    <div className="mt-4 flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                        <span className="text-green-600 font-bold text-sm">✓ Régime le plus avantageux :</span>
+                        <span className="text-green-800 text-sm font-semibold">
+                            {totalCME === minimum && totalCME !== null ? 'CME (Contribution des Micro-Entreprises)' :
+                                totalRNI === minimum ? 'RNI — Réel Normal d\'Imposition (IS/MFP + Patente)' :
+                                    'RSI — Réel Simplifié d\'Imposition (MFP + Patente)'}
+                        </span>
+                        <span className="ml-auto text-green-700 font-mono text-sm">{fmtN(minimum)} FCFA</span>
+                    </div>
+                )}
+                <p className="text-[11px] text-gray-400 mt-3">
+                    Estimation indicative CGI 2025. Consultez un expert-comptable pour votre choix de régime.
+                    {cga && ' Réductions CGA appliquées.'}
+                </p>
+            </Card>
+
+            {/* Détail patente */}
+            <Card title="Détail Patente">
+                <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="bg-gray-50 rounded-xl p-3">
+                        <p className="text-xs text-gray-500">Droit fixe</p>
+                        <p className="font-bold text-gray-800 text-sm">{fmtN(patente.droitFixe)}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-3">
+                        <p className="text-xs text-gray-500">Droit proportionnel (1 %)</p>
+                        <p className="font-bold text-gray-800 text-sm">{fmtN(patente.droitProp)}</p>
+                    </div>
+                    <div className="bg-blue-50 rounded-xl p-3">
+                        <p className="text-xs text-gray-500">Total Patente</p>
+                        <p className="font-bold text-blue-700 text-sm">{fmtN(patente.totalPatente)}</p>
+                    </div>
                 </div>
             </Card>
         </div>

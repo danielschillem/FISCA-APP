@@ -46,7 +46,7 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
         prevUnread.current = unread;
     }, [unread, notifs]);
 
-    // -- Push notifications J-7 : échéances fiscales proches ----------------
+    // -- Push notifications J-7 : une notification par échéance urgente ------
     useEffect(() => {
         if (!user || !('Notification' in window)) return;
 
@@ -55,19 +55,21 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
 
             const now = new Date();
             const annee = now.getFullYear();
-            const FIRED_KEY = `fisca_notif_echeances_${annee}_${now.getMonth()}`;
-            if (localStorage.getItem(FIRED_KEY)) return; // déjà envoyé ce mois
-
+            const dateStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
             const prochaines = getProchaines(annee, 10, now);
             const urgentes = prochaines.filter(e => e.joursRestants >= 0 && e.joursRestants <= 7);
-            if (urgentes.length === 0) return;
 
-            localStorage.setItem(FIRED_KEY, '1');
-            const top = urgentes[0];
-            new Notification(`Échéance fiscale dans ${top.joursRestants === 0 ? "aujourd'hui" : `${top.joursRestants}j`} : ${top.label}`, {
-                body: top.description,
-                icon: '/favicon.svg',
-                tag: `echeance-${top.id}`,
+            // Envoyer une notification par échéance urgente si pas encore envoyée aujourd'hui
+            urgentes.forEach(e => {
+                const key = `fisca_notif_${e.id}_${dateStr}`;
+                if (localStorage.getItem(key)) return;
+                localStorage.setItem(key, '1');
+                const quand = e.joursRestants === 0 ? "aujourd'hui" : e.joursRestants === 1 ? 'demain' : `dans ${e.joursRestants} j`;
+                new Notification(`Échéance fiscale ${quand} : ${e.label}`, {
+                    body: e.description,
+                    icon: '/favicon.svg',
+                    tag: `echeance-${e.id}-${dateStr}`,
+                });
             });
         };
 

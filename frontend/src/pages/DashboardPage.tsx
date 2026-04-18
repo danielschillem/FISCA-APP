@@ -1,6 +1,8 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { dashboardApi, declarationApi } from '../lib/api';
 import { useAuthStore } from '../lib/store';
 import { usePermissions } from '../lib/permissions';
@@ -12,12 +14,123 @@ import {
     BarChart2, TrendingUp, Users, User, AlertTriangle, CheckCircle2,
     Clock, Minus, CalendarDays, ArrowRight, Eye, FileText, Receipt,
     Home, BookOpen, PenLine, FileCheck, GitBranch, History,
-    WifiOff, UserPlus, Building2,
+    WifiOff, UserPlus, Building2, Download,
 } from 'lucide-react';
 import { getProchaines, getEcheancesParRegime, TYPE_COLORS, type Echeance } from '../lib/fiscalCalendar';
 import { useRegime } from '../lib/regime';
 
 const MOIS_COURT = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+// Génère le PDF de synthèse mensuelle du tableau de bord
+function exportDashboardPDF(
+    kpi: DashboardKPI,
+    declarations: { mois: number; iuts_total: number; tpa_total: number; css_total: number; statut: string }[],
+    prochaines: Echeance[],
+    nomEntreprise: string,
+    annee: number,
+    moisActuel: number,
+) {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const W = 210;
+    let y = 15;
+
+    // --- En-tête ---
+    doc.setFillColor(22, 163, 74); // vert FISCA
+    doc.rect(0, 0, W, 22, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FISCA — Synthèse tableau de bord', 14, 10);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${nomEntreprise}   |   Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 17);
+    doc.text(`Mois de référence : ${MOIS_FR[moisActuel]} ${annee}`, W - 14, 17, { align: 'right' });
+    y = 28;
+
+    // --- KPIs ---
+    doc.setTextColor(30, 30, 30);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Indicateurs clés du mois', 14, y);
+    y += 4;
+    autoTable(doc, {
+        startY: y,
+        head: [['Indicateur', 'Valeur', 'Contexte']],
+        body: [
+            ['IUTS Net', fmt(kpi.mois_courant?.iuts_total ?? 0), `${MOIS_FR[moisActuel]} ${annee}`],
+            ['TPA (3 %)', fmt(kpi.mois_courant?.tpa_total ?? 0), `${kpi.nb_employes} salarié(s)`],
+            ['Cotisations CNSS/CARFO', fmt(kpi.mois_courant?.css_total ?? 0), 'Part salariale'],
+            ['Salariés actifs', String(kpi.nb_employes), 'Total effectif'],
+            ['Total obligations annuelles', fmt(kpi.total_annee?.total ?? 0), `Cumul ${annee}`],
+        ],
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: [22, 163, 74], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { left: 14, right: 14 },
+    });
+    y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+
+    // --- Synthèse IUTS mensuel ---
+    if (declarations.length > 0) {
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Synthèse annuelle IUTS ${annee}`, 14, y);
+        y += 4;
+        const rows = MOIS_COURT.map((m, i) => {
+            const d = declarations.find(x => x.mois === i + 1);
+            const iuts = d?.iuts_total ?? 0;
+            const statut = d ? (d.statut === 'ok' ? 'Déclaré' : d.statut === 'retard' ? 'Retard' : 'En cours') : '-';
+            return [m, iuts > 0 ? fmtN(iuts) + ' FCFA' : '-', statut];
+        });
+        autoTable(doc, {
+            startY: y,
+            head: [['Mois', 'IUTS Net', 'Statut']],
+            body: rows,
+            styles: { fontSize: 8, cellPadding: 2.5 },
+            headStyles: { fillColor: [55, 65, 81], textColor: 255, fontStyle: 'bold' },
+            columnStyles: { 1: { halign: 'right' } },
+            alternateRowStyles: { fillColor: [249, 250, 251] },
+            margin: { left: 14, right: 14 },
+        });
+        y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+    }
+
+    // --- Prochaines échéances ---
+    if (prochaines.length > 0) {
+        if (y > 240) { doc.addPage(); y = 15; }
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(30, 30, 30);
+        doc.text('Prochaines échéances fiscales', 14, y);
+        y += 4;
+        autoTable(doc, {
+            startY: y,
+            head: [['Échéance', 'Date limite', 'Délai']],
+            body: prochaines.map(e => [
+                e.label,
+                e.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
+                e.joursRestants === 0 ? "Aujourd'hui" : e.joursRestants === 1 ? 'Demain' : `J-${e.joursRestants}`,
+            ]),
+            styles: { fontSize: 9, cellPadding: 3 },
+            headStyles: { fillColor: [245, 158, 11], textColor: 255, fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: [255, 251, 235] },
+            margin: { left: 14, right: 14 },
+        });
+    }
+
+    // --- Pied de page ---
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        doc.setTextColor(160, 160, 160);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`FISCA – Document généré automatiquement – CGI 2025`, 14, 290);
+        doc.text(`Page ${i}/${pageCount}`, W - 14, 290, { align: 'right' });
+    }
+
+    doc.save(`FISCA-Dashboard-${annee}-${String(moisActuel + 1).padStart(2, '0')}.pdf`);
+}
 
 // Liens rapides selon le rôle
 const QUICK_LINKS: Record<string, { to: string; label: string; icon: React.ElementType; color: string }[]> = {
@@ -180,7 +293,16 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-6">
-            {/* Bannière régime fiscal non défini */}
+            {/* Bouton export PDF */}
+            <div className="flex justify-end">
+                <button
+                    onClick={() => exportDashboardPDF(kpi!, declarations, prochaines, user?.email ?? 'Mon entreprise', anneeActuelle, moisActuel)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                    <Download className="w-3.5 h-3.5" />
+                    Exporter PDF
+                </button>
+            </div>
             {regime === '' && (
                 <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
                     <div className="flex items-center gap-2">
