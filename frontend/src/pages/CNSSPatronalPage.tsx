@@ -15,10 +15,19 @@ export default function CNSSPatronalPage() {
 }
 
 const TAUX = { famille: 0.072, accident: 0.034, retraite: 0.055 };
-const PLAFOND = 600000;
+const TAUX_CARFO_PATRONAL = 0.07; // CARFO patronal 7 %
+const PLAFOND = 600_000;
 
-function calcCnssEmp(salaire: number) {
-    const base = Math.min(salaire, PLAFOND);
+// Base CNSS = rémunération brute complète (tous composants), plafonnée à 600 000 FCFA.
+// Conformément au Code du Travail BF et CGI 2025 Art. 229.
+function calcCnssEmp(e: Employee) {
+    const remBrute = e.salaire_base + e.anciennete + e.heures_sup + e.logement + e.transport + e.fonction;
+    const base = Math.min(remBrute, PLAFOND);
+    if (e.cotisation === 'CARFO') {
+        // CARFO : taux patronal unique 7 % (Art. 3 Décret CARFO BF)
+        const total = Math.round(base * TAUX_CARFO_PATRONAL);
+        return { base, famille: 0, accident: 0, retraite: total, total };
+    }
     return {
         base,
         famille: Math.round(base * TAUX.famille),
@@ -52,9 +61,17 @@ function CNSSContent() {
     if (loadEmp || loadDecl) return <Spinner />;
 
     const totaux = employees.reduce((acc, e) => {
-        const c = calcCnssEmp(e.salaire_base + e.anciennete);
-        return { base: acc.base + c.base, total: acc.total + c.total };
-    }, { base: 0, total: 0 });
+        const c = calcCnssEmp(e);
+        const remBrute = e.salaire_base + e.anciennete + e.heures_sup + e.logement + e.transport + e.fonction;
+        return {
+            masseSalariale: acc.masseSalariale + remBrute,
+            base: acc.base + c.base,
+            famille: acc.famille + c.famille,
+            accident: acc.accident + c.accident,
+            retraite: acc.retraite + c.retraite,
+            total: acc.total + c.total,
+        };
+    }, { masseSalariale: 0, base: 0, famille: 0, accident: 0, retraite: 0, total: 0 });
 
     return (
         <div className="space-y-6">
@@ -89,8 +106,8 @@ function CNSSContent() {
                     <p className="text-2xl font-bold text-gray-900">{employees.length}</p>
                 </div>
                 <div className="bg-blue-50 rounded-xl p-4">
-                    <p className="text-xs text-gray-500">Masse salariale</p>
-                    <p className="text-xl font-bold text-blue-700">{fmt(totaux.base)}</p>
+                    <p className="text-xs text-gray-500">Masse salariale brute</p>
+                    <p className="text-xl font-bold text-blue-700">{fmt(totaux.masseSalariale)}</p>
                 </div>
                 <div className="bg-green-50 rounded-xl p-4">
                     <p className="text-xs text-gray-500">Cotisations patronales</p>
@@ -105,17 +122,16 @@ function CNSSContent() {
             {/* Per-employee table */}
             <Card title="Détail par employé">
                 <div className="overflow-x-auto">
-                    <Table columns={['Employé', 'Salaire', 'Base CNSS', 'Famille (7,2%)', 'Accident (3,4%)', 'Retraite (5,5%)', 'Total patronal']}>
+                    <Table columns={['Employé', 'Brut total', 'Base CNSS', 'Famille (7,2%)', 'Accident (3,4%)', 'Retraite/CARFO (5,5%/7%)', 'Total patronal']}>
                         {employees.map((e) => {
-                            const sal = e.salaire_base + e.anciennete;
-                            const c = calcCnssEmp(sal);
+                            const c = calcCnssEmp(e);
                             return (
                                 <tr key={e.id} className="hover:bg-gray-50">
                                     <td className="py-3 px-4 text-sm font-medium text-gray-900">
                                         {e.nom}
                                         {e.cotisation === 'CARFO' && <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700">CARFO</span>}
                                     </td>
-                                    <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(sal)}</td>
+                                    <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(e.salaire_base + e.anciennete + e.heures_sup + e.logement + e.transport + e.fonction)}</td>
                                     <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(c.base)}</td>
                                     <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(c.famille)}</td>
                                     <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(c.accident)}</td>
@@ -127,9 +143,9 @@ function CNSSContent() {
                         <tr className="bg-gray-50 font-bold border-t-2 border-gray-200">
                             <td className="py-3 px-4 text-sm">Total</td>
                             <td colSpan={2} />
-                            <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(Math.round(totaux.base * TAUX.famille))}</td>
-                            <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(Math.round(totaux.base * TAUX.accident))}</td>
-                            <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(Math.round(totaux.base * TAUX.retraite))}</td>
+                            <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(totaux.famille)}</td>
+                            <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(totaux.accident)}</td>
+                            <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(totaux.retraite)}</td>
                             <td className="py-3 px-4 text-sm text-right font-bold text-green-700">{fmtN(totaux.total)}</td>
                         </tr>
                     </Table>
