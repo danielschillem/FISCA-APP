@@ -88,7 +88,8 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 		r.With(authRateLimit).Post("/auth/login", authH.Login)
 		r.With(authRateLimit).Post("/auth/forgot-password", authH.ForgotPassword)
 		r.With(authRateLimit).Post("/auth/reset-password", authH.ResetPassword)
-		r.Post("/auth/refresh", authH.Refresh)
+		// A07 OWASP : rate-limit le refresh pour empêcher l'énumération de tokens
+		r.With(authRateLimit).Post("/auth/refresh", authH.Refresh)
 		r.Post("/auth/logout", authH.Logout)
 
 		// Webhook Orange Money (public - pas de JWT)

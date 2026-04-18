@@ -28,6 +28,11 @@ if port == "" {
 port = "8080"
 }
 
+// A02 OWASP : JWT_SECRET doit être présent et suffisamment long avant tout démarrage.
+if secret := os.Getenv("JWT_SECRET"); len(secret) < 32 {
+log.Fatal("[SECURITE] JWT_SECRET manquant ou trop court — minimum 32 caractères requis")
+}
+
 // Demarrage immediat du serveur HTTP - Render health check passe des maintenant
 var (
 handlerMu      sync.RWMutex

@@ -84,11 +84,10 @@ func RateLimit(maxTokens float64, refillPerSec float64) func(http.Handler) http.
 	store := newRateLimitStore()
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// chi middleware.RealIP a déjà mis l'IP réelle dans r.RemoteAddr.
+			// Ne pas relire X-Real-IP depuis le header : un client peut le forger
+			// pour contourner son bucket de rate-limiting (A04/A07 OWASP).
 			ip := r.RemoteAddr
-			// chi/middleware.RealIP aura déjà normalisé l'IP réelle
-			if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
-				ip = realIP
-			}
 			l := store.get(ip, maxTokens, refillPerSec)
 			if !l.allow() {
 				w.Header().Set("Content-Type", "application/json")

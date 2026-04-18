@@ -60,7 +60,9 @@ func (h *AssistantHandler) Chat(w http.ResponseWriter, r *http.Request) {
 		reply, err = callMistral(mistralKey, context, req.Message)
 	}
 	if err != nil {
-		jsonError(w, "Erreur assistant IA : "+err.Error(), http.StatusBadGateway)
+		// A09 OWASP : ne pas exposer les détails internes de l'erreur (clé API, quota, etc.)
+		fmt.Printf("[ASSISTANT] Erreur provider IA pour user %s: %v\n", userID, err)
+		jsonError(w, "L'assistant IA est temporairement indisponible. Veuillez réessayer.", http.StatusBadGateway)
 		return
 	}
 

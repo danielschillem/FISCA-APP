@@ -206,6 +206,13 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "Données invalides", http.StatusBadRequest)
 		return
 	}
+	// A07 OWASP : normaliser l'email exactement comme à l'inscription pour éviter
+	// des comptes fantômes et des incohérences de casse.
+	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
+	if req.Email == "" || !strings.Contains(req.Email, "@") || len(req.Email) > 254 {
+		jsonError(w, "Identifiants invalides", http.StatusUnauthorized)
+		return
+	}
 
 	var user models.User
 	err := h.DB.QueryRow(r.Context(),
