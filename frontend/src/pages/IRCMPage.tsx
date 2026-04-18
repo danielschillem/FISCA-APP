@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ircmApi, companyApi } from '../lib/api';
 import { calcIRCM, fmt } from '../lib/fiscalCalc';
-import { Card, Btn, Spinner } from '../components/ui';
+import { Card, Btn, Spinner, NumericInput } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
 import type { IRCMDeclaration, Company } from '../types';
@@ -79,8 +79,7 @@ function IRCMContent() {
                     </div>
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Montant brut des revenus (FCFA)</label>
-                        <input type="number" value={montant} onChange={(e) => setMontant(+e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
+                        <NumericInput value={montant} onChange={setMontant} />
                     </div>
                 </div>
                 <div className="grid grid-cols-1 gap-2 mb-4">

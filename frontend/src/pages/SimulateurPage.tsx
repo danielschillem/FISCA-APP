@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { calcEmploye, fmt, fmtN } from '../lib/fiscalCalc';
 import { simulationApi } from '../lib/api';
-import { Card, Input, Select, Btn } from '../components/ui';
+import { Card, Input, Select, Btn, NumericInput } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Lock, TrendingUp, BarChart2, Save, FolderOpen, Trash2 } from 'lucide-react';
 
@@ -260,13 +260,17 @@ function ScenarioPanel({ label, s, setS, r }: {
     r: ReturnType<typeof calcEmploye>;
 }) {
     const field = (key: keyof ScenInput, labelStr: string) => (
-        <Input
-            label={labelStr}
-            type="number"
-            value={String(s[key])}
-            onChange={(e) => setS({ ...s, [key]: +e.target.value })}
-            suffix="FCFA"
-        />
+        <div className="space-y-1">
+            <label className="block text-xs font-medium text-gray-700">{labelStr}</label>
+            <div className="relative">
+                <NumericInput
+                    value={Number(s[key])}
+                    onChange={(v) => setS({ ...s, [key]: v })}
+                    className="pr-14"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">FCFA</span>
+            </div>
+        </div>
     );
 
     return (

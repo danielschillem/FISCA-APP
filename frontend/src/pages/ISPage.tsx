@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { isApi, companyApi } from '../lib/api';
 import { calcIS, calcMFP, fmt } from '../lib/fiscalCalc';
-import { Card, Btn, Spinner } from '../components/ui';
+import { Card, Btn, Spinner, NumericInput } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
 import type { ISDeclaration, Company } from '../types';
@@ -104,13 +104,11 @@ function ISContent() {
                     </div>
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Chiffre d'affaires HT (FCFA)</label>
-                        <input type="number" value={ca} onChange={(e) => setCa(+e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
+                        <NumericInput value={ca} onChange={setCa} />
                     </div>
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Bénéfice imposable (FCFA)</label>
-                        <input type="number" value={benefice} onChange={(e) => setBenefice(+e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
+                        <NumericInput value={benefice} onChange={setBenefice} />
                     </div>
                     <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={cga} onChange={(e) => setCga(e.target.checked)} className="accent-green-600" />

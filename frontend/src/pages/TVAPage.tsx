@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tvaApi, companyApi } from '../lib/api';
 import { calcTVA, fmt, fmtN } from '../lib/fiscalCalc';
 import { parseFile, downloadCsvTemplate, parseAmount, parseTaux } from '../lib/importCsv';
-import { Card, Btn, Spinner } from '../components/ui';
+import { Card, Btn, Spinner, NumericInput } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import type { TVADeclaration, Company } from '../types';
 import { generateTVAForm } from '../lib/pdfDGI';
@@ -320,46 +320,6 @@ function TVAContent() {
     );
 }
 
-// Champ montant HT : saisie libre, formatage automatique avec séparateurs de milliers
-function AmountInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-    const [focused, setFocused] = useState(false);
-    const [raw, setRaw] = useState('');
-
-    const handleFocus = () => {
-        setRaw(value === 0 ? '' : String(value));
-        setFocused(true);
-    };
-    const handleBlur = () => {
-        setFocused(false);
-        const n = parseInt(raw.replace(/\s/g, ''), 10);
-        onChange(isNaN(n) || n < 0 ? 0 : n);
-    };
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const cleaned = e.target.value.replace(/[^\d]/g, '');
-        setRaw(cleaned);
-        const n = parseInt(cleaned, 10);
-        onChange(isNaN(n) ? 0 : n);
-    };
-
-    // Formatage avec espaces comme séparateurs de milliers pendant l'affichage
-    const displayValue = focused
-        ? raw
-        : (value === 0 ? '' : value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0'));
-
-    return (
-        <input
-            type="text"
-            inputMode="numeric"
-            className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-mono text-right focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:outline-none"
-            value={displayValue}
-            placeholder="0"
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            onChange={handleChange}
-        />
-    );
-}
-
 function LignesPanel({
     title, lignes, onChange, typeOp,
 }: { title: string; lignes: LigneLocal[]; onChange: (l: LigneLocal[]) => void; typeOp: 'vente' | 'achat' }) {
@@ -438,8 +398,9 @@ function LignesPanel({
                                 }}
                             />
                             <div className="col-span-4">
-                                <AmountInput
+                                <NumericInput
                                     value={l.ht}
+                                    className="border-gray-200 px-2 py-1.5"
                                     onChange={(v) => {
                                         const arr = [...lignes]; arr[i] = { ...l, ht: v }; onChange(arr);
                                     }}

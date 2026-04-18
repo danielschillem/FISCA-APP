@@ -4,7 +4,7 @@ import { employeeApi, declarationApi, bulletinApi } from '../lib/api';
 import { calcEmploye, fmtN } from '../lib/fiscalCalc';
 import { downloadCsvTemplate } from '../lib/importCsv';
 import type { Employee, Bulletin } from '../types';
-import { Card, Btn, Badge, Spinner, useAppStore, PLAN_FEATURES } from '../components/ui';
+import { Card, Btn, Badge, Spinner, useAppStore, PLAN_FEATURES, NumericInput } from '../components/ui';
 import { usePermissions } from '../lib/permissions';
 import { MOIS_FR } from '../types';
 import { FileText, CheckCircle2, AlertCircle, X, Download, Upload, Copy, List, PenLine } from 'lucide-react';
@@ -458,16 +458,21 @@ function EmployeeCard({ employee: emp, index, cotisation, onDelete }: EmployeeCa
             <label className="block text-xs font-medium text-gray-600 mb-1">
                 {label} {hint && <span className="text-gray-400 font-normal">{hint}</span>}
             </label>
-            <input
-                type={type}
-                value={String(e[key] ?? '')}
-                onChange={(ev) => {
-                    const val = type === 'number' ? +ev.target.value : ev.target.value;
-                    setE((prev) => ({ ...prev, [key]: val }));
-                }}
-                onBlur={() => update.mutate({ ...e })}  // envoie l'objet complet
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
+            {type === 'number' ? (
+                <NumericInput
+                    value={Number(e[key] ?? 0)}
+                    onChange={(v) => setE((prev) => ({ ...prev, [key]: v }))}
+                    onBlur={() => update.mutate({ ...e })}
+                />
+            ) : (
+                <input
+                    type="text"
+                    value={String(e[key] ?? '')}
+                    onChange={(ev) => setE((prev) => ({ ...prev, [key]: ev.target.value }))}
+                    onBlur={() => update.mutate({ ...e })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+            )}
         </div>
     );
 

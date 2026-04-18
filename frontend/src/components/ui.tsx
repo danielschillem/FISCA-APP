@@ -1,4 +1,5 @@
 // Shared UI primitives
+import { useState } from 'react';
 import { PLAN_FEATURES } from '../types';
 import { useAppStore } from '../lib/store';
 import { Lock } from 'lucide-react';
@@ -117,6 +118,61 @@ export function Input({ label, suffix, error, className = '', ...props }: InputP
             </div>
             {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
+    );
+}
+
+/**
+ * Champ de saisie numérique harmonisé (FCFA, montants entiers).
+ * - Affiche vide quand la valeur est 0 (pas de "0" bloqué)
+ * - Saisie libre en texte, nettoyage des non-chiffres
+ * - Formatage milliers (espaces insécables) au blur
+ * - Compatible iOS Safari (inputMode="numeric")
+ */
+interface NumericInputProps {
+    value: number;
+    onChange: (v: number) => void;
+    onBlur?: () => void;
+    placeholder?: string;
+    className?: string;
+    disabled?: boolean;
+}
+export function NumericInput({ value, onChange, onBlur, placeholder = '0', className = '', disabled }: NumericInputProps) {
+    const [focused, setFocused] = useState(false);
+    const [raw, setRaw] = useState('');
+
+    const handleFocus = () => {
+        setRaw(value === 0 ? '' : String(value));
+        setFocused(true);
+    };
+    const handleBlur = () => {
+        setFocused(false);
+        const n = parseInt(raw.replace(/\s/g, ''), 10);
+        onChange(isNaN(n) || n < 0 ? 0 : n);
+        onBlur?.();
+    };
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const cleaned = e.target.value.replace(/[^\d]/g, '');
+        setRaw(cleaned);
+        const n = parseInt(cleaned, 10);
+        onChange(isNaN(n) ? 0 : n);
+    };
+
+    const displayValue = focused
+        ? raw
+        : (value === 0 ? '' : value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0'));
+
+    return (
+        <input
+            type="text"
+            inputMode="numeric"
+            disabled={disabled}
+            className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono text-right focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 ${className}`}
+            value={displayValue}
+            placeholder={placeholder}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onChange={handleChange}
+        />
     );
 }
 

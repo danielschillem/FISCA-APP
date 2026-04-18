@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { patenteApi, companyApi } from '../lib/api';
 import { calcPatente, fmt, fmtN } from '../lib/fiscalCalc';
-import { Card, Btn, Spinner } from '../components/ui';
+import { Card, Btn, Spinner, NumericInput } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
 import type { PatenteDeclaration, Company } from '../types';
@@ -80,13 +80,11 @@ function PatenteContent() {
                     </div>
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Chiffre d'affaires annuel HT (FCFA)</label>
-                        <input type="number" value={ca} onChange={(e) => setCa(+e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
+                        <NumericInput value={ca} onChange={setCa} />
                     </div>
                     <div className="col-span-2">
                         <label className="block text-xs font-medium text-gray-700 mb-1">Valeur locative annuelle des locaux (FCFA)</label>
-                        <input type="number" value={valeurLocative} onChange={(e) => setValeurLocative(+e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
+                        <NumericInput value={valeurLocative} onChange={setValeurLocative} />
                         <p className="text-[11px] text-gray-400 mt-1">= Loyer mensuel × 12 si locataire</p>
                     </div>
                 </div>

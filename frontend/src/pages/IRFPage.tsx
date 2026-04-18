@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { irfApi, companyApi } from '../lib/api';
 import { calcIRF, fmt } from '../lib/fiscalCalc';
-import { Card, Btn, Spinner } from '../components/ui';
+import { Card, Btn, Spinner, NumericInput } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
 import type { IRFDeclaration, Company } from '../types';
@@ -67,8 +67,7 @@ function IRFContent() {
                     </div>
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Loyer brut annuel (FCFA)</label>
-                        <input type="number" value={loyerBrut} onChange={(e) => setLoyerBrut(+e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
+                        <NumericInput value={loyerBrut} onChange={setLoyerBrut} />
                     </div>
                 </div>
                 <div className="flex gap-2">

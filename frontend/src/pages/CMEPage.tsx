@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cmeApi, companyApi } from '../lib/api';
 import { calcCME, fmt, fmtN, CME_CA_PLAFOND } from '../lib/fiscalCalc';
-import { Card, Btn, Spinner } from '../components/ui';
+import { Card, Btn, Spinner, NumericInput } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Save, Trash2, Download, Lock, CheckCircle, FileText, AlertTriangle } from 'lucide-react';
 import type { CMEDeclaration, Company } from '../types';
@@ -97,8 +97,11 @@ function CMEContent() {
                     </div>
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Chiffre d'affaires annuel HT (FCFA)</label>
-                        <input type="number" value={ca} onChange={(e) => setCa(+e.target.value)}
-                            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none ${horsRegime ? 'border-red-400 focus:ring-2 focus:ring-red-400' : 'border-gray-300 focus:ring-2 focus:ring-green-500'}`} />
+                        <NumericInput
+                            value={ca}
+                            onChange={setCa}
+                            className={horsRegime ? 'border-red-400 focus:ring-red-400' : ''}
+                        />
                         {horsRegime && (
                             <div className="flex items-start gap-2 mt-1.5 p-2.5 bg-red-50 border border-red-200 rounded-lg">
                                 <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
