@@ -37,6 +37,7 @@ const PatentePage = lazy(() => import('./pages/PatentePage'));
 const CalendrierFiscalPage = lazy(() => import('./pages/CalendrierFiscalPage'));
 const ChecklistPage = lazy(() => import('./pages/ChecklistPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const MentionsLegalesPage = lazy(() => import('./pages/MentionsLegalesPage'));
 
 // Admin pages : lazy loaded
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
@@ -96,6 +97,7 @@ function App() {
               <Route path="/exercice" element={<ExercicePage />} />
               <Route path="/parametres" element={<ParametresPage />} />
               <Route path="/abonnement" element={<AbonnementPage />} />
+              <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               {/* Organisation Admin */}
               <Route path="/org/info" element={<OrgInfoPage />} />

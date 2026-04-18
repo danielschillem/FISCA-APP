@@ -6,6 +6,7 @@ import { usePermissions } from '../lib/permissions';
 import { useRegime } from '../lib/regime';
 import { PLAN_FEATURES, type Plan } from '../types';
 import { authApi } from '../lib/api';
+import { APP_VERSION, COPYRIGHT_YEAR_END, DEVELOPER_NAME } from '../lib/version';
 import {
     LayoutDashboard, PenLine, Calculator, FileText, FileCheck,
     Sliders, Receipt, Home, TrendingUp, Bot, Building2, GitBranch,
@@ -260,6 +261,18 @@ export default function Sidebar() {
                         >
                             <LogOut className="w-4 h-4" />
                         </button>
+                    </div>
+                    {/* Version + Mentions légales */}
+                    <div className="mt-3 pt-3 border-t border-slate-800/60 flex items-center justify-between">
+                        <span className="text-[10px] text-slate-600 font-mono">
+                            v{APP_VERSION} · © {COPYRIGHT_YEAR_END} {DEVELOPER_NAME}
+                        </span>
+                        <NavLink
+                            to="/mentions-legales"
+                            className="text-[10px] text-slate-600 hover:text-slate-400 underline transition-colors"
+                        >
+                            Mentions légales
+                        </NavLink>
                     </div>
                 </div>
             </aside>

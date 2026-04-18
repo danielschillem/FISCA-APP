@@ -32,6 +32,7 @@ const PAGE_META: Record<string, { title: string; subtitle?: string }> = {
     '/org/info': { title: 'Mon Organisation', subtitle: 'Vue d\'ensemble & quotas' },
     '/org/membres': { title: 'Membres & Rôles', subtitle: 'Gérer les accès de l\'organisation' },
     '/org/societes': { title: 'Accès Sociétés', subtitle: 'Permissions par entité' },
+    '/mentions-legales': { title: 'Mentions légales', subtitle: 'CGU · Licence · Confidentialité · Droit applicable' },
 };
 
 export default function AppLayout() {
