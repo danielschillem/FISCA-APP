@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { irfApi, companyApi } from '../lib/api';
 import { calcIRF, fmt } from '../lib/fiscalCalc';
-import { Card, Btn, Spinner, NumericInput } from '../components/ui';
+import { Card, Btn, Spinner, NumericInput, useToast } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
 import type { IRFDeclaration, Company } from '../types';
@@ -16,6 +16,7 @@ export default function IRFPage() {
 
 function IRFContent() {
     const qc = useQueryClient();
+    const toast = useToast();
     const [annee, setAnnee] = useState(new Date().getFullYear());
     const [loyerBrut, setLoyerBrut] = useState(6_000_000);
     const [result, setResult] = useState<ReturnType<typeof calcIRF> | null>(null);
@@ -33,16 +34,20 @@ function IRFContent() {
     const createMut = useMutation({
         mutationFn: () => irfApi.create({ annee, loyer_brut: loyerBrut }),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['irf'] }),
+        onError: (err: { response?: { data?: { error?: string } } }) =>
+            toast(err?.response?.data?.error ?? "Erreur lors de l'enregistrement", 'error'),
     });
 
     const deleteMut = useMutation({
         mutationFn: (id: string) => irfApi.delete(id),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['irf'] }),
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['irf'] }); toast('Déclaration IRF supprimée'); },
+        onError: (err: { response?: { data?: { error?: string } } }) =>
+            toast(err?.response?.data?.error ?? 'Erreur lors de la suppression', 'error'),
     });
 
     const validerMut = useMutation({
         mutationFn: (id: string) => irfApi.valider(id),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['irf'] }),
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['irf'] }); toast('Déclaration IRF validée'); },
     });
 
     const calc = () => setResult(calcIRF(loyerBrut));
@@ -79,7 +84,7 @@ function IRFContent() {
                         </Btn>
                     )}
                 </div>
-                {createMut.isError && <p className="text-xs text-red-600 mt-2">Erreur lors de l'enregistrement</p>}
+                {createMut.isError && <p className="text-xs text-red-600 mt-2">{(createMut.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Erreur lors de l'enregistrement"}</p>}
                 {createMut.isSuccess && <p className="text-xs text-green-600 mt-2 flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Déclaration enregistrée</p>}
             </Card>
 

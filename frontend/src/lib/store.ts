@@ -84,3 +84,20 @@ useAuthStore.subscribe((state) => {
         useAppStore.getState().setPlan(state.user.plan as Plan);
     }
 });
+
+// --- Toast store (notifications éphémères) ----------------------------
+
+interface ToastItem { id: number; msg: string; type: 'success' | 'error' | 'info' }
+interface ToastStore {
+    toasts: ToastItem[];
+    toast: (msg: string, type?: ToastItem['type']) => void;
+}
+
+export const useToastStore = create<ToastStore>((set) => ({
+    toasts: [],
+    toast: (msg, type = 'success') => {
+        const id = Date.now();
+        set((s) => ({ toasts: [...s.toasts, { id, msg, type }] }));
+        setTimeout(() => set((s) => ({ toasts: s.toasts.filter(t => t.id !== id) })), 3500);
+    },
+}));

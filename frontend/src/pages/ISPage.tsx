@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { isApi, companyApi } from '../lib/api';
 import { calcIS, calcMFP, fmt } from '../lib/fiscalCalc';
-import { Card, Btn, Spinner, NumericInput } from '../components/ui';
+import { Card, Btn, Spinner, NumericInput, useToast } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
 import type { ISDeclaration, Company } from '../types';
@@ -19,6 +19,7 @@ export default function ISPage() {
 
 function ISContent() {
     const qc = useQueryClient();
+    const toast = useToast();
     const { requestPayment, PaymentModalComponent } = usePaymentGate();
     const [annee, setAnnee] = useState(new Date().getFullYear());
     const [ca, setCa] = useState(500_000_000);
@@ -42,16 +43,20 @@ function ISContent() {
     const createMut = useMutation({
         mutationFn: () => isApi.create({ annee, ca, benefice, regime, adhesion_cga: cga }),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['is'] }),
+        onError: (err: { response?: { data?: { error?: string } } }) =>
+            toast(err?.response?.data?.error ?? "Erreur lors de l'enregistrement", 'error'),
     });
 
     const deleteMut = useMutation({
         mutationFn: (id: string) => isApi.delete(id),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['is'] }),
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['is'] }); toast('Déclaration IS supprimée'); },
+        onError: (err: { response?: { data?: { error?: string } } }) =>
+            toast(err?.response?.data?.error ?? 'Erreur lors de la suppression', 'error'),
     });
 
     const validerMut = useMutation({
         mutationFn: (id: string) => isApi.valider(id),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['is'] }),
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['is'] }); toast('Déclaration IS validée'); },
     });
 
     const calc = () => {

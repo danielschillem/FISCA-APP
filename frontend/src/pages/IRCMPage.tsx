@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ircmApi, companyApi } from '../lib/api';
 import { calcIRCM, fmt } from '../lib/fiscalCalc';
-import { Card, Btn, Spinner, NumericInput } from '../components/ui';
+import { Card, Btn, Spinner, NumericInput, useToast } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
 import type { IRCMDeclaration, Company } from '../types';
@@ -25,6 +25,7 @@ export default function IRCMPage() {
 
 function IRCMContent() {
     const qc = useQueryClient();
+    const toast = useToast();
     const { requestPayment, PaymentModalComponent } = usePaymentGate();
     const [annee, setAnnee] = useState(new Date().getFullYear());
     const [type, setType] = useState<IRCMType>('CREANCES');
@@ -44,16 +45,20 @@ function IRCMContent() {
     const createMut = useMutation({
         mutationFn: () => ircmApi.create({ annee, montant_brut: montant, type_revenu: type }),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['ircm'] }),
+        onError: (err: { response?: { data?: { error?: string } } }) =>
+            toast(err?.response?.data?.error ?? "Erreur lors de l'enregistrement", 'error'),
     });
 
     const deleteMut = useMutation({
         mutationFn: (id: string) => ircmApi.delete(id),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['ircm'] }),
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['ircm'] }); toast('Déclaration IRCM supprimée'); },
+        onError: (err: { response?: { data?: { error?: string } } }) =>
+            toast(err?.response?.data?.error ?? 'Erreur lors de la suppression', 'error'),
     });
 
     const validerMut = useMutation({
         mutationFn: (id: string) => ircmApi.valider(id),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['ircm'] }),
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['ircm'] }); toast('Déclaration IRCM validée'); },
     });
 
     const calc = () => setResult(calcIRCM(montant, type));

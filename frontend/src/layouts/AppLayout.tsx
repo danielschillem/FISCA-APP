@@ -3,6 +3,7 @@ import { useAuthStore, useAppStore } from '../lib/store';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import NotifPanel from '../components/NotifPanel';
+import { Toaster } from '../components/ui';
 import { useLocation } from 'react-router-dom';
 import { Eye, X, WifiOff } from 'lucide-react';
 import { useOnlineStatus } from '../lib/useOnlineStatus';
@@ -81,6 +82,7 @@ export default function AppLayout() {
                 </main>
             </div>
             <NotifPanel />
+            <Toaster />
         </div>
     );
 }

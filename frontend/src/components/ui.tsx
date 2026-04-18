@@ -258,6 +258,36 @@ export function PlanGate({ feature, requiredPlan, children }: GateProps) {
     );
 }
 
+// --- Toaster (toast notifications éphémères) --------------------------
+import { useToastStore } from '../lib/store';
+
+export function useToast() {
+    return useToastStore(s => s.toast);
+}
+
+export function Toaster() {
+    const toasts = useToastStore(s => s.toasts);
+    if (toasts.length === 0) return null;
+    return (
+        <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
+            {toasts.map(t => (
+                <div
+                    key={t.id}
+                    className={`flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white min-w-[220px] max-w-xs animate-pulse ${
+                        t.type === 'error' ? 'bg-red-600' : t.type === 'info' ? 'bg-blue-600' : 'bg-green-600'
+                    }`}
+                    style={{ animation: 'none' }}
+                >
+                    {t.type === 'success' && <span className="shrink-0">&#10003;</span>}
+                    {t.type === 'error' && <span className="shrink-0">&#x2715;</span>}
+                    {t.type === 'info' && <span className="shrink-0">&#x2139;</span>}
+                    <span>{t.msg}</span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 // Re-export useAppStore and PLAN_FEATURES for convenience
 // eslint-disable-next-line react-refresh/only-export-components
 export { useAppStore } from '../lib/store';

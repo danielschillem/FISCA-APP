@@ -68,8 +68,9 @@ export default function DashboardPage() {
     const navigate = useNavigate();
 
     const retards = declarations.filter((d: { statut: string }) => d.statut === 'retard');
-    const totalPenalites = retards.reduce((sum: number, d: { iuts_total: number; mois: number }) => {
-        const moisRetard = moisActuel - d.mois + 1;
+    const totalPenalites = retards.reduce((sum: number, d: { iuts_total: number; mois: number; annee?: number }) => {
+        const anneeDecl = d.annee ?? anneeActuelle;
+        const moisRetard = (anneeActuelle - anneeDecl) * 12 + (moisActuel - d.mois + 1);
         return sum + calcPenalite(d.iuts_total, Math.max(0, moisRetard));
     }, 0);
 

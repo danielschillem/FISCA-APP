@@ -42,6 +42,10 @@ export default function ParametresPage() {
     const qc = useQueryClient();
     const { user, setAuth } = useAuthStore();
     const [success, setSuccess] = useState('');
+    const [saveError, setSaveError] = useState('');
+
+    const IFU_RE = /^\d{10}[A-Z]{2}$/;
+    const RC_RE = /^[A-Z]{2}-[A-Z0-9]{3}-\d{4}-[A-Z]-\d{4}$/;
 
     const { data: company, isLoading } = useQuery<Company>({
         queryKey: ['company'],
@@ -59,8 +63,12 @@ export default function ParametresPage() {
         mutationFn: (data: Partial<Company>) => companyApi.update(data),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['company'] });
+            setSaveError('');
             setSuccess('Paramètres mis à jour avec succès.');
             setTimeout(() => setSuccess(''), 3000);
+        },
+        onError: (err: { response?: { data?: { error?: string } } }) => {
+            setSaveError(err?.response?.data?.error ?? 'Erreur lors de la sauvegarde.');
         },
     });
 
@@ -107,15 +115,24 @@ export default function ParametresPage() {
 
     if (isLoading) return <Spinner />;
 
-    const f = (key: keyof Company, label: string, placeholder?: string, type?: string) => (
-        <Input
-            label={label}
-            type={type ?? 'text'}
-            value={String(form[key] ?? '')}
-            onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
-            placeholder={placeholder}
-        />
-    );
+    const f = (key: keyof Company, label: string, placeholder?: string, type?: string) => {
+        const val = String(form[key] ?? '');
+        let error: string | undefined;
+        if (key === 'ifu' && val && !IFU_RE.test(val))
+            error = 'Format IFU invalide (ex : 0012345678BF - 10 chiffres + 2 lettres)';
+        if (key === 'rc' && val && !RC_RE.test(val))
+            error = 'Format RC invalide (ex : BF-OUA-2024-B-0001)';
+        return (
+            <Input
+                label={label}
+                type={type ?? 'text'}
+                value={val}
+                onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
+                placeholder={placeholder}
+                error={error}
+            />
+        );
+    };
 
     return (
         <div className="max-w-3xl space-y-6">
@@ -201,6 +218,13 @@ export default function ParametresPage() {
                     </div>
                 </div>
 
+                {saveError && (
+                    <div className="mt-2 bg-red-50 text-red-700 text-sm px-4 py-2 rounded-lg border border-red-100">
+                        <div className="flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4" /> {saveError}
+                        </div>
+                    </div>
+                )}
                 {success && (
                     <div className="mt-2 bg-green-50 text-green-700 text-sm px-4 py-2 rounded-lg border border-green-100">
                         <div className="flex items-center gap-2 text-green-700 text-sm">
@@ -210,7 +234,17 @@ export default function ParametresPage() {
                 )}
 
                 <div className="mt-4 flex justify-end">
-                    <Btn onClick={() => update.mutate(form)} disabled={update.isPending}>
+                    <Btn
+                        onClick={() => {
+                            const ifu = String(form.ifu ?? '');
+                            const rc = String(form.rc ?? '');
+                            if (ifu && !IFU_RE.test(ifu)) { setSaveError('Format IFU invalide (ex : 0012345678BF)'); return; }
+                            if (rc && !RC_RE.test(rc)) { setSaveError('Format RC invalide (ex : BF-OUA-2024-B-0001)'); return; }
+                            setSaveError('');
+                            update.mutate(form);
+                        }}
+                        disabled={update.isPending}
+                    >
                         {update.isPending ? 'Sauvegarde…' : 'Sauvegarder la fiche contribuable'}
                     </Btn>
                 </div>

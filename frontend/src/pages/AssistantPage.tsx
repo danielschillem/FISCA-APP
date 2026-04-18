@@ -85,8 +85,8 @@ function MarkdownMsg({ content }: { content: string }) {
         flushTable(`table-${idx}`);
 
         // Listes
-        if (/^[--]\s+/.test(line)) {
-            listItems.push(line.replace(/^[--]\s+/, ''));
+        if (/^- /.test(line)) {
+            listItems.push(line.replace(/^- /, ''));
             return;
         }
         flushList(`list-${idx}`);

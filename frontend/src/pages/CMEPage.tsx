@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cmeApi, companyApi } from '../lib/api';
 import { calcCME, fmt, fmtN, CME_CA_PLAFOND } from '../lib/fiscalCalc';
-import { Card, Btn, Spinner, NumericInput } from '../components/ui';
+import { Card, Btn, Spinner, NumericInput, useToast } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Save, Trash2, Download, Lock, CheckCircle, FileText, AlertTriangle } from 'lucide-react';
 import type { CMEDeclaration, Company } from '../types';
@@ -37,6 +37,7 @@ export default function CMEPage() {
 
 function CMEContent() {
     const qc = useQueryClient();
+    const toast = useToast();
     const { requestPayment, PaymentModalComponent } = usePaymentGate();
     const [annee, setAnnee] = useState(new Date().getFullYear());
     const [ca, setCa] = useState(5_000_000);
@@ -57,16 +58,20 @@ function CMEContent() {
     const createMut = useMutation({
         mutationFn: () => cmeApi.create({ annee, ca, zone, adhesion_cga: cga }),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['cme'] }),
+        onError: (err: { response?: { data?: { error?: string } } }) =>
+            toast(err?.response?.data?.error ?? "Erreur lors de l'enregistrement", 'error'),
     });
 
     const deleteMut = useMutation({
         mutationFn: (id: string) => cmeApi.delete(id),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['cme'] }),
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['cme'] }); toast('Déclaration CME supprimée'); },
+        onError: (err: { response?: { data?: { error?: string } } }) =>
+            toast(err?.response?.data?.error ?? 'Erreur lors de la suppression', 'error'),
     });
 
     const validerMut = useMutation({
         mutationFn: (id: string) => cmeApi.valider(id),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['cme'] }),
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['cme'] }); toast('Déclaration CME validée'); },
     });
 
     const horsRegime = ca > CME_CA_PLAFOND;

@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { patenteApi, companyApi } from '../lib/api';
 import { calcPatente, fmt, fmtN } from '../lib/fiscalCalc';
-import { Card, Btn, Spinner, NumericInput } from '../components/ui';
+import { Card, Btn, Spinner, NumericInput, useToast } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
 import type { PatenteDeclaration, Company } from '../types';
@@ -16,6 +16,7 @@ export default function PatentePage() {
 
 function PatenteContent() {
     const qc = useQueryClient();
+    const toast = useToast();
     const [annee, setAnnee] = useState(new Date().getFullYear());
     const [ca, setCa] = useState(100_000_000);
     const [valeurLocative, setValeurLocative] = useState(2_400_000);
@@ -34,16 +35,20 @@ function PatenteContent() {
     const createMut = useMutation({
         mutationFn: () => patenteApi.create({ annee, ca, valeur_locative: valeurLocative }),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['patente'] }),
+        onError: (err: { response?: { data?: { error?: string } } }) =>
+            toast(err?.response?.data?.error ?? "Erreur lors de l'enregistrement", 'error'),
     });
 
     const deleteMut = useMutation({
         mutationFn: (id: string) => patenteApi.delete(id),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['patente'] }),
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['patente'] }); toast('Déclaration Patente supprimée'); },
+        onError: (err: { response?: { data?: { error?: string } } }) =>
+            toast(err?.response?.data?.error ?? 'Erreur lors de la suppression', 'error'),
     });
 
     const validerMut = useMutation({
         mutationFn: (id: string) => patenteApi.valider(id),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['patente'] }),
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['patente'] }); toast('Déclaration Patente validée'); },
     });
 
     const calc = () => setResult(calcPatente(ca, valeurLocative));
