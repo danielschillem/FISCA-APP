@@ -31,6 +31,9 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 		"https://*.netlify.app", // frontend Netlify (prod + previews)
 		"http://localhost:3000", // frontend Vite (dev) / frontend Docker
 		"http://localhost:5173", // frontend Vite dev server
+		"https://localhost",     // Capacitor Android (androidScheme: 'https')
+		"http://localhost",      // Capacitor Android (fallback)
+		"capacitor://localhost", // Capacitor iOS
 	}
 	if extra := os.Getenv("ALLOWED_ORIGIN"); extra != "" {
 		// Supporte plusieurs origines séparées par des virgules

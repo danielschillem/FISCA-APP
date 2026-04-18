@@ -1,6 +1,9 @@
 ﻿import axios from 'axios';
 
-const BASE = import.meta.env.VITE_API_URL || '/api';
+// En contexte Capacitor (Android/iOS), window.Capacitor est injecté par le runtime natif.
+// L'app tourne depuis https://localhost → on doit pointer l'URL absolue du backend.
+const isNative = typeof (window as unknown as { Capacitor?: unknown }).Capacitor !== 'undefined';
+const BASE = import.meta.env.VITE_API_URL || (isNative ? 'https://fisca-backend.onrender.com' : '/api');
 
 export const api = axios.create({
     baseURL: BASE,
