@@ -134,7 +134,7 @@ function BulletinsContent() {
             )}
 
             {bulletins.map((b) => (
-                <BulletinCard key={b.id} bulletin={b} company={company} />
+                <BulletinCard key={b.id} bulletin={b} company={company} onPdf={requestPayment} />
             ))}
         </div>
     );
@@ -164,7 +164,11 @@ function PreviewBulletin({ employee: e, index }: { employee: Employee; index: nu
     );
 }
 
-function BulletinCard({ bulletin: b, company }: { bulletin: Bulletin; company?: Company }) {
+function BulletinCard({ bulletin: b, company, onPdf }: {
+    bulletin: Bulletin;
+    company?: Company;
+    onPdf: (docType: 'bulletin', docId: string, cb: () => void) => void;
+}) {
     return (
         <Card>
             <div className="flex items-center justify-between mb-4">
@@ -173,7 +177,7 @@ function BulletinCard({ bulletin: b, company }: { bulletin: Bulletin; company?: 
                     <p className="text-xs text-gray-500">{b.periode} - {b.categorie}</p>
                 </div>
                 <div className="flex gap-2">
-                    <Btn size="sm" variant="outline" onClick={() => requestPayment('bulletin', b.id, () => exportBulletinPDF(b, company))}>
+                    <Btn size="sm" variant="outline" onClick={() => onPdf('bulletin', b.id, () => exportBulletinPDF(b, company))}>
                         <FileText className="w-3.5 h-3.5" /> PDF
                     </Btn>
                 </div>
