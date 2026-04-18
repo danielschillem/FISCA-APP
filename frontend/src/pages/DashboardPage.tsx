@@ -450,7 +450,7 @@ export default function DashboardPage() {
                                             />
                                         </div>
                                         <span className="text-[11px] font-mono text-gray-600 w-24 text-right shrink-0">
-                                            {val > 0 ? fmtN(val) : ':'}
+                                            {val > 0 ? fmtN(val) : '-'}
                                         </span>
                                     </div>
                                 );

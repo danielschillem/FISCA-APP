@@ -5,7 +5,7 @@ import { Card, Badge, Btn, Spinner } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import type { WorkflowEtape } from '../types';
 import { MOIS_FR } from '../types';
-import { MessageSquare, Check, X, Lock } from 'lucide-react';
+import { MessageSquare, Check, X, Lock, History, ChevronUp } from 'lucide-react';
 
 const STATUT_COLOR: Record<string, 'green' | 'orange' | 'blue' | 'red' | 'gray'> = {
     approuve: 'green',
@@ -14,6 +14,46 @@ const STATUT_COLOR: Record<string, 'green' | 'orange' | 'blue' | 'red' | 'gray'>
     rejete: 'red',
     brouillon: 'gray',
 };
+
+const ETAPE_LABEL: Record<string, string> = {
+    soumis: 'Soumis',
+    en_revision: 'En révision',
+    approuve: 'Approuvé',
+    rejete: 'Rejeté',
+    brouillon: 'Brouillon',
+};
+
+function AuditTrail({ declId }: { declId: string }) {
+    const { data: etapes = [], isLoading } = useQuery<WorkflowEtape[]>({
+        queryKey: ['workflow-history', declId],
+        queryFn: () => workflowApi.get(declId).then((r) => r.data),
+    });
+
+    if (isLoading) return <div className="text-xs text-gray-400 py-2 animate-pulse">Chargement de l'historique...</div>;
+    if (etapes.length === 0) return <p className="text-xs text-gray-400 py-2">Aucune transition enregistrée.</p>;
+
+    return (
+        <div className="mt-3 border-t border-gray-100 pt-3 space-y-2">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Historique des transitions</p>
+            {etapes.map((e, i) => (
+                <div key={e.id ?? i} className="flex items-start gap-2.5">
+                    <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${
+                        e.etape === 'approuve' ? 'bg-green-400' :
+                        e.etape === 'rejete' ? 'bg-red-400' :
+                        e.etape === 'soumis' ? 'bg-blue-400' : 'bg-gray-300'
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                        <span className="text-xs font-semibold text-gray-700">{ETAPE_LABEL[e.etape] ?? e.etape}</span>
+                        {e.commentaire && <span className="text-xs text-gray-500 ml-2 italic">— {e.commentaire}</span>}
+                        <p className="text-[10px] text-gray-400">
+                            {new Date(e.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
 
 export default function WorkflowPage() {
     const { plan } = useAppStore();
@@ -25,6 +65,7 @@ function WorkflowContent() {
     const qc = useQueryClient();
     const [filterStatut, setFilterStatut] = useState('all');
     const [rejectModal, setRejectModal] = useState<{ id: string; comment: string } | null>(null);
+    const [openHistory, setOpenHistory] = useState<string | null>(null);
 
     const { data: etapes = [], isLoading } = useQuery<WorkflowEtape[]>({
         queryKey: ['workflow', filterStatut],
@@ -107,8 +148,16 @@ function WorkflowContent() {
                                         ↩ Réviser
                                     </Btn>
                                 )}
+                                <button
+                                    onClick={() => setOpenHistory(openHistory === e.id ? null : e.id)}
+                                    title="Historique des transitions"
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                                >
+                                    {openHistory === e.id ? <ChevronUp className="w-4 h-4" /> : <History className="w-4 h-4" />}
+                                </button>
                             </div>
                         </div>
+                        {openHistory === e.id && <AuditTrail declId={e.id} />}
                     </Card>
                 ))}
                 {etapes.length === 0 && (
