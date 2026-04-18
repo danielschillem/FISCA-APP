@@ -126,12 +126,8 @@ func (h *BulletinHandler) Generate(w http.ResponseWriter, r *http.Request) {
 	}
 	periode := fmt.Sprintf("%s %d", periodeNoms[req.Mois], req.Annee)
 
-	// Supprimer les bulletins existants pour cette période (régénération propre)
-	_, _ = h.DB.Exec(r.Context(),
-		`DELETE FROM bulletins WHERE company_id=$1 AND mois=$2 AND annee=$3`,
-		companyID, req.Mois, req.Annee)
-
-	rows, err := h.DB.Query(r.Context(),
+	// Récupérer les employés avant d'ouvrir la transaction
+	empRows, err := h.DB.Query(r.Context(),
 		`SELECT id, nom, categorie, charges, salaire_base, anciennete, heures_sup,
 		        logement, transport, fonction, cotisation
 		 FROM employees WHERE company_id=$1 ORDER BY nom`,
@@ -140,36 +136,60 @@ func (h *BulletinHandler) Generate(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "Erreur récupération employés", http.StatusInternalServerError)
 		return
 	}
-	defer rows.Close()
+	defer empRows.Close()
 
-	var bulletins []models.Bulletin
-	for rows.Next() {
-		var empID, nom, categorie, empCotisation string
-		var charges int
-		var salBase, anc, hSup, log, trans, fonc float64
-		if err := rows.Scan(&empID, &nom, &categorie, &charges,
-			&salBase, &anc, &hSup, &log, &trans, &fonc, &empCotisation); err != nil {
+	type empData struct {
+		id, nom, categorie, cotisation string
+		charges                        int
+		salBase, anc, hSup, log, trans, fonc float64
+	}
+	var employes []empData
+	for empRows.Next() {
+		var e empData
+		if err := empRows.Scan(&e.id, &e.nom, &e.categorie, &e.charges,
+			&e.salBase, &e.anc, &e.hSup, &e.log, &e.trans, &e.fonc, &e.cotisation); err != nil {
 			continue
 		}
-		// Utiliser la cotisation de l'employé (CNSS ou CARFO) — pas celle du payload
-		if empCotisation != "CARFO" {
-			empCotisation = "CNSS"
+		if e.cotisation != "CARFO" {
+			e.cotisation = "CNSS"
 		}
+		employes = append(employes, e)
+	}
+	empRows.Close()
+
+	// Transaction atomique : DELETE ancien + INSERT nouveau
+	tx, err := h.DB.Begin(r.Context())
+	if err != nil {
+		jsonError(w, "Erreur démarrage transaction", http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback(r.Context()) //nolint:errcheck
+
+	// Supprimer les bulletins existants pour cette période (régénération propre)
+	if _, err := tx.Exec(r.Context(),
+		`DELETE FROM bulletins WHERE company_id=$1 AND mois=$2 AND annee=$3`,
+		companyID, req.Mois, req.Annee); err != nil {
+		jsonError(w, "Erreur suppression bulletins", http.StatusInternalServerError)
+		return
+	}
+
+	var bulletins []models.Bulletin
+	for _, emp := range employes {
 		res := calc.CalcSalarie(calc.SalarieInput{
-			SalaireBase: salBase, Anciennete: anc, HeuresSup: hSup,
-			Logement: log, Transport: trans, Fonction: fonc,
-			Charges: charges, Categorie: categorie, Cotisation: empCotisation,
+			SalaireBase: emp.salBase, Anciennete: emp.anc, HeuresSup: emp.hSup,
+			Logement: emp.log, Transport: emp.trans, Fonction: emp.fonc,
+			Charges: emp.charges, Categorie: emp.categorie, Cotisation: emp.cotisation,
 		})
 		var b models.Bulletin
-		err = h.DB.QueryRow(r.Context(),
+		err = tx.QueryRow(r.Context(),
 			`INSERT INTO bulletins
 			 (company_id, employee_id, mois, annee, periode, nom_employe, categorie,
 			  salaire_base, anciennete, heures_sup, logement, transport, fonction, charges, cotisation,
 			  brut_total, base_imp, iuts_brut, iuts_net, cot_soc, tpa, fsp, salaire_net)
 			 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
 			 RETURNING `+bulletinCols,
-			companyID, empID, req.Mois, req.Annee, periode, nom, categorie,
-			salBase, anc, hSup, log, trans, fonc, charges, empCotisation,
+			companyID, emp.id, req.Mois, req.Annee, periode, emp.nom, emp.categorie,
+			emp.salBase, emp.anc, emp.hSup, emp.log, emp.trans, emp.fonc, emp.charges, emp.cotisation,
 			res.BrutTotal, res.BaseImp, res.IUTSBrut, res.IUTSNet, res.CotSoc, res.TPA, res.FSP, res.SalaireNet,
 		).Scan(
 			&b.ID, &b.CompanyID, &b.EmployeeID, &b.Mois, &b.Annee, &b.Periode,
@@ -177,9 +197,16 @@ func (h *BulletinHandler) Generate(w http.ResponseWriter, r *http.Request) {
 			&b.Logement, &b.Transport, &b.Fonction, &b.Charges, &b.Cotisation,
 			&b.BrutTotal, &b.BaseImp, &b.IUTSBrut, &b.IUTSNet, &b.CotSoc, &b.TPA, &b.FSP, &b.SalaireNet, &b.CreatedAt,
 		)
-		if err == nil {
-			bulletins = append(bulletins, b)
+		if err != nil {
+			jsonError(w, "Erreur génération bulletin: "+err.Error(), http.StatusInternalServerError)
+			return
 		}
+		bulletins = append(bulletins, b)
+	}
+
+	if err := tx.Commit(r.Context()); err != nil {
+		jsonError(w, "Erreur finalisation bulletins", http.StatusInternalServerError)
+		return
 	}
 	jsonCreated(w, bulletins)
 }

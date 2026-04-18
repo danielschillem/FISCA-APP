@@ -109,6 +109,12 @@ func (h *CMEHandler) Create(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "annee (≥ 2000) et ca (> 0) requis", http.StatusBadRequest)
 		return
 	}
+	// CGI BF : la CME est réservée aux micro-entreprises dont le CA ≤ 15 000 000 FCFA.
+	// Au-delà, l'entreprise relève du RSI ou du régime réel (IS/MFP).
+	if req.CA > 15_000_000 {
+		jsonError(w, "Le régime CME est réservé aux entreprises dont le CA n'excède pas 15 000 000 FCFA (CGI 2025 Art. 533). Utilisez le module IS/MFP.", http.StatusBadRequest)
+		return
+	}
 
 	res := calc.CalcCME(req.CA, req.Zone, req.AdhesionCGA)
 	ref := fmt.Sprintf("CME-%d-%04d", req.Annee, time.Now().UnixNano()%10000)

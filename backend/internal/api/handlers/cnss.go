@@ -168,17 +168,23 @@ func (h *CNSSHandler) Generer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Si aucun bulletin, estimer depuis la déclaration
+	// css_total = somme des cotisations salariales (CNSS 5.5% + CARFO 6%)
+	// On ne peut pas distinguer CNSS/CARFO sans bulletins → estimation conservative via taux moyen.
+	// La base est divisée par le taux CNSS (5.5%) pour obtenir un plancher prudent.
 	if nbCNSS+nbCARFO == 0 {
 		var cssTotal float64
 		h.DB.QueryRow(r.Context(),
 			`SELECT COALESCE(css_total,0) FROM declarations
 			 WHERE company_id=$1 AND mois=$2 AND annee=$3 LIMIT 1`,
 			companyID, req.Mois, req.Annee).Scan(&cssTotal)
-		// estimer base via taux salarial CNSS (5.5%) — arrondi au FCFA entier
-		baseCNSS = math.Round(cssTotal / (TauxSalarialCNSS / 100))
-		res := calc.CalcCNSSPatronal(baseCNSS, "CNSS")
-		patCNSS = res.TotalPatronal
-		salCNSS = res.CotSalariale
+		if cssTotal > 0 {
+			// Estimation via taux salarial CNSS 5.5% (taux le plus bas → base la plus haute)
+			// Si des employés sont CARFO (6%), la base réelle est légèrement inférieure.
+			baseCNSS = math.Round(cssTotal / (TauxSalarialCNSS / 100))
+			res := calc.CalcCNSSPatronal(baseCNSS, "CNSS")
+			patCNSS = res.TotalPatronal
+			salCNSS = res.CotSalariale
+		}
 	}
 
 	patCNSS = round2(patCNSS)

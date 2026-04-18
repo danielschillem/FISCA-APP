@@ -146,9 +146,9 @@ func (h *DeclarationHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Récupérer les employés avec leur cotisation individuelle
+	// Récupérer les employés avec leur cotisation et catégorie individuelles
 	rows, err := h.DB.Query(r.Context(),
-		`SELECT salaire_base, anciennete, heures_sup, logement, transport, fonction, charges, cotisation
+		`SELECT salaire_base, anciennete, heures_sup, logement, transport, fonction, charges, cotisation, categorie
 		 FROM employees WHERE company_id=$1`, companyID)
 	if err != nil {
 		jsonError(w, "Erreur récupération employés", http.StatusInternalServerError)
@@ -161,7 +161,7 @@ func (h *DeclarationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var e calc.SalarieInput
 		if err := rows.Scan(&e.SalaireBase, &e.Anciennete, &e.HeuresSup,
-			&e.Logement, &e.Transport, &e.Fonction, &e.Charges, &e.Cotisation); err != nil {
+			&e.Logement, &e.Transport, &e.Fonction, &e.Charges, &e.Cotisation, &e.Categorie); err != nil {
 			continue
 		}
 		if e.Cotisation != "CARFO" {
