@@ -106,50 +106,47 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
-  # ── Trigger Render deploys (dépend seulement du backend) ───────────────────
+  # ── Patch Render + trigger deploy (toujours, indépendant des builds) ────────
   deploy:
     name: Deploy to Render
     runs-on: ubuntu-latest
-    needs: [build-backend]
+    # Pas de needs: tourne même si les builds échouent (images déjà sur Docker Hub)
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     steps:
-      - name: Update Render services to use Docker Hub image + trigger deploy
+      - name: Patch Render services → Docker Hub + trigger deploy
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
         run: |
-          set -e
           BACKEND_SVC="srv-d7h5qv1f9bms739m9g4g"
           FRONTEND_SVC="srv-d7h5r2vaqgkc739ovevg"
           OWNER="schillem7"
 
-          # ── Mettre à jour les services pour utiliser Docker Hub (public) ───
-          echo "==> Patching backend service -> docker.io/$OWNER/fisca-backend:latest"
+          echo "==> Patching backend -> docker.io/$OWNER/fisca-backend:latest"
           curl -s -X PATCH "https://api.render.com/v1/services/$BACKEND_SVC" \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
             -d "{\"image\":{\"imagePath\":\"docker.io/$OWNER/fisca-backend:latest\"}}" \
-            | python3 -c "import sys,json; d=json.load(sys.stdin); print('backend patch:', str(d.get('id', d.get('message','?')))[:60])"
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print('backend patch:', str(d.get('id', d.get('message','?')))[:80])"
 
-          echo "==> Patching frontend service -> docker.io/$OWNER/fisca-frontend:latest"
+          echo "==> Patching frontend -> docker.io/$OWNER/fisca-frontend:latest"
           curl -s -X PATCH "https://api.render.com/v1/services/$FRONTEND_SVC" \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
             -d "{\"image\":{\"imagePath\":\"docker.io/$OWNER/fisca-frontend:latest\"}}" \
-            | python3 -c "import sys,json; d=json.load(sys.stdin); print('frontend patch:', str(d.get('id', d.get('message','?')))[:60])"
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print('frontend patch:', str(d.get('id', d.get('message','?')))[:80])"
 
-          # ── Déclencher les deploys ──────────────────────────────────────────
           echo "==> Triggering backend deploy..."
-          HTTP=$(curl -s -o /tmp/back.json -w "%{http_code}" \
+          curl -s -o /tmp/back.json -w "Backend HTTP: %{http_code}\n" \
             -X POST "https://api.render.com/v1/services/$BACKEND_SVC/deploys" \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
-            -d '{"clearCache":"do_not_clear"}')
-          cat /tmp/back.json ; echo "" ; echo "Backend deploy HTTP: $HTTP"
+            -d '{"clearCache":"do_not_clear"}'
+          cat /tmp/back.json ; echo ""
 
           echo "==> Triggering frontend deploy..."
-          HTTP2=$(curl -s -o /tmp/front.json -w "%{http_code}" \
+          curl -s -o /tmp/front.json -w "Frontend HTTP: %{http_code}\n" \
             -X POST "https://api.render.com/v1/services/$FRONTEND_SVC/deploys" \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
-            -d '{"clearCache":"do_not_clear"}')
-          cat /tmp/front.json ; echo "" ; echo "Frontend deploy HTTP: $HTTP2"
+            -d '{"clearCache":"do_not_clear"}'
+          cat /tmp/front.json ; echo ""
