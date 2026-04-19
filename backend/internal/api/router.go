@@ -25,26 +25,37 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.RequestSize(1 << 20)) // 1 MB max body
-	// CORS - origines autorisées
-	allowedOrigins := []string{
-		"https://*.vercel.app",
-		"https://*.netlify.app", // frontend Netlify (prod + previews)
-		"http://localhost:3000", // frontend Vite (dev) / frontend Docker
-		"http://localhost:5173", // frontend Vite dev server
-		"https://localhost",     // Capacitor Android (androidScheme: 'https')
-		"http://localhost",      // Capacitor Android (fallback)
-		"capacitor://localhost", // Capacitor iOS
-	}
+	// CORS - origines autorisées via AllowOriginFunc pour fiabilité
+	// (AllowedOrigins a des quirks avec https://localhost sans port)
+	extraOrigins := map[string]bool{}
 	if extra := os.Getenv("ALLOWED_ORIGIN"); extra != "" {
-		// Supporte plusieurs origines séparées par des virgules
 		for _, o := range strings.Split(extra, ",") {
 			if trimmed := strings.TrimSpace(o); trimmed != "" {
-				allowedOrigins = append(allowedOrigins, trimmed)
+				extraOrigins[trimmed] = true
 			}
 		}
 	}
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   allowedOrigins,
+		AllowOriginFunc: func(r *http.Request, origin string) bool {
+			// Capacitor Android/iOS : https://localhost, http://localhost, capacitor://localhost
+			if strings.HasPrefix(origin, "https://localhost") ||
+				strings.HasPrefix(origin, "http://localhost") ||
+				strings.HasPrefix(origin, "capacitor://localhost") {
+				return true
+			}
+			// Dev local : localhost avec port
+			if strings.HasPrefix(origin, "http://localhost:") ||
+				strings.HasPrefix(origin, "https://localhost:") {
+				return true
+			}
+			// Netlify / Vercel previews
+			if strings.HasSuffix(origin, ".netlify.app") ||
+				strings.HasSuffix(origin, ".vercel.app") {
+				return true
+			}
+			// Origines supplémentaires (ALLOWED_ORIGIN env)
+			return extraOrigins[origin]
+		},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Company-ID"},
 		ExposedHeaders:   []string{"X-Total-Count", "X-Page", "X-Limit"},
