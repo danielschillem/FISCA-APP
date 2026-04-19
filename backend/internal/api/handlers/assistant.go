@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -61,7 +62,7 @@ func (h *AssistantHandler) Chat(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		// A09 OWASP : ne pas exposer les détails internes de l'erreur (clé API, quota, etc.)
-		fmt.Printf("[ASSISTANT] Erreur provider IA pour user %s: %v\n", userID, err)
+		log.Printf("[ASSISTANT] Erreur provider IA pour user %s: %v", userID, err)
 		jsonError(w, "L'assistant IA est temporairement indisponible. Veuillez réessayer.", http.StatusBadGateway)
 		return
 	}

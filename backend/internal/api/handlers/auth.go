@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -379,7 +379,7 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	// Envoyer l'email (fallback log si SMTP non configuré)
 	if err := mailer.SendResetPassword(req.Email, token); err != nil {
-		fmt.Printf("[MAILER] Erreur envoi reset pour %s: %v\n", req.Email, err)
+		log.Printf("[MAILER] Erreur envoi reset pour %s: %v", req.Email, err)
 	}
 
 	jsonOK(w, msg)

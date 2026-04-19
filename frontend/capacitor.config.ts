@@ -5,12 +5,22 @@ const config: CapacitorConfig = {
     appName: 'FISCA',
     webDir: 'dist',
     server: {
-        // 'https' = WebView charge depuis https://localhost → CORS cohérent
         androidScheme: 'https',
     },
     android: {
-        // Icône adaptative générée depuis les assets PWA existants
         minWebViewVersion: 95,
+    },
+    plugins: {
+        SplashScreen: {
+            launchShowDuration: 2500,
+            launchAutoHide: true,
+            backgroundColor: '#22AA55',
+            androidSplashResourceName: 'splash',
+            androidScaleType: 'CENTER_INSIDE',
+            showSpinner: false,
+            splashFullScreen: true,
+            splashImmersive: true,
+        },
     },
 };
 

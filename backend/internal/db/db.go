@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -536,6 +537,6 @@ func seedSuperAdmin(pool *pgxpool.Pool) error {
 	if err != nil {
 		return fmt.Errorf("seed super admin: insert: %w", err)
 	}
-	fmt.Printf("[SUPERADMIN] Compte super admin créé : %s\n", email)
+	log.Printf("[SUPERADMIN] Compte super admin créé : %s", email)
 	return nil
 }

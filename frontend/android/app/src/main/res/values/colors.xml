@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
+    <!-- FISCA brand colors -->
+    <color name="colorPrimary">#22AA55</color>
+    <color name="colorPrimaryDark">#1B8B44</color>
+    <color name="colorAccent">#22AA55</color>
+    <color name="fisca_green">#22AA55</color>
+    <color name="fisca_green_dark">#1B8B44</color>
+    <!-- Legacy -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 </resources>

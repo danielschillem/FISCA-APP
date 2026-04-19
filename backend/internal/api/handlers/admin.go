@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -200,7 +201,7 @@ func (h *AdminHandler) ResetUserPassword(w http.ResponseWriter, r *http.Request)
 	h.DB.Exec(ctx, `INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES ($1,$2,$3)`,
 		userID, token, expires)
 	if err := mailer.SendResetPassword(email, token); err != nil {
-		fmt.Printf("[ADMIN MAILER] Erreur reset pour %s: %v\n", email, err)
+		log.Printf("[ADMIN MAILER] Erreur reset pour %s: %v", email, err)
 	}
 	h.logAudit(ctx, adminID, "user.reset_password", "user", userID, map[string]any{"email": email})
 	jsonOK(w, map[string]any{"ok": true, "message": "Lien envoye a " + email})

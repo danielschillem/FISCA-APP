@@ -11,6 +11,7 @@ package mailer
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 
@@ -22,7 +23,7 @@ func Send(to, subject, htmlBody string) error {
 	host := os.Getenv("SMTP_HOST")
 	if host == "" {
 		// Pas de mailer configuré - log et sortie silencieuse
-		fmt.Printf("[MAILER] (non configuré) To=%s Subject=%s\n", to, subject)
+		log.Printf("[MAILER] (non configuré) To=%s Subject=%s", to, subject)
 		return nil
 	}
 
