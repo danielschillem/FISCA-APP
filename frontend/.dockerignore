@@ -1,7 +1,12 @@
 node_modules/
 dist/
+android/
 .env
 .env.*
 *.log
 .DS_Store
 Thumbs.db
+.git/
+e2e/
+playwright-report/
+test-results/

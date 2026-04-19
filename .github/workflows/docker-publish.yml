@@ -11,7 +11,9 @@ env:
   FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/fisca-app-frontend
 
 jobs:
-  publish:
+  # ── Backend Go ──────────────────────────────────────────────────────────────
+  build-backend:
+    name: Build & push backend
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -37,12 +39,36 @@ jobs:
           context: ./backend
           platforms: linux/amd64
           push: true
-          tags: ${{ env.BACKEND_IMAGE }}:latest
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:latest
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.title=fisca-backend
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+  # ── Frontend React/Vite ─────────────────────────────────────────────────────
+  build-frontend:
+    name: Build & push frontend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build and push frontend
         uses: docker/build-push-action@v5
@@ -50,33 +76,45 @@ jobs:
           context: ./frontend
           platforms: linux/amd64
           push: true
-          tags: ${{ env.FRONTEND_IMAGE }}:latest
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:latest
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
           build-args: |
             VITE_API_URL=https://fisca-backend.onrender.com/api
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.title=fisca-frontend
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
 
+  # ── Trigger Render deploys (dépend seulement du backend) ───────────────────
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    needs: [build-backend]
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
       - name: Trigger Render deploys
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
         run: |
-          set -e
           BACKEND_SVC="srv-d7h5qv1f9bms739m9g4g"
           FRONTEND_SVC="srv-d7h5r2vaqgkc739ovevg"
 
           echo "Triggering backend deploy..."
-          curl -sf -X POST "https://api.render.com/v1/services/$BACKEND_SVC/deploys" \
+          HTTP=$(curl -s -o /tmp/render_back.json -w "%{http_code}" \
+            -X POST "https://api.render.com/v1/services/$BACKEND_SVC/deploys" \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
-            -d '{"clearCache":"do_not_clear"}' \
-            | python3 -c "import sys,json; d=json.load(sys.stdin); print('backend deploy:', d.get('id','?'), d.get('status','?'))"
+            -d '{"clearCache":"do_not_clear"}')
+          cat /tmp/render_back.json
+          echo "Backend deploy HTTP: $HTTP"
 
           echo "Triggering frontend deploy..."
-          curl -sf -X POST "https://api.render.com/v1/services/$FRONTEND_SVC/deploys" \
+          HTTP2=$(curl -s -o /tmp/render_front.json -w "%{http_code}" \
+            -X POST "https://api.render.com/v1/services/$FRONTEND_SVC/deploys" \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
-            -d '{"clearCache":"do_not_clear"}' \
-            | python3 -c "import sys,json; d=json.load(sys.stdin); print('frontend deploy:', d.get('id','?'), d.get('status','?'))"
+            -d '{"clearCache":"do_not_clear"}')
+          cat /tmp/render_front.json
+          echo "Frontend deploy HTTP: $HTTP2"
