@@ -35,7 +35,7 @@ services:
       - key: PORT
         value: "8080"
       - key: ALLOWED_ORIGIN
-        value: "https://fisca-frontend.onrender.com"
+        value: "https://fisca-frontend.onrender.com,https://localhost,http://localhost,capacitor://localhost"
       - key: ADMIN_SECRET
         generateValue: true
       - key: SUPERADMIN_EMAIL
