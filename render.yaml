@@ -17,12 +17,12 @@
 
 services:
   # ── Backend Go ────────────────────────────────────────────────────────────
-  # Render PULL l'image pre-built depuis GHCR (0 build minutes Render)
-  # GitHub Actions build + push vers ghcr.io puis trigger ce deploy via API
+  # Render PULL depuis Docker Hub (image publique, 0 build minutes, 0 credentials)
+  # GitHub Actions build + push vers schillem7/fisca-backend:latest
   - type: web
     name: fisca-backend
     image:
-      url: ghcr.io/danielschillem/fisca-app-backend:latest
+      url: docker.io/schillem7/fisca-backend:latest
     region: oregon
     plan: free
     healthCheckPath: /api/health
@@ -59,11 +59,11 @@ services:
         value: "https://fisca-frontend.onrender.com"
 
   # ── Frontend Vite (nginx) ─────────────────────────────────────────────────
-  # Render PULL l'image pre-built depuis GHCR (0 build minutes Render)
+  # Render PULL depuis Docker Hub (image publique, 0 build minutes, 0 credentials)
   - type: web
     name: fisca-frontend
     image:
-      url: ghcr.io/danielschillem/fisca-app-frontend:latest
+      url: docker.io/schillem7/fisca-frontend:latest
     region: oregon
     plan: free
     healthCheckPath: /

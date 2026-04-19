@@ -9,6 +9,9 @@ env:
   REGISTRY: ghcr.io
   BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/fisca-app-backend
   FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/fisca-app-frontend
+  # Docker Hub (public, pas besoin de credentials cote Render)
+  DH_BACKEND_IMAGE: schillem7/fisca-backend
+  DH_FRONTEND_IMAGE: schillem7/fisca-frontend
 
 jobs:
   # ── Backend Go ──────────────────────────────────────────────────────────────
@@ -30,6 +33,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -42,23 +51,13 @@ jobs:
           tags: |
             ${{ env.BACKEND_IMAGE }}:latest
             ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+            ${{ env.DH_BACKEND_IMAGE }}:latest
+            ${{ env.DH_BACKEND_IMAGE }}:${{ github.sha }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.title=fisca-backend
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
-
-      - name: Make backend package public on GHCR
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GHCR_PUBLIC_TOKEN || secrets.GITHUB_TOKEN }}
-        run: |
-          gh api --method PATCH \
-            -H "Accept: application/vnd.github+json" \
-            "/user/packages/container/fisca-app-backend" \
-            -f visibility=public \
-            && echo "✅ backend package is now public" \
-            || echo "⚠️  Could not set public visibility (needs PAT with write:packages)"
 
   # ── Frontend React/Vite ─────────────────────────────────────────────────────
   build-frontend:
@@ -79,6 +78,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -91,6 +96,8 @@ jobs:
           tags: |
             ${{ env.FRONTEND_IMAGE }}:latest
             ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+            ${{ env.DH_FRONTEND_IMAGE }}:latest
+            ${{ env.DH_FRONTEND_IMAGE }}:${{ github.sha }}
           build-args: |
             VITE_API_URL=https://fisca-backend.onrender.com/api
           labels: |
@@ -99,18 +106,6 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
-      - name: Make frontend package public on GHCR
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GHCR_PUBLIC_TOKEN || secrets.GITHUB_TOKEN }}
-        run: |
-          gh api --method PATCH \
-            -H "Accept: application/vnd.github+json" \
-            "/user/packages/container/fisca-app-frontend" \
-            -f visibility=public \
-            && echo "✅ frontend package is now public" \
-            || echo "⚠️  Could not set public visibility (needs PAT with write:packages)"
-
   # ── Trigger Render deploys (dépend seulement du backend) ───────────────────
   deploy:
     name: Deploy to Render
@@ -118,64 +113,29 @@ jobs:
     needs: [build-backend]
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     steps:
-      - name: Update Render services to use GHCR image + trigger deploy
+      - name: Update Render services to use Docker Hub image + trigger deploy
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
           BACKEND_SVC="srv-d7h5qv1f9bms739m9g4g"
           FRONTEND_SVC="srv-d7h5r2vaqgkc739ovevg"
-          OWNER="danielschillem"
+          OWNER="schillem7"
 
-          # ── Créer un credential GHCR temporaire dans Render ────────────────
-          # GITHUB_TOKEN est valide pour la durée du workflow (~60 min)
-          # Render pull l'image dans cette fenêtre
-          echo "==> Creating GHCR registry credential in Render..."
-          CRED_JSON=$(curl -s -X POST "https://api.render.com/v1/registryCredentials" \
+          # ── Mettre à jour les services pour utiliser Docker Hub (public) ───
+          echo "==> Patching backend service -> docker.io/$OWNER/fisca-backend:latest"
+          curl -s -X PATCH "https://api.render.com/v1/services/$BACKEND_SVC" \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"name\": \"ghcr-actions-$(date +%s)\",
-              \"registry\": \"GITHUB\",
-              \"username\": \"$OWNER\",
-              \"authToken\": \"$GHCR_TOKEN\"
-            }")
-          echo "Credential response: $CRED_JSON"
-          CRED_ID=$(echo "$CRED_JSON" | python3 -c "
-          import sys, json
-          d = json.load(sys.stdin)
-          # Render retourne soit {id: ...} soit {credential: {id: ...}}
-          print(d.get('id') or d.get('credential', {}).get('id', ''))
-          " 2>/dev/null || echo "")
-          echo "Credential ID: [$CRED_ID]"
+            -d "{\"image\":{\"imagePath\":\"docker.io/$OWNER/fisca-backend:latest\"}}" \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print('backend patch:', str(d.get('id', d.get('message','?')))[:60])"
 
-          # ── Mettre à jour les services pour utiliser les images GHCR ───────
-          if [ -n "$CRED_ID" ]; then
-            echo "==> Updating backend service to pull from GHCR..."
-            curl -s -X PATCH "https://api.render.com/v1/services/$BACKEND_SVC" \
-              -H "Authorization: Bearer $RENDER_API_KEY" \
-              -H "Content-Type: application/json" \
-              -d "{
-                \"image\": {
-                  \"imagePath\": \"ghcr.io/$OWNER/fisca-app-backend:latest\",
-                  \"registryCredentialId\": \"$CRED_ID\"
-                }
-              }" | python3 -c "import sys,json; d=json.load(sys.stdin); print('backend patch:', d.get('id', d.get('message','?'))[:60])"
-
-            echo "==> Updating frontend service to pull from GHCR..."
-            curl -s -X PATCH "https://api.render.com/v1/services/$FRONTEND_SVC" \
-              -H "Authorization: Bearer $RENDER_API_KEY" \
-              -H "Content-Type: application/json" \
-              -d "{
-                \"image\": {
-                  \"imagePath\": \"ghcr.io/$OWNER/fisca-app-frontend:latest\",
-                  \"registryCredentialId\": \"$CRED_ID\"
-                }
-              }" | python3 -c "import sys,json; d=json.load(sys.stdin); print('frontend patch:', d.get('id', d.get('message','?'))[:60])"
-          else
-            echo "⚠️  Could not create registry credential - will trigger deploy with existing config"
-          fi
+          echo "==> Patching frontend service -> docker.io/$OWNER/fisca-frontend:latest"
+          curl -s -X PATCH "https://api.render.com/v1/services/$FRONTEND_SVC" \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"image\":{\"imagePath\":\"docker.io/$OWNER/fisca-frontend:latest\"}}" \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print('frontend patch:', str(d.get('id', d.get('message','?')))[:60])"
 
           # ── Déclencher les deploys ──────────────────────────────────────────
           echo "==> Triggering backend deploy..."
