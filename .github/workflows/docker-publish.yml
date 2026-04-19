@@ -50,13 +50,15 @@ jobs:
 
       - name: Make backend package public on GHCR
         continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GHCR_PUBLIC_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          curl -s -X PATCH \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          gh api --method PATCH \
             -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/user/packages/container/fisca-app-backend" \
-            -d '{"visibility":"public"}' | python3 -c "import sys,json; d=json.load(sys.stdin); print('backend visibility:', d.get('visibility', d.get('message','?')))"
+            "/user/packages/container/fisca-app-backend" \
+            -f visibility=public \
+            && echo "✅ backend package is now public" \
+            || echo "⚠️  Could not set public visibility (needs PAT with write:packages)"
 
   # ── Frontend React/Vite ─────────────────────────────────────────────────────
   build-frontend:
@@ -99,13 +101,15 @@ jobs:
 
       - name: Make frontend package public on GHCR
         continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GHCR_PUBLIC_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          curl -s -X PATCH \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          gh api --method PATCH \
             -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/user/packages/container/fisca-app-frontend" \
-            -d '{"visibility":"public"}' | python3 -c "import sys,json; d=json.load(sys.stdin); print('frontend visibility:', d.get('visibility', d.get('message','?')))"
+            "/user/packages/container/fisca-app-frontend" \
+            -f visibility=public \
+            && echo "✅ frontend package is now public" \
+            || echo "⚠️  Could not set public visibility (needs PAT with write:packages)"
 
   # ── Trigger Render deploys (dépend seulement du backend) ───────────────────
   deploy:
