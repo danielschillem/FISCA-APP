@@ -118,27 +118,78 @@ jobs:
     needs: [build-backend]
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     steps:
-      - name: Trigger Render deploys
+      - name: Update Render services to use GHCR image + trigger deploy
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -e
           BACKEND_SVC="srv-d7h5qv1f9bms739m9g4g"
           FRONTEND_SVC="srv-d7h5r2vaqgkc739ovevg"
+          OWNER="danielschillem"
 
-          echo "Triggering backend deploy..."
-          HTTP=$(curl -s -o /tmp/render_back.json -w "%{http_code}" \
+          # ── Créer un credential GHCR temporaire dans Render ────────────────
+          # GITHUB_TOKEN est valide pour la durée du workflow (~60 min)
+          # Render pull l'image dans cette fenêtre
+          echo "==> Creating GHCR registry credential in Render..."
+          CRED_JSON=$(curl -s -X POST "https://api.render.com/v1/registryCredentials" \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"name\": \"ghcr-actions-$(date +%s)\",
+              \"registry\": \"GITHUB\",
+              \"username\": \"$OWNER\",
+              \"authToken\": \"$GHCR_TOKEN\"
+            }")
+          echo "Credential response: $CRED_JSON"
+          CRED_ID=$(echo "$CRED_JSON" | python3 -c "
+          import sys, json
+          d = json.load(sys.stdin)
+          # Render retourne soit {id: ...} soit {credential: {id: ...}}
+          print(d.get('id') or d.get('credential', {}).get('id', ''))
+          " 2>/dev/null || echo "")
+          echo "Credential ID: [$CRED_ID]"
+
+          # ── Mettre à jour les services pour utiliser les images GHCR ───────
+          if [ -n "$CRED_ID" ]; then
+            echo "==> Updating backend service to pull from GHCR..."
+            curl -s -X PATCH "https://api.render.com/v1/services/$BACKEND_SVC" \
+              -H "Authorization: Bearer $RENDER_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"image\": {
+                  \"imagePath\": \"ghcr.io/$OWNER/fisca-app-backend:latest\",
+                  \"registryCredentialId\": \"$CRED_ID\"
+                }
+              }" | python3 -c "import sys,json; d=json.load(sys.stdin); print('backend patch:', d.get('id', d.get('message','?'))[:60])"
+
+            echo "==> Updating frontend service to pull from GHCR..."
+            curl -s -X PATCH "https://api.render.com/v1/services/$FRONTEND_SVC" \
+              -H "Authorization: Bearer $RENDER_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"image\": {
+                  \"imagePath\": \"ghcr.io/$OWNER/fisca-app-frontend:latest\",
+                  \"registryCredentialId\": \"$CRED_ID\"
+                }
+              }" | python3 -c "import sys,json; d=json.load(sys.stdin); print('frontend patch:', d.get('id', d.get('message','?'))[:60])"
+          else
+            echo "⚠️  Could not create registry credential - will trigger deploy with existing config"
+          fi
+
+          # ── Déclencher les deploys ──────────────────────────────────────────
+          echo "==> Triggering backend deploy..."
+          HTTP=$(curl -s -o /tmp/back.json -w "%{http_code}" \
             -X POST "https://api.render.com/v1/services/$BACKEND_SVC/deploys" \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
             -d '{"clearCache":"do_not_clear"}')
-          cat /tmp/render_back.json
-          echo "Backend deploy HTTP: $HTTP"
+          cat /tmp/back.json ; echo "" ; echo "Backend deploy HTTP: $HTTP"
 
-          echo "Triggering frontend deploy..."
-          HTTP2=$(curl -s -o /tmp/render_front.json -w "%{http_code}" \
+          echo "==> Triggering frontend deploy..."
+          HTTP2=$(curl -s -o /tmp/front.json -w "%{http_code}" \
             -X POST "https://api.render.com/v1/services/$FRONTEND_SVC/deploys" \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
             -d '{"clearCache":"do_not_clear"}')
-          cat /tmp/render_front.json
-          echo "Frontend deploy HTTP: $HTTP2"
+          cat /tmp/front.json ; echo "" ; echo "Frontend deploy HTTP: $HTTP2"
