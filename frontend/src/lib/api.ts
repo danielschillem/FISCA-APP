@@ -1,9 +1,8 @@
 ﻿import axios from 'axios';
-import { Capacitor } from '@capacitor/core';
 
-// Capacitor.isNativePlatform() = true sur Android/iOS, false sur web
-const BASE = import.meta.env.VITE_API_URL ||
-  (Capacitor.isNativePlatform() ? 'https://fisca-backend.onrender.com/api' : '/api');
+// VITE_API_URL est injecté au build (ex: build:android le fixe à l'URL Render)
+// Sur le web Netlify, /api est proxifié par Netlify vers le backend
+const BASE = import.meta.env.VITE_API_URL || '/api';
 
 export const api = axios.create({
     baseURL: BASE,
