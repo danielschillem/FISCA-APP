@@ -17,15 +17,14 @@
 
 services:
   # ── Backend Go ────────────────────────────────────────────────────────────
+  # Render PULL l'image pre-built depuis GHCR (0 build minutes Render)
+  # GitHub Actions build + push vers ghcr.io puis trigger ce deploy via API
   - type: web
     name: fisca-backend
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    image:
+      url: ghcr.io/danielschillem/fisca-app-backend:latest
     region: oregon
     plan: free
-    autoDeploy: true
-    branch: main
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
@@ -60,15 +59,13 @@ services:
         value: "https://fisca-frontend.onrender.com"
 
   # ── Frontend Vite (nginx) ─────────────────────────────────────────────────
+  # Render PULL l'image pre-built depuis GHCR (0 build minutes Render)
   - type: web
     name: fisca-frontend
-    runtime: docker
-    dockerfilePath: ./frontend/Dockerfile
-    dockerContext: ./frontend
+    image:
+      url: ghcr.io/danielschillem/fisca-app-frontend:latest
     region: oregon
     plan: free
-    autoDeploy: true
-    branch: main
     healthCheckPath: /
     envVars:
       - key: VITE_API_URL

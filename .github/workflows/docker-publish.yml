@@ -48,6 +48,16 @@ jobs:
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 
+      - name: Make backend package public on GHCR
+        continue-on-error: true
+        run: |
+          curl -s -X PATCH \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/user/packages/container/fisca-app-backend" \
+            -d '{"visibility":"public"}' | python3 -c "import sys,json; d=json.load(sys.stdin); print('backend visibility:', d.get('visibility', d.get('message','?')))"
+
   # ── Frontend React/Vite ─────────────────────────────────────────────────────
   build-frontend:
     name: Build & push frontend
@@ -86,6 +96,16 @@ jobs:
             org.opencontainers.image.title=fisca-frontend
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
+
+      - name: Make frontend package public on GHCR
+        continue-on-error: true
+        run: |
+          curl -s -X PATCH \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/user/packages/container/fisca-app-frontend" \
+            -d '{"visibility":"public"}' | python3 -c "import sys,json; d=json.load(sys.stdin); print('frontend visibility:', d.get('visibility', d.get('message','?')))"
 
   # ── Trigger Render deploys (dépend seulement du backend) ───────────────────
   deploy:
