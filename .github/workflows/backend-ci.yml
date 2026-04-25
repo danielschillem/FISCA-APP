@@ -1,4 +1,4 @@
-name: Backend CI/CD — Go (Render)
+name: Backend CI/CD — Go
 
 on:
   push:
@@ -57,25 +57,4 @@ jobs:
       - name: Build backend Docker image
         run: docker build -t fisca-backend:ci ./backend
 
-  deploy:
-    name: Deploy to Render
-    needs: [test, build-docker]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Trigger Render deploy webhook
-        env:
-          RENDER_DEPLOY_HOOK_BACKEND: ${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}
-        run: |
-          if [ -z "$RENDER_DEPLOY_HOOK_BACKEND" ]; then
-            echo "RENDER_DEPLOY_HOOK_BACKEND not set — skipping (deploy handled by docker-publish.yml)"
-            exit 0
-          fi
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST "$RENDER_DEPLOY_HOOK_BACKEND")
-          echo "Render webhook status: $HTTP_STATUS"
-          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
-            echo "Render deploy webhook failed with status $HTTP_STATUS"
-            exit 1
-          fi
+  # Le déploiement est géré dans docker-publish.yml (DigitalOcean).

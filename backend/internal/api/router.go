@@ -48,11 +48,6 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 				strings.HasPrefix(origin, "https://localhost:") {
 				return true
 			}
-			// Netlify / Vercel previews
-			if strings.HasSuffix(origin, ".netlify.app") ||
-				strings.HasSuffix(origin, ".vercel.app") {
-				return true
-			}
 			// Origines supplémentaires (ALLOWED_ORIGIN env)
 			return extraOrigins[origin]
 		},

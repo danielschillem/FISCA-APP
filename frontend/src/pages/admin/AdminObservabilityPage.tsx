@@ -12,6 +12,16 @@ function downloadBlob(blob: Blob, filename: string) {
     URL.revokeObjectURL(url);
 }
 
+function formatDetails(details: unknown): string {
+    if (details == null) return '-';
+    if (typeof details === 'string') return details || '-';
+    try {
+        return JSON.stringify(details);
+    } catch {
+        return '[details non affichables]';
+    }
+}
+
 export default function AdminObservabilityPage() {
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(50);
@@ -103,7 +113,7 @@ export default function AdminObservabilityPage() {
                                 <td className="px-3 py-2">{l.action}</td>
                                 <td className="px-3 py-2">{l.target_type}</td>
                                 <td className="px-3 py-2 text-xs">{l.target_id || '-'}</td>
-                                <td className="px-3 py-2 text-xs text-gray-500 truncate max-w-[280px]">{l.details || '-'}</td>
+                                <td className="px-3 py-2 text-xs text-gray-500 truncate max-w-[280px]">{formatDetails(l.details)}</td>
                             </tr>
                         ))}
                     </tbody>

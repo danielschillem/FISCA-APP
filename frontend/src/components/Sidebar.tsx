@@ -92,17 +92,18 @@ function navClasses(isActive: boolean, locked: boolean, outOfRegime: boolean): s
 }
 
 export default function Sidebar() {
-    const { user, logout } = useAuthStore();
+    const { user, logout, impersonating } = useAuthStore();
     const { plan, sidebarOpen, toggleSidebar } = useAppStore();
     const navigate = useNavigate();
     const planFeatures = PLAN_FEATURES[plan];
     const { isAuditeur, roleLabel, roleBadgeColor } = usePermissions();
     const { regime, info: regimeInfo, routeApplies } = useRegime();
 
+    const canUseCompanyScopedApis = !!user && (user.role !== 'super_admin' || impersonating);
     const { data: company } = useQuery<Company>({
         queryKey: ['company', 'sidebar'],
         queryFn: () => companyApi.get().then((r) => r.data),
-        enabled: !!user,
+        enabled: canUseCompanyScopedApis,
         staleTime: 60_000,
     });
     const ensureContribuableScope = useContribuableStore((s) => s.ensureScope);

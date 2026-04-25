@@ -33,7 +33,7 @@ func main() {
 		log.Fatal("[SECURITE] JWT_SECRET manquant ou trop court — minimum 32 caractères requis")
 	}
 
-	// Demarrage immediat du serveur HTTP - Render health check passe des maintenant
+	// Démarrage immédiat du serveur HTTP - health check disponible pendant la connexion DB.
 	var (
 		handlerMu      sync.RWMutex
 		currentHandler http.Handler

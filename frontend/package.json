@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build:android": "cross-env VITE_API_URL=https://fisca-backend.onrender.com/api vite build && npx cap sync android"
+    "build:android": "vite build && npx cap sync android"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.1",

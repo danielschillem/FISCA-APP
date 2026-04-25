@@ -16,12 +16,13 @@ const MOIS = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', '
 
 export default function Topbar({ title, subtitle }: TopbarProps) {
     const { toggleSidebar, toggleNotif } = useAppStore();
-    const { user } = useAuthStore();
+    const { user, impersonating } = useAuthStore();
+    const canUseCompanyScopedApis = !!user && (user.role !== 'super_admin' || impersonating);
 
     const { data: notifs } = useQuery<Notification[]>({
         queryKey: ['notifications'],
         queryFn: () => notificationApi.list().then((r) => r.data),
-        enabled: !!user,
+        enabled: canUseCompanyScopedApis,
         refetchInterval: 30_000,
     });
 
@@ -48,7 +49,7 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
 
     // -- Push notifications J-7 : une notification par échéance urgente ------
     useEffect(() => {
-        if (!user || !('Notification' in window)) return;
+        if (!canUseCompanyScopedApis || !('Notification' in window)) return;
 
         const fire = () => {
             if (Notification.permission !== 'granted') return;
@@ -80,7 +81,7 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
             fire();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.email]); // Une seule fois par session utilisateur
+    }, [canUseCompanyScopedApis, user?.email]); // Une seule fois par session utilisateur
     const now = new Date();
     const dateStr = `${JOURS[now.getDay()]} ${now.getDate()} ${MOIS[now.getMonth()]} ${now.getFullYear()}`;
     const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'US';

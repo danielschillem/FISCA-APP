@@ -20,7 +20,7 @@ export const COPYRIGHT_NOTICE =
     `© ${COPYRIGHT_YEAR_START}-${COPYRIGHT_YEAR_END} ${DEVELOPER_NAME}. Tous droits réservés.`;
 
 // --- Hébergement ------------------------------------------------------------
-export const HOSTING_PROVIDER = 'Render.com (Oregon, USA)';
+export const HOSTING_PROVIDER = 'DigitalOcean Droplet (preprod)';
 export const DB_PROVIDER = 'Neon PostgreSQL (eu-central-1, Allemagne)';
 
 // --- Références légales -----------------------------------------------------

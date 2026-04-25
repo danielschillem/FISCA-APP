@@ -26,7 +26,7 @@ services:
     environment:
       # Local by default (safe for development). Override via DATABASE_URL only when needed.
       DATABASE_URL: ${DATABASE_URL:-postgres://fisca:${POSTGRES_PASSWORD:-password}@db:5432/fisca_dev?sslmode=disable}
-      JWT_SECRET: ${JWT_SECRET:-dev_secret_change_in_production}
+      JWT_SECRET: ${JWT_SECRET:-dev_secret_change_in_production_min_32_chars}
       PORT: "8080"
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-http://localhost:3000,http://localhost:5173}
       ADMIN_SECRET: ${ADMIN_SECRET:-}

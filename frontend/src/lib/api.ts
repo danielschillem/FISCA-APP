@@ -2,8 +2,8 @@
 import { useAuthStore } from './store';
 import type { User } from '../types';
 
-// VITE_API_URL est injecté au build (ex: build:android le fixe à l'URL Render)
-// Sur le web Netlify, /api est proxifié par Netlify vers le backend
+// VITE_API_URL peut être injecté au build (mobile, preview dédiée).
+// Sinon, /api est servi via reverse-proxy (nginx/Caddy) vers le backend.
 const BASE = import.meta.env.VITE_API_URL || '/api';
 
 export const api = axios.create({

@@ -21,13 +21,14 @@ const NIVEAU_BG: Record<string, string> = {
 
 export default function NotifPanel() {
     const { notifOpen, toggleNotif } = useAppStore();
-    const { user } = useAuthStore();
+    const { user, impersonating } = useAuthStore();
     const qc = useQueryClient();
+    const canUseCompanyScopedApis = !!user && (user.role !== 'super_admin' || impersonating);
 
     const { data: notifs = [] } = useQuery<Notification[]>({
         queryKey: ['notifications'],
         queryFn: () => notificationApi.list().then((r) => r.data),
-        enabled: !!user,
+        enabled: canUseCompanyScopedApis,
         staleTime: 30_000,
     });
 

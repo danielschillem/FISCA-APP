@@ -45,7 +45,7 @@ export default defineConfig({
           {
             // Lecture offline : NetworkFirst avec fallback rapide (4s) vers le cache
             // maxAgeSeconds: 86400 = 24h → données lisibles même sans connexion le lendemain
-            urlPattern: /^https:\/\/fisca-backend\.onrender\.com\/api\//,
+            urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',

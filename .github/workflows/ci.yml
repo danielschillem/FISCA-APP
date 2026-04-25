@@ -84,7 +84,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://fisca-backend.onrender.com/api' }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL || '' }}
 
       - name: Upload build artefact
         uses: actions/upload-artifact@v4
@@ -160,52 +160,5 @@ jobs:
         if: always()
         run: docker compose down -v
 
-  # ─────────────────────────────────────────────────────────────
-  # 4. Deploy — Render (backend) + Netlify (frontend)
-  #    Seulement sur push main, après les tests
-  # ─────────────────────────────────────────────────────────────
-  deploy-backend:
-    name: Deploy backend → Render
-    needs: [backend]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Trigger Render deploy webhook
-        run: |
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}")
-          echo "Render webhook status: $HTTP_STATUS"
-          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
-            echo "Render deploy webhook failed with status $HTTP_STATUS"
-            exit 1
-          fi
-
-  deploy-frontend:
-    name: Deploy frontend → Netlify
-    needs: [frontend]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download build artefact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend/dist
-
-      - name: Deploy to Netlify
-        uses: nwtgck/actions-netlify@v3
-        with:
-          publish-dir: frontend/dist
-          production-branch: main
-          production-deploy: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Deploy from GitHub Actions — ${{ github.sha }}"
-          enable-pull-request-comment: false
-          enable-commit-comment: true
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID:    ${{ secrets.NETLIFY_SITE_ID }}
+  # Déploiement pré-prod/prod déplacé vers workflow dédié:
+  # .github/workflows/docker-publish.yml (DigitalOcean).

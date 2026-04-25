@@ -391,7 +391,7 @@ export default function MentionsLegalesPage() {
                         fourniture du service :
                     </p>
                     <ul className="list-disc ml-5 space-y-1 mt-2">
-                        <li><strong>Render.com</strong> - hébergement de l'application (USA, soumis au DPF EU-US) ;</li>
+                        <li><strong>DigitalOcean</strong> - hébergement de l'application (UE/USA selon région choisie) ;</li>
                         <li><strong>Neon Technology</strong> - base de données PostgreSQL (EU, conforme RGPD) ;</li>
                         <li><strong>Orange Money BF</strong> - traitement des paiements Mobile Money.</li>
                     </ul>
