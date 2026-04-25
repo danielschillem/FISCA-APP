@@ -1,31 +1,29 @@
 ﻿import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { historiqueApi } from '../lib/api';
 import { fmt, fmtN } from '../lib/fiscalCalc';
 import { Card, Btn, Spinner } from '../components/ui';
 import { MOIS_FR } from '../types';
 import { FileSpreadsheet, BarChart2, GitCompare } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { computeHistoriqueFromAnnexes } from '../lib/declarationAnalytics';
+import { useContribuableStore } from '../contribuable/contribuableStore';
+import { calcFSP } from '../contribuable/contribuableCalc';
 
 export default function HistoriquePage() {
     const [annee, setAnnee] = useState(new Date().getFullYear());
     const [vue, setVue] = useState<'tableau' | 'graphique' | 'comparaison'>('tableau');
 
-    const { data, isLoading } = useQuery({
-        queryKey: ['historique', annee],
-        queryFn: () => historiqueApi.get(annee).then((r) => r.data),
-    });
-
-    const { data: dataN1, isLoading: isLoadingN1 } = useQuery({
-        queryKey: ['historique', annee - 1],
-        queryFn: () => historiqueApi.get(annee - 1).then((r) => r.data),
-        enabled: vue === 'comparaison',
-    });
-
-    const { data: annees = [] } = useQuery<number[]>({
-        queryKey: ['historique-annees'],
-        queryFn: () => historiqueApi.annees().then((r) => r.data),
-    });
+    const period = useContribuableStore((s) => s.period);
+    const annexes = useContribuableStore((s) => s.annexes);
+    const data = computeHistoriqueFromAnnexes(annexes, period, annee);
+    const dataN1 = computeHistoriqueFromAnnexes(annexes, period, annee - 1);
+    const fspTotal = annexes.iuts.rows.reduce(
+        (s, r) => s + calcFSP(r.salaireB || 0, r.cnss || 0, r.iutsDu || 0),
+        0
+    );
+    const fspForMonth = (mois: number) => (annee === period.year && mois === period.month ? fspTotal : 0);
+    const isLoading = false;
+    const isLoadingN1 = false;
+    const annees = [period.year, period.year - 1];
 
     return (
         <div className="space-y-6">
@@ -71,10 +69,11 @@ export default function HistoriquePage() {
                                 'IUTS (FCFA)': m.iuts_total,
                                 'TPA (FCFA)': m.tpa_total,
                                 'CSS (FCFA)': m.css_total,
+                                'FSP (FCFA)': fspForMonth(m.mois),
                                 'CNSS Pat. (FCFA)': m.cnss_patronal,
                                 'TVA nette (FCFA)': m.tva_nette,
                                 'Retenues (FCFA)': m.retenue_total,
-                                'Total obligations (FCFA)': m.total_obligations,
+                                'Total obligations CGI (FCFA)': m.total_obligations,
                             }));
                             const ws = XLSX.utils.json_to_sheet(rows);
                             const wb = XLSX.utils.book_new();
@@ -100,7 +99,8 @@ export default function HistoriquePage() {
                             { label: 'IUTS total', value: data.iuts_total, color: 'green' },
                             { label: 'TPA total', value: data.tpa_total, color: 'blue' },
                             { label: 'CSS total', value: data.css_total, color: 'orange' },
-                            { label: 'Total obligations', value: data.total_obligations, color: 'gray' },
+                            { label: 'FSP total', value: fspTotal, color: 'purple' },
+                            { label: 'Total obligations CGI', value: data.total_obligations, color: 'gray' },
                         ].map(({ label, value, color }) => (
                             <div key={label} className={`bg-${color}-50 rounded-xl p-4`}>
                                 <p className="text-xs text-gray-500">{label}</p>
@@ -116,7 +116,7 @@ export default function HistoriquePage() {
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="text-xs font-semibold text-gray-500 border-b border-gray-200">
-                                            {['Mois', 'IUTS', 'TPA', 'CSS', 'CNSS Pat.', 'TVA', 'Retenues', 'Total'].map((c) => (
+                                            {['Mois', 'IUTS', 'TPA', 'CSS', 'FSP', 'CNSS Pat.', 'TVA', 'Retenues', 'Total'].map((c) => (
                                                 <th key={c} className="py-2 px-3 text-right first:text-left">{c}</th>
                                             ))}
                                         </tr>
@@ -131,6 +131,7 @@ export default function HistoriquePage() {
                                                 <td className="py-2.5 px-3 text-right font-mono text-xs">{fmtN(m.iuts_total)}</td>
                                                 <td className="py-2.5 px-3 text-right font-mono text-xs">{fmtN(m.tpa_total)}</td>
                                                 <td className="py-2.5 px-3 text-right font-mono text-xs">{fmtN(m.css_total)}</td>
+                                                <td className="py-2.5 px-3 text-right font-mono text-xs">{fmtN(fspForMonth(m.mois))}</td>
                                                 <td className="py-2.5 px-3 text-right font-mono text-xs">{fmtN(m.cnss_patronal)}</td>
                                                 <td className="py-2.5 px-3 text-right font-mono text-xs">{fmtN(m.tva_nette)}</td>
                                                 <td className="py-2.5 px-3 text-right font-mono text-xs">{fmtN(m.retenue_total)}</td>
@@ -138,7 +139,24 @@ export default function HistoriquePage() {
                                             </tr>
                                         ))}
                                     </tbody>
+                                    <tfoot>
+                                        <tr className="font-bold border-t-2 border-gray-300 bg-gray-50">
+                                            <td className="py-2.5 px-3">TOTAL OBLIGATIONS CGI {annee}</td>
+                                            <td className="py-2.5 px-3 text-right font-mono text-xs">{fmtN(data.iuts_total)}</td>
+                                            <td className="py-2.5 px-3 text-right font-mono text-xs">{fmtN(data.tpa_total)}</td>
+                                            <td className="py-2.5 px-3 text-right font-mono text-xs">{fmtN(data.css_total)}</td>
+                                            <td className="py-2.5 px-3 text-right font-mono text-xs">{fmtN(fspTotal)}</td>
+                                            <td className="py-2.5 px-3 text-right font-mono text-xs">{fmtN(data.cnss_patronal)}</td>
+                                            <td className="py-2.5 px-3 text-right font-mono text-xs">{fmtN(data.tva_nette)}</td>
+                                            <td className="py-2.5 px-3 text-right font-mono text-xs">{fmtN(data.retenue_total)}</td>
+                                            <td className="py-2.5 px-3 text-right font-mono text-xs text-gray-900">{fmtN(data.total_obligations)}</td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
+                            </div>
+                            <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
+                                <span className="text-gray-600">Total des obligations fiscales a reverser (CGI) ({annee}) : </span>
+                                <strong className="text-gray-900">{fmt(data.total_obligations ?? 0)}</strong>
                             </div>
                         </Card>
                     )}
@@ -182,8 +200,12 @@ export default function HistoriquePage() {
                                     })}
                                 </div>
                                 <div className="flex gap-4 mt-4 text-[11px] text-gray-500">
-                                    <span><span className="inline-block w-3 h-3 bg-gray-400 rounded-sm mr-1" />Total obligations</span>
+                                    <span><span className="inline-block w-3 h-3 bg-gray-400 rounded-sm mr-1" />Total obligations CGI</span>
                                     <span><span className="inline-block w-3 h-3 bg-green-400 rounded-sm mr-1" />IUTS</span>
+                                </div>
+                                <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
+                                    <span className="text-gray-600">Total des obligations fiscales a reverser (CGI) ({annee}) : </span>
+                                    <strong className="text-gray-900">{fmt(data.total_obligations ?? 0)}</strong>
                                 </div>
                             </Card>
                         );
@@ -248,6 +270,10 @@ export default function HistoriquePage() {
                                 <p className="text-[11px] text-gray-400 mt-3">
                                     Comparaison des obligations totales (IUTS + CNSS + TVA + Retenues) entre {annee - 1} et {annee}.
                                 </p>
+                                <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
+                                    <span className="text-gray-600">Total des obligations fiscales a reverser (CGI) ({annee}) : </span>
+                                    <strong className="text-gray-900">{fmt(data.total_obligations ?? 0)}</strong>
+                                </div>
                             </Card>
                         )
                     )}

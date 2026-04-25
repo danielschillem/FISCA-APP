@@ -13,6 +13,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { TVADeclaration, RetenueSource, ISDeclaration, IRCMDeclaration, CMEDeclaration, IRFDeclaration, PatenteDeclaration, Company } from '../types';
 import { fmtN } from './fiscalCalc';
+import { appendPaymentReceiptPage } from './paymentReceipt';
 
 // ── Constantes ────────────────────────────────────────────────
 const MOIS_DGI = [
@@ -187,7 +188,7 @@ function dgiSignatures(doc: jsPDF, ML: number, CW: number, y: number): number {
     box(doc, ML, y, hw, rowH);
     box(doc, ML + hw, y, hw, rowH);
     t(doc, 'LE DECLARANT', ML + hw / 2, y + 4, 7, true, 'center');
-    t(doc, '(Signature et cachet)', ML + hw / 2, y + 8, 5.5, false, 'center');
+    t(doc, '(Lu et approuve - signature et cachet)', ML + hw / 2, y + 8, 5.5, false, 'center');
     t(doc, 'LE RECEVEUR', ML + hw + hw / 2, y + 4, 7, true, 'center');
     return y + rowH;
 }
@@ -202,7 +203,7 @@ function dgiFooter(doc: jsPDF) {
 }
 
 // ── 1. TVA ────────────────────────────────────────────────────
-export function generateTVAForm(decl: TVADeclaration, company?: Company) {
+export async function generateTVAForm(decl: TVADeclaration, company?: Company) {
     const doc = makeDoc();
     const ML = 10;
     const CW = 190;
@@ -312,11 +313,20 @@ export function generateTVAForm(decl: TVADeclaration, company?: Company) {
     y = dgiReglement(doc, ML, CW, y, Math.max(0, pdfNette));
     dgiSignatures(doc, ML, CW, y);
     dgiFooter(doc);
+    await appendPaymentReceiptPage(doc, {
+        documentLabel: 'Declaration TVA',
+        baseAmount: 2000,
+        feeRate: 0.015,
+        provider: 'Orange Money',
+        transactionRef: `TVA-${decl.annee}-${String(decl.mois).padStart(2, '0')}`,
+        company,
+        periodLabel: `${String(decl.mois).padStart(2, '0')}/${decl.annee}`,
+    });
     savePdf(doc, `DGI-TVA-${String(decl.mois).padStart(2, '0')}-${decl.annee}.pdf`);
 }
 
 // ── 2. Retenues �  la source ───────────────────────────────────
-export function generateRetenuesForm(
+export async function generateRetenuesForm(
     retenues: RetenueSource[],
     company?: Company,
     mois?: number,
@@ -387,11 +397,20 @@ export function generateRetenuesForm(
     y = dgiReglement(doc, ML, CW, y, totRas);
     dgiSignatures(doc, ML, CW, y);
     dgiFooter(doc);
+    await appendPaymentReceiptPage(doc, {
+        documentLabel: 'Declaration Retenues a la source',
+        baseAmount: 2000,
+        feeRate: 0.015,
+        provider: 'Orange Money',
+        transactionRef: `RAS-${a}-${String(m).padStart(2, '0')}`,
+        company,
+        periodLabel: `${String(m).padStart(2, '0')}/${a}`,
+    });
     savePdf(doc, `DGI-Retenues-${String(m).padStart(2, '0')}-${a}.pdf`);
 }
 
 // ── 3. IS / MFP ───────────────────────────────────────────────
-export function generateISForm(decl: ISDeclaration, company?: Company) {
+export async function generateISForm(decl: ISDeclaration, company?: Company) {
     const doc = makeDoc();
     const ML = 10;
     const CW = 190;
@@ -448,6 +467,15 @@ export function generateISForm(decl: ISDeclaration, company?: Company) {
     y = dgiReglement(doc, ML, CW, y, decl.is_du);
     dgiSignatures(doc, ML, CW, y);
     dgiFooter(doc);
+    await appendPaymentReceiptPage(doc, {
+        documentLabel: 'Declaration IS / MFP',
+        baseAmount: 2000,
+        feeRate: 0.015,
+        provider: 'Orange Money',
+        transactionRef: `IS-${decl.annee}`,
+        company,
+        periodLabel: String(decl.annee),
+    });
     savePdf(doc, `DGI-IS-${decl.annee}.pdf`);
 }
 
@@ -458,7 +486,7 @@ const TYPE_IRCM_LABEL: Record<string, string> = {
     DIVIDENDES: 'Dividendes et revenus assimiles (12,5 %)',
 };
 
-export function generateIRCMForm(decl: IRCMDeclaration, company?: Company) {
+export async function generateIRCMForm(decl: IRCMDeclaration, company?: Company) {
     const doc = makeDoc();
     const ML = 10;
     const CW = 190;
@@ -506,6 +534,15 @@ export function generateIRCMForm(decl: IRCMDeclaration, company?: Company) {
     y = dgiReglement(doc, ML, CW, y, decl.ircm_total);
     dgiSignatures(doc, ML, CW, y);
     dgiFooter(doc);
+    await appendPaymentReceiptPage(doc, {
+        documentLabel: 'Declaration IRCM',
+        baseAmount: 2000,
+        feeRate: 0.015,
+        provider: 'Orange Money',
+        transactionRef: `IRCM-${decl.annee}`,
+        company,
+        periodLabel: String(decl.annee),
+    });
     savePdf(doc, `DGI-IRCM-${decl.annee}.pdf`);
 }
 
@@ -517,7 +554,7 @@ const ZONE_DESC: Record<string, string> = {
     D: 'Zone D – Zones rurales et periurbaines',
 };
 
-export function generateCMEForm(decl: CMEDeclaration, company?: Company) {
+export async function generateCMEForm(decl: CMEDeclaration, company?: Company) {
     const doc = makeDoc();
     const ML = 10;
     const CW = 190;
@@ -569,11 +606,20 @@ export function generateCMEForm(decl: CMEDeclaration, company?: Company) {
     y = dgiReglement(doc, ML, CW, y, decl.cme_net);
     dgiSignatures(doc, ML, CW, y);
     dgiFooter(doc);
+    await appendPaymentReceiptPage(doc, {
+        documentLabel: 'Declaration CME',
+        baseAmount: 2000,
+        feeRate: 0.015,
+        provider: 'Orange Money',
+        transactionRef: `CME-${decl.annee}`,
+        company,
+        periodLabel: String(decl.annee),
+    });
     savePdf(doc, `DGI-CME-${decl.annee}.pdf`);
 }
 
 // -- 6. IRF -----------------------------------------------------------
-export function generateIRFForm(decl: IRFDeclaration, company?: Company) {
+export async function generateIRFForm(decl: IRFDeclaration, company?: Company) {
     const doc = makeDoc();
     const ML = 10;
     const CW = 190;
@@ -621,11 +667,20 @@ export function generateIRFForm(decl: IRFDeclaration, company?: Company) {
     y = dgiReglement(doc, ML, CW, y, decl.irf_total);
     dgiSignatures(doc, ML, CW, y);
     dgiFooter(doc);
+    await appendPaymentReceiptPage(doc, {
+        documentLabel: 'Declaration IRF',
+        baseAmount: 2000,
+        feeRate: 0.015,
+        provider: 'Orange Money',
+        transactionRef: `IRF-${decl.annee}`,
+        company,
+        periodLabel: String(decl.annee),
+    });
     savePdf(doc, `DGI-IRF-${decl.annee}.pdf`);
 }
 
 // -- 7. Patente -------------------------------------------------------
-export function generatePatenteForm(decl: PatenteDeclaration, company?: Company) {
+export async function generatePatenteForm(decl: PatenteDeclaration, company?: Company) {
     const doc = makeDoc();
     const ML = 10;
     const CW = 190;
@@ -671,5 +726,14 @@ export function generatePatenteForm(decl: PatenteDeclaration, company?: Company)
     y = dgiReglement(doc, ML, CW, y, decl.total_patente);
     dgiSignatures(doc, ML, CW, y);
     dgiFooter(doc);
+    await appendPaymentReceiptPage(doc, {
+        documentLabel: 'Declaration Patente',
+        baseAmount: 2000,
+        feeRate: 0.015,
+        provider: 'Orange Money',
+        transactionRef: `PATENTE-${decl.annee}`,
+        company,
+        periodLabel: String(decl.annee),
+    });
     savePdf(doc, `DGI-Patente-${decl.annee}.pdf`);
 }

@@ -4,7 +4,7 @@ import { calcEmploye, calcIS, calcMFP, calcCME, calcPatente, CME_CA_PLAFOND, fmt
 import { simulationApi } from '../lib/api';
 import { Card, Input, Select, Btn, NumericInput } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
-import { Lock, TrendingUp, BarChart2, Save, FolderOpen, Trash2, Layers } from 'lucide-react';
+import { Lock, TrendingUp, BarChart2, Save, FolderOpen, Trash2, Layers, Check, X } from 'lucide-react';
 
 const MOIS_PROJ = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 
@@ -20,7 +20,9 @@ type ScenInput = {
     label: string;
     salaire_base: number; anciennete: number; logement: number;
     transport: number; fonction: number; charges: number;
-    categorie: 'Cadre' | 'Non-cadre'; cotisation: 'CNSS' | 'CARFO';
+    categorie: 'Cadre' | 'Non-cadre';
+    /** CARFO conservé pour compat. données sauvegardées ; scénarios ne l’exposent pas dans l’UI. */
+    cotisation: 'CNSS' | 'CARFO';
 };
 
 const defaultInput = (label: string): ScenInput => ({
@@ -420,8 +422,9 @@ function RegimesFiscauxPanel() {
                             <tr className="text-xs font-semibold text-gray-500 border-b border-gray-200">
                                 <th className="text-left py-3 px-4">Composante</th>
                                 <th className="text-right py-3 px-4">
-                                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${totalCME === minimum && totalCME !== null ? 'bg-green-600 text-white' : 'bg-purple-100 text-purple-700'}`}>
-                                        CME {ca <= CME_CA_PLAFOND ? '' : '✕'}
+                                    <span className={`inline-flex items-center justify-end gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold ${totalCME === minimum && totalCME !== null ? 'bg-green-600 text-white' : 'bg-purple-100 text-purple-700'}`}>
+                                        CME
+                                        {ca > CME_CA_PLAFOND && <X className="w-3 h-3 shrink-0" aria-hidden />}
                                     </span>
                                 </th>
                                 <th className="text-right py-3 px-4">
@@ -464,7 +467,8 @@ function RegimesFiscauxPanel() {
                 </div>
                 {minimum !== Infinity && (
                     <div className="mt-4 flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-                        <span className="text-green-600 font-bold text-sm">✓ Régime le plus avantageux :</span>
+                        <Check className="w-4 h-4 text-green-600 shrink-0" strokeWidth={2.5} />
+                        <span className="text-green-600 font-bold text-sm">Régime le plus avantageux :</span>
                         <span className="text-green-800 text-sm font-semibold">
                             {totalCME === minimum && totalCME !== null ? 'CME (Contribution des Micro-Entreprises)' :
                                 totalRNI === minimum ? 'RNI — Réel Normal d\'Imposition (IS/MFP + Patente)' :

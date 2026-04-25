@@ -1,11 +1,15 @@
 import { useState, useEffect, type ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { companyApi, authApi } from '../lib/api';
 import { Card, Btn, Input, Select, Spinner } from '../components/ui';
 import { useAuthStore } from '../lib/store';
 import { REGIMES_INFO } from '../lib/regime';
 import type { Company } from '../types';
-import { CheckCircle2, AlertCircle, Building2, MapPin, FileText, UserCircle, Info } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Building2, MapPin, FileText, UserCircle, Info, CalendarRange } from 'lucide-react';
+import { useContribuableStore } from '../contribuable/contribuableStore';
+import { MOIS_LABELS } from '../contribuable/contribuableNav';
+import { isCompanyProfileComplete } from '../lib/companyProfile';
 
 const FORMES_JURIDIQUES = [
     { value: '', label: ' - Sélectionner - ' },
@@ -39,8 +43,11 @@ function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
 }
 
 export default function ParametresPage() {
+    const navigate = useNavigate();
     const qc = useQueryClient();
     const { user, setAuth } = useAuthStore();
+    const period = useContribuableStore((s) => s.period);
+    const setPeriod = useContribuableStore((s) => s.setPeriod);
     const [success, setSuccess] = useState('');
     const [saveError, setSaveError] = useState('');
 
@@ -66,6 +73,9 @@ export default function ParametresPage() {
             setSaveError('');
             setSuccess('Paramètres mis à jour avec succès.');
             setTimeout(() => setSuccess(''), 3000);
+            if (isCompanyProfileComplete(form as Company)) {
+                navigate('/dashboard');
+            }
         },
         onError: (err: { response?: { data?: { error?: string } } }) => {
             setSaveError(err?.response?.data?.error ?? 'Erreur lors de la sauvegarde.');
@@ -250,6 +260,33 @@ export default function ParametresPage() {
                 </div>
             </Card>
 
+            <Card title="Période de déclaration (annexes DGI)">
+                <p className="text-xs text-gray-500 mb-4">
+                    Mois et exercice utilisés pour IUTS, ROS, retenues, TVA annexes, etc. Modifiez-les ici avant la saisie dans{' '}
+                    <Link to="/declarations/iuts" className="font-semibold text-green-700 underline">
+                        Déclarations et annexes
+                    </Link>
+                    .
+                </p>
+                <div className="mb-2">
+                    <SectionTitle icon={<CalendarRange className="w-4 h-4" />} title="Mois et exercice" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Select
+                            label="Mois"
+                            value={String(period.month)}
+                            options={MOIS_LABELS.slice(1).map((m, i) => ({ value: String(i + 1), label: m }))}
+                            onChange={(e) => setPeriod({ month: +e.target.value })}
+                        />
+                        <Select
+                            label="Exercice"
+                            value={String(period.year)}
+                            options={[2023, 2024, 2025, 2026, 2027].map((y) => ({ value: String(y), label: String(y) }))}
+                            onChange={(e) => setPeriod({ year: +e.target.value })}
+                        />
+                    </div>
+                </div>
+            </Card>
+
             {/* -- Compte utilisateur ------------------------------ */}
             <Card title="Compte utilisateur">
                 <div className="space-y-5">
@@ -332,11 +369,6 @@ export default function ParametresPage() {
                         </div>
                     </div>
 
-                    {/* Plan */}
-                    <div className="border-t border-gray-100 pt-3 flex items-center justify-between">
-                        <span className="text-sm text-gray-500">Plan actuel</span>
-                        <span className="text-sm font-semibold text-green-700 capitalize">{user?.plan}</span>
-                    </div>
                 </div>
             </Card>
         </div>

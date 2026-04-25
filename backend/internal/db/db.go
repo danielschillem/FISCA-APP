@@ -459,6 +459,9 @@ func RunMigrations(pool *pgxpool.Pool) error {
 	CREATE INDEX IF NOT EXISTS idx_orgs_owner        ON organizations(owner_id);
 	CREATE INDEX IF NOT EXISTS idx_users_org_id      ON users(org_id);
 	CREATE INDEX IF NOT EXISTS idx_companies_org_id  ON companies(org_id);
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_companies_ifu_unique_norm
+		ON companies (UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(ifu,''), ' ', ''), '-', ''), '.', ''), '_', '')))
+		WHERE COALESCE(ifu,'') <> '';
 	CREATE INDEX IF NOT EXISTS idx_oca_user          ON org_company_access(user_id);
 	CREATE INDEX IF NOT EXISTS idx_oca_company       ON org_company_access(company_id);
 
@@ -470,6 +473,13 @@ func RunMigrations(pool *pgxpool.Pool) error {
 		checked    BOOLEAN NOT NULL DEFAULT TRUE,
 		updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 		PRIMARY KEY (user_id, item_id)
+	);
+
+	-- --- Snapshot annexes contribuable par société ----------------------------
+	CREATE TABLE IF NOT EXISTS contribuable_states (
+		company_id UUID PRIMARY KEY REFERENCES companies(id) ON DELETE CASCADE,
+		state      JSONB NOT NULL,
+		updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 	);
 
 	-- --- Paiements Orange Money (génération PDF) ------------------------------

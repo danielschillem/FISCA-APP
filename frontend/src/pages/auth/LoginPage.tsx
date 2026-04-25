@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '../../lib/api';
 import { useAuthStore } from '../../lib/store';
@@ -21,8 +21,14 @@ export default function LoginPage() {
     const [showPwd, setShowPwd] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { setAuth } = useAuthStore();
+    const { setAuth, token, user, impersonating } = useAuthStore();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!token) return;
+        if (user?.role === 'super_admin' && !impersonating) navigate('/admin', { replace: true });
+        else navigate('/dashboard', { replace: true });
+    }, [token, user, impersonating, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,7 +37,7 @@ export default function LoginPage() {
         try {
             const res = await authApi.login({ email, password });
             const data: AuthResponse = res.data;
-            setAuth(data.token, data.user);
+            setAuth(data.token, data.user, data.refresh_token);
             navigate(data.user.role === 'super_admin' ? '/admin' : '/dashboard');
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
@@ -96,7 +102,7 @@ export default function LoginPage() {
             </div>
 
             {/* -- Panneau droit : formulaire -------------------------------- */}
-            <div className="flex-1 flex items-center justify-center p-6 bg-[#f8fafc]">
+            <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-slate-50 via-slate-100/90 to-slate-200/40 p-6">
                 <div className="w-full max-w-[400px]">
 
                     {/* Logo */}
@@ -106,7 +112,7 @@ export default function LoginPage() {
                     </div>
 
                     {/* Carte formulaire */}
-                    <div className="bg-white rounded-3xl shadow-xl border border-gray-100/80 px-8 py-10">
+                    <div className="rounded-3xl border border-slate-200/80 bg-white/95 px-8 py-10 shadow-[var(--card-shadow-hover)] backdrop-blur-sm">
 
                         {/* En-tête */}
                         <div className="mb-8">

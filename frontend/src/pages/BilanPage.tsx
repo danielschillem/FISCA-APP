@@ -1,12 +1,15 @@
 ﻿import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { bilanApi, companyApi } from '../lib/api';
+import { companyApi } from '../lib/api';
 import { fmt } from '../lib/fiscalCalc';
-import { Card, Spinner } from '../components/ui';
+import { Card } from '../components/ui';
 import { useAppStore, PLAN_FEATURES, Btn } from '../components/ui';
 import { Printer, Lock, FileDown, FileSpreadsheet, FileText } from 'lucide-react';
 import type { BilanData, Company } from '../types';
 import { exportBilanPDF, exportBilanXLSX, exportBilanDOCX } from '../lib/exportBilan';
+import { computeBilanFromAnnexes } from '../lib/declarationAnalytics';
+import { useContribuableStore } from '../contribuable/contribuableStore';
+import { calcFSP } from '../contribuable/contribuableCalc';
 
 export default function BilanPage() {
     const { plan } = useAppStore();
@@ -31,6 +34,8 @@ const LIGNES: { label: string; key: keyof Omit<BilanData, 'annee' | 'total'>; co
 function BilanContent() {
     const [annee, setAnnee] = useState(new Date().getFullYear());
     const [exportingDocx, setExportingDocx] = useState(false);
+    const period = useContribuableStore((s) => s.period);
+    const annexes = useContribuableStore((s) => s.annexes);
 
     const { data: company } = useQuery<Company>({
         queryKey: ['company'],
@@ -38,17 +43,14 @@ function BilanContent() {
         staleTime: Infinity,
     });
 
-    const { data: bilan, isLoading } = useQuery<BilanData>({
-        queryKey: ['bilan', annee],
-        queryFn: () => bilanApi.get(annee).then((r) => r.data),
-    });
-
-    if (isLoading) return <Spinner />;
-
-    const b = bilan ?? {
-        annee, iuts: 0, tpa: 0, css: 0, ras: 0, tva: 0,
-        cnss_patronal: 0, irf: 0, ircm: 0, is: 0, cme: 0, patente: 0, total: 0,
-    };
+    const b: BilanData = computeBilanFromAnnexes(annexes, period, annee);
+    const fspTotal =
+        period.year === annee
+            ? annexes.iuts.rows.reduce(
+                  (s, r) => s + calcFSP(r.salaireB || 0, r.cnss || 0, r.iutsDu || 0),
+                  0
+              )
+            : 0;
 
     const nonZero = LIGNES.filter((l) => b[l.key] > 0);
 
@@ -71,9 +73,9 @@ function BilanContent() {
                     <Btn
                         variant="outline"
                         onClick={() => exportBilanPDF(b, company)}
-                        title="Télécharger PDF"
+                        title="Exporter le bilan en PDF"
                     >
-                        <FileDown className="w-4 h-4" /> PDF
+                        <FileDown className="w-4 h-4" /> Exporter PDF
                     </Btn>
                     <Btn
                         variant="outline"
@@ -112,15 +114,19 @@ function BilanContent() {
                     <p className="text-xs text-gray-500">Retenues source</p>
                     <p className="text-lg font-bold text-blue-700">{fmt(b.ras)}</p>
                 </div>
+                <div className="bg-violet-50 rounded-xl p-4">
+                    <p className="text-xs text-gray-500">FSP (1% net salarial)</p>
+                    <p className="text-lg font-bold text-violet-700">{fmt(fspTotal)}</p>
+                </div>
                 <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-xs text-gray-500">Total obligations {annee}</p>
+                    <p className="text-xs text-gray-500">Total des obligations fiscales a reverser (CGI) {annee}</p>
                     <p className="text-lg font-bold text-gray-900">{fmt(b.total)}</p>
                 </div>
             </div>
 
             {/* Module breakdown */}
             <Card title={`Récapitulatif fiscal : exercice ${annee}`}>
-                {nonZero.length === 0 ? (
+                {nonZero.length === 0 && fspTotal <= 0 ? (
                     <p className="text-sm text-gray-400 py-8 text-center">
                         Aucune déclaration enregistrée pour l'exercice {annee}
                     </p>
@@ -150,8 +156,15 @@ function BilanContent() {
                                         </tr>
                                     );
                                 })}
+                                <tr className={`hover:bg-gray-50 ${fspTotal === 0 ? 'opacity-40' : ''}`}>
+                                    <td className="py-2.5 px-3 text-gray-800">FSP (1% net salarial)</td>
+                                    <td className="py-2.5 px-3 text-right font-mono font-semibold">{fmt(fspTotal)}</td>
+                                    <td className="py-2.5 px-3 text-right text-gray-500 text-xs">
+                                        {fspTotal > 0 && b.total > 0 ? `${((fspTotal / b.total) * 100).toFixed(1)} %` : ':'}
+                                    </td>
+                                </tr>
                                 <tr className="border-t-2 border-gray-300 font-bold">
-                                    <td className="py-3 px-3 text-gray-900">Total obligations fiscales</td>
+                                    <td className="py-3 px-3 text-gray-900">TOTAL OBLIGATIONS CGI</td>
                                     <td className="py-3 px-3 text-right font-mono text-red-700 text-base">
                                         {fmt(b.total)}
                                     </td>

@@ -15,7 +15,8 @@ export default function CNSSPatronalPage() {
 }
 
 const TAUX = { famille: 0.072, accident: 0.034, retraite: 0.055 };
-const TAUX_CARFO_PATRONAL = 0.07; // CARFO patronal 7 %
+/** Taux 7 % — employés historiques `cotisation === 'CARFO'` (non proposé en saisie). */
+const TAUX_CARFO_PATRONAL = 0.07;
 const PLAFOND = 600_000;
 
 // Base CNSS = rémunération brute complète (tous composants), plafonnée à 600 000 FCFA.
@@ -24,7 +25,7 @@ function calcCnssEmp(e: Employee) {
     const remBrute = e.salaire_base + e.anciennete + e.heures_sup + e.logement + e.transport + e.fonction;
     const base = Math.min(remBrute, PLAFOND);
     if (e.cotisation === 'CARFO') {
-        // CARFO : taux patronal unique 7 % (Art. 3 Décret CARFO BF)
+        // Branche CARFO : taux patronal unique 7 % (données existantes uniquement)
         const total = Math.round(base * TAUX_CARFO_PATRONAL);
         return { base, famille: 0, accident: 0, retraite: total, total };
     }
@@ -95,7 +96,7 @@ function CNSSContent() {
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-24 focus:ring-2 focus:ring-green-500 focus:outline-none"
                 />
                 <Btn onClick={() => generate.mutate()} disabled={generate.isPending}>
-                    {generate.isPending ? 'Génération…' : <><Zap className="w-4 h-4" /> Générer déclaration</>}
+                    {generate.isPending ? 'Génération…' : <><Zap className="w-4 h-4" /> Générer la déclaration CNSS</>}
                 </Btn>
             </div>
 
@@ -122,14 +123,17 @@ function CNSSContent() {
             {/* Per-employee table */}
             <Card title="Détail par employé">
                 <div className="overflow-x-auto">
-                    <Table columns={['Employé', 'Brut total', 'Base CNSS', 'Famille (7,2%)', 'Accident (3,4%)', 'Retraite/CARFO (5,5%/7%)', 'Total patronal']}>
+                    <Table columns={['Employé', 'Brut total', 'Base CNSS', 'Famille (7,2%)', 'Accident (3,4%)', 'Retraite (5,5 % ou 7 %)', 'Total patronal']}>
                         {employees.map((e) => {
                             const c = calcCnssEmp(e);
                             return (
                                 <tr key={e.id} className="hover:bg-gray-50">
                                     <td className="py-3 px-4 text-sm font-medium text-gray-900">
                                         {e.nom}
-                                        {e.cotisation === 'CARFO' && <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700">CARFO</span>}
+                                        {/* Badge CARFO masqué — les montants restent calculés pour les fiches historiques
+                                        {e.cotisation === 'CARFO' && (
+                                            <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700">CARFO</span>
+                                        )} */}
                                     </td>
                                     <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(e.salaire_base + e.anciennete + e.heures_sup + e.logement + e.transport + e.fonction)}</td>
                                     <td className="py-3 px-4 text-sm text-right font-mono">{fmtN(c.base)}</td>
@@ -155,7 +159,7 @@ function CNSSContent() {
             {declarations.length > 0 && (
                 <Card title="Déclarations CNSS générées">
                     <div className="overflow-x-auto">
-                        <Table columns={['Période', 'Salariés CNSS', 'Salariés CARFO', 'Total patronal CNSS', 'Total CARFO', 'Total général', 'Statut', 'Export']}>
+                        <Table columns={['Période', 'Salariés CNSS', 'Autres régimes', 'Total patronal CNSS', 'Total autres régimes', 'Total général', 'Statut', 'Export']}>
                             {declarations.map((d) => (
                                 <tr key={d.id} className="hover:bg-gray-50">
                                     <td className="py-3 px-4 text-sm font-medium text-gray-900">{d.periode}</td>
@@ -180,7 +184,7 @@ function CNSSContent() {
                                             }}
                                             className="flex items-center gap-1 text-xs text-green-700 hover:underline font-medium"
                                         >
-                                            <Download className="w-3.5 h-3.5" /> PDF
+                                            <Download className="w-3.5 h-3.5" /> Exporter PDF
                                         </button>
                                     </td>
                                 </tr>

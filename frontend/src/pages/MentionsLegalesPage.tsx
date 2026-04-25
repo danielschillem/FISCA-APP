@@ -203,20 +203,20 @@ export default function MentionsLegalesPage() {
 
                 <Art n="1" title="Concession de licence">
                     <p>
-                        Sous réserve du paiement des frais d'abonnement applicables et du respect des présentes
-                        conditions, <strong>{DEVELOPER_NAME}</strong> vous concède un droit d'accès et d'utilisation
-                        du Logiciel, non exclusif, personnel, non transférable et révocable, uniquement pour vos
-                        besoins professionnels internes liés à la gestion fiscale et sociale au Burkina Faso.
+                        Sous réserve du respect des présentes conditions et des modalités commerciales en vigueur
+                        (tarification, accès aux modules), <strong>{DEVELOPER_NAME}</strong> vous concède un droit
+                        d'accès et d'utilisation du Logiciel, non exclusif, personnel, non transférable et révocable,
+                        uniquement pour vos besoins professionnels internes liés à la gestion fiscale et sociale au
+                        Burkina Faso.
                     </p>
                 </Art>
 
-                <Art n="2" title="Étendue des droits selon le plan souscrit">
-                    <p>Les fonctionnalités accessibles dépendent du plan d'abonnement :</p>
-                    <ul className="list-disc ml-5 space-y-1 mt-2">
-                        <li><strong>Solo Starter / Solo Pro</strong> : Usage individuel, personne physique, calcul IUTS, TVA, IRF, IRCM.</li>
-                        <li><strong>Équipe</strong> : Jusqu'à 5 utilisateurs, personnes morales, modules CNSS, RAS, bulletins de paie.</li>
-                        <li><strong>Entreprise</strong> : Utilisateurs illimités, multi-sociétés, IS/MFP, CME, Patente, Workflow, Assistant IA.</li>
-                    </ul>
+                <Art n="2" title="Étendue des droits">
+                    <p>
+                        Les fonctionnalités disponibles peuvent varier selon le profil du compte (personne physique
+                        ou morale), les options activées et les évolutions du service. La description à jour des
+                        offres est communiquée sur le site ou sur demande auprès de <strong>{DEVELOPER_NAME}</strong>.
+                    </p>
                 </Art>
 
                 <Art n="3" title="Restrictions">
@@ -242,11 +242,11 @@ export default function MentionsLegalesPage() {
 
                 <Art n="5" title="Durée et résiliation">
                     <p>
-                        La licence est consentie pour la durée de l'abonnement souscrit. Elle prend fin automatiquement
-                        en cas de non-paiement, de résiliation par l'utilisateur ou de violation des présentes conditions.
-                        En cas de résiliation, l'utilisateur devra cesser immédiatement toute utilisation du Logiciel.
-                        L'éditeur se réserve le droit de résilier l'accès sans préavis en cas de violation grave des
-                        présentes conditions.
+                        La licence est consentie pour la durée d'utilisation du service conformément aux conditions
+                        contractuelles applicables. Elle prend fin en cas de résiliation du compte, de cessation du
+                        service ou de violation des présentes conditions. En cas de résiliation, l'utilisateur devra
+                        cesser immédiatement toute utilisation du Logiciel. L'éditeur se réserve le droit de résilier
+                        l'accès sans préavis en cas de violation grave des présentes conditions.
                     </p>
                 </Art>
 
@@ -281,7 +281,7 @@ export default function MentionsLegalesPage() {
                     <ul className="list-disc ml-5 space-y-1 mt-2">
                         <li>La création d'un compte avec une adresse email valide ;</li>
                         <li>L'acceptation des présentes CGU et de la politique de confidentialité ;</li>
-                        <li>La souscription d'un plan d'abonnement adapté à votre situation.</li>
+                        <li>Le cas échéant, l'acceptation des conditions tarifaires applicables à votre utilisation du service.</li>
                     </ul>
                     <p className="mt-2">
                         L'utilisateur garantit que les informations fournies lors de l'inscription sont exactes,
@@ -323,21 +323,22 @@ export default function MentionsLegalesPage() {
                     </p>
                 </Art>
 
-                <Art n="6" title="Tarification et abonnements">
+                <Art n="6" title="Tarification et prestations payantes">
                     <p>
-                        Les prix des abonnements sont affichés dans l'interface, libellés en Francs CFA (XOF) TTC.
-                        Le paiement s'effectue via les moyens disponibles dans l'application (Mobile Money, etc.).
-                        L'abonnement est renouvelable mensuellement ou annuellement selon le choix de l'utilisateur.
-                        Aucun remboursement ne sera accordé pour la période déjà consommée en cas de résiliation
-                        anticipée, sauf cas de force majeure dûment justifié.
+                        Les prix et modalités de facturation (notamment en Francs CFA, XOF) sont communiqués dans
+                        l'application, sur le site ou par tout canal d'information tenu par l'éditeur. Les paiements
+                        peuvent s'effectuer via les moyens proposés (par exemple Mobile Money ou virement), selon les
+                        options disponibles au moment de la commande. Les conditions de remboursement ou d'annulation,
+                        le cas échéant, sont précisées au moment de la souscription de la prestation concernée.
                     </p>
                 </Art>
 
                 <Art n="7" title="Résiliation">
                     <p>
-                        L'utilisateur peut résilier son abonnement à tout moment depuis son espace « Mon abonnement ».
-                        L'accès aux fonctionnalités payantes cesse à l'issue de la période abonnée. L'éditeur peut
-                        résilier un compte en cas de violation des présentes CGU, sans remboursement.
+                        L'utilisateur peut demander la clôture de son compte ou cesser d'utiliser le service selon les
+                        modalités indiquées par l'éditeur. L'accès aux fonctionnalités soumises à rémunération cesse
+                        conformément aux conditions contractuelles applicables. L'éditeur peut résilier un compte en
+                        cas de violation des présentes CGU, dans les limites prévues par la loi.
                     </p>
                 </Art>
 
@@ -368,7 +369,7 @@ export default function MentionsLegalesPage() {
                     <ul className="list-disc ml-5 space-y-1 mt-2">
                         <li>Fourniture du service de gestion fiscale et sociale ;</li>
                         <li>Authentification et sécurité des comptes ;</li>
-                        <li>Facturation et gestion des abonnements ;</li>
+                        <li>Facturation et suivi des prestations ;</li>
                         <li>Amélioration du service (anonymisée, agrégée) ;</li>
                         <li>Respect des obligations légales applicables.</li>
                     </ul>
@@ -433,8 +434,9 @@ export default function MentionsLegalesPage() {
                 <Art n="2" title="Limitation de responsabilité">
                     <p>
                         Dans les limites autorisées par la loi applicable, la responsabilité totale de l'éditeur
-                        au titre du présent contrat est limitée au montant des frais d'abonnement versés par
-                        l'utilisateur au cours des 12 derniers mois précédant le sinistre. L'éditeur ne saurait
+                        au titre du présent contrat est limitée au montant des sommes effectivement versées par
+                        l'utilisateur au titre du service au cours des 12 derniers mois précédant le sinistre.
+                        L'éditeur ne saurait
                         en aucun cas être tenu responsable de dommages indirects, y compris les redressements
                         fiscaux, pénalités ou intérêts de retard résultant d'une erreur de calcul ou d'une
                         utilisation incorrecte du Logiciel.

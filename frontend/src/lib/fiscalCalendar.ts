@@ -115,7 +115,7 @@ export function getEcheancesAnnee(annee: number, today: Date = new Date()): Eche
     for (let m = 0; m < 12; m++) {
         const moisDecl = m + 1 > 11 ? 0 : m + 1;
         const anneeDecl = m + 1 > 11 ? annee + 1 : annee;
-        add('CNSS', `Cotisations CNSS/CARFO : ${nomMois(m)} ${annee}`, 15, moisDecl, anneeDecl);
+        add('CNSS', `Cotisations CNSS : ${nomMois(m)} ${annee}`, 15, moisDecl, anneeDecl);
     }
 
     // -- TVA : le 15 du mois suivant ----------------------------------------

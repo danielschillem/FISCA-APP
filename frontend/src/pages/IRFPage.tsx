@@ -7,6 +7,7 @@ import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
 import type { IRFDeclaration, Company } from '../types';
 import { generateIRFForm } from '../lib/pdfDGI';
+import { usePaymentGate } from '../components/PaymentModal';
 
 export default function IRFPage() {
     const { plan } = useAppStore();
@@ -17,6 +18,7 @@ export default function IRFPage() {
 function IRFContent() {
     const qc = useQueryClient();
     const toast = useToast();
+    const { requestPayment, PaymentModalComponent } = usePaymentGate();
     const [annee, setAnnee] = useState(new Date().getFullYear());
     const [loyerBrut, setLoyerBrut] = useState(6_000_000);
     const [result, setResult] = useState<ReturnType<typeof calcIRF> | null>(null);
@@ -62,6 +64,7 @@ function IRFContent() {
 
     return (
         <div className="max-w-3xl space-y-6">
+            {PaymentModalComponent}
             <Card title="IRF : Impôt sur les Revenus Fonciers">
                 <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 121-126 - Abattement 50 % - Taux progressif 18 % / 25 %</p>
                 <div className="grid grid-cols-2 gap-4 mb-4">
@@ -143,7 +146,7 @@ function IRFContent() {
                                         <td className="py-2 text-right font-semibold text-red-700">{fmt(d.irf_total)}</td>
                                         <td className="py-2 text-center">
                                             <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${d.statut === 'declare' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                                {d.statut === 'declare' ? 'Déclaré' : 'Brouillon'}
+                                                {d.statut === 'declare' ? 'Déclaré' : 'En cours'}
                                             </span>
                                         </td>
                                         <td className="py-2 text-right">
@@ -161,7 +164,13 @@ function IRFContent() {
                                                     className="p-1 text-blue-600 hover:bg-blue-50 rounded">
                                                     <Download className="w-3.5 h-3.5" />
                                                 </button>
-                                                <button onClick={() => generateIRFForm(d, company)} title="Formulaire DGI"
+                                                <button
+                                                    onClick={() =>
+                                                        requestPayment('irf', d.id, () => {
+                                                            void generateIRFForm(d, company);
+                                                        })
+                                                    }
+                                                    title="Exporter formulaire DGI (PDF)"
                                                     className="p-1 text-purple-600 hover:bg-purple-50 rounded">
                                                     <FileText className="w-3.5 h-3.5" />
                                                 </button>

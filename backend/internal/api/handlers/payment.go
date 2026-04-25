@@ -4,13 +4,18 @@ import (
 	"bytes"
 	"context"
 	cryptorand "crypto/rand"
-	"encoding/json"
+	"crypto/tls"
+	"crypto/x509"
 	hexenc "encoding/hex"
+	"encoding/json"
+	"encoding/xml"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,27 +25,47 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Tarif génération PDF : 2 000 FCFA + 1,5% frais Orange Money
+// Tarifs génération PDF + 1,5% frais Orange Money
 const (
-	PrixBase  = 2000.0
 	TauxFrais = 0.015
 )
 
 // Types de documents autorisés
 var docTypes = map[string]bool{
-	"iuts":     true,
-	"tva":      true,
-	"retenues": true,
-	"is":       true,
-	"ircm":     true,
-	"cme":      true,
-	"irf":      true,
-	"bulletin": true,
-	"patente":  true,
-	"cnss":     true,
+	"iuts":            true,
+	"tva":             true,
+	"retenues":        true,
+	"is":              true,
+	"ircm":            true,
+	"cme":             true,
+	"irf":             true,
+	"bulletin":        true,
+	"patente":         true,
+	"cnss":            true,
+	"annexe":          true,
+	"duplicata":       true,
+	"annexe_bulletin": true,
+}
+
+var prixBaseByDocType = map[string]float64{
+	"iuts":            2000,
+	"tva":             2000,
+	"retenues":        2000,
+	"is":              2000,
+	"ircm":            2000,
+	"cme":             2000,
+	"irf":             2000,
+	"patente":         2000,
+	"cnss":            2000,
+	"annexe":          5000,
+	"duplicata":       3000,
+	"bulletin":        5000,
+	"annexe_bulletin": 8000,
 }
 
 var phoneRE = regexp.MustCompile(`^(\+226|00226)?[0-9]{8}$`)
+var otpRE = regexp.MustCompile(`^[0-9]{6}$`)
+var uuidRE = regexp.MustCompile(`^[0-9a-fA-F-]{36}$`)
 
 type PaymentHandler struct {
 	DB *pgxpool.Pool
@@ -76,6 +101,10 @@ func (h *PaymentHandler) Initiate(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "document_id requis", http.StatusBadRequest)
 		return
 	}
+	if err := h.validateDocumentOwnership(ctx, companyID, req.DocumentType, req.DocumentID); err != nil {
+		jsonError(w, err.Error(), http.StatusForbidden)
+		return
+	}
 
 	// Validation téléphone
 	phone := strings.TrimSpace(req.Telephone)
@@ -90,9 +119,17 @@ func (h *PaymentHandler) Initiate(w http.ResponseWriter, r *http.Request) {
 	if len(phone) == 8 {
 		phone = "+226" + phone
 	}
+	otp := strings.TrimSpace(req.OTP)
+	if !otpRE.MatchString(otp) {
+		jsonError(w, "Code OTP invalide (6 chiffres requis)", http.StatusBadRequest)
+		return
+	}
 
 	// Montant
-	base := PrixBase
+	base := prixBaseByDocType[req.DocumentType]
+	if base <= 0 {
+		base = 2000
+	}
 	if req.MontantBase > 0 {
 		base = req.MontantBase
 	}
@@ -145,10 +182,10 @@ func (h *PaymentHandler) Initiate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Appel API Orange Money (si configurée)
-	omURL := os.Getenv("OM_API_URL")
+	omURL := resolveOMURL()
 	if omURL == "" {
 		// Mode sandbox/mock - approuver automatiquement pour les tests
-		log.Printf("[PAYMENT] OM_API_URL non configuré - mode mock, approbation automatique")
+		log.Printf("[PAYMENT] URL Orange Money non configurée - mode mock, approbation automatique")
 		h.DB.Exec(ctx, //nolint:errcheck
 			`UPDATE payments SET statut='completed', om_reference='MOCK-'+$1, updated_at=NOW() WHERE id=$2`,
 			orderID, paymentID,
@@ -164,7 +201,7 @@ func (h *PaymentHandler) Initiate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Appel réel Orange Money API
-	omErr := callOrangeMoney(ctx, omURL, orderID, phone, total, paymentID)
+	omErr := callOrangeMoney(ctx, omURL, orderID, phone, total, otp, paymentID)
 	if omErr != nil {
 		log.Printf("[PAYMENT] Orange Money API error: %v", omErr)
 		// Ne pas bloquer - le paiement est créé, le webhook peut encore arriver
@@ -182,6 +219,40 @@ func (h *PaymentHandler) Initiate(w http.ResponseWriter, r *http.Request) {
 		"total":  total,
 		"frais":  frais,
 	})
+}
+
+func (h *PaymentHandler) validateDocumentOwnership(ctx context.Context, companyID, docType, docID string) error {
+	// IDs synthétiques autorisés pour les exports "pack" côté contribuable.
+	if !uuidRE.MatchString(docID) {
+		switch docType {
+		case "annexe", "duplicata", "annexe_bulletin", "bulletin":
+			return nil
+		default:
+			return fmt.Errorf("document non autorisé pour cette société")
+		}
+	}
+
+	queryByType := map[string]string{
+		"iuts":     `SELECT 1 FROM declarations WHERE id=$1 AND company_id=$2`,
+		"tva":      `SELECT 1 FROM tva_declarations WHERE id=$1 AND company_id=$2`,
+		"retenues": `SELECT 1 FROM retenues_source WHERE id=$1 AND company_id=$2`,
+		"is":       `SELECT 1 FROM is_declarations WHERE id=$1 AND company_id=$2`,
+		"ircm":     `SELECT 1 FROM ircm_declarations WHERE id=$1 AND company_id=$2`,
+		"cme":      `SELECT 1 FROM cme_declarations WHERE id=$1 AND company_id=$2`,
+		"irf":      `SELECT 1 FROM irf_declarations WHERE id=$1 AND company_id=$2`,
+		"patente":  `SELECT 1 FROM patente_declarations WHERE id=$1 AND company_id=$2`,
+		"cnss":     `SELECT 1 FROM cnss_patronal WHERE id=$1 AND company_id=$2`,
+		"bulletin": `SELECT 1 FROM bulletins WHERE id=$1 AND company_id=$2`,
+	}
+	q, ok := queryByType[docType]
+	if !ok {
+		return nil
+	}
+	var one int
+	if err := h.DB.QueryRow(ctx, q, docID, companyID).Scan(&one); err != nil {
+		return fmt.Errorf("document non autorisé pour cette société")
+	}
+	return nil
 }
 
 // GET /api/payments/{id}/status
@@ -298,43 +369,186 @@ func (h *PaymentHandler) Check(w http.ResponseWriter, r *http.Request) {
 
 // --- Appel API Orange Money ---------------------------------------------------
 
-// callOrangeMoney envoie la demande de paiement à l'API OM.
-// La structure exacte dépend de votre contrat avec Orange Money.
-// Configurez OM_API_URL, OM_API_KEY, OM_MERCHANT_ID dans les variables d'env.
-func callOrangeMoney(ctx context.Context, baseURL, orderID, phone string, amount float64, paymentID string) error {
-	callbackURL := os.Getenv("APP_BASE_URL") + "/api/payments/webhook"
-	merchantID := os.Getenv("OM_MERCHANT_ID")
-	apiKey := os.Getenv("OM_API_KEY")
+type omCommand struct {
+	XMLName        xml.Name `xml:"COMMAND"`
+	Type           string   `xml:"TYPE"`
+	CustomerMSISDN string   `xml:"customer_msisdn"`
+	MerchantMSISDN string   `xml:"merchant_msisdn"`
+	APIUsername    string   `xml:"api_username"`
+	APIPassword    string   `xml:"api_password"`
+	Amount         string   `xml:"amount"`
+	Provider       string   `xml:"PROVIDER"`
+	Provider2      string   `xml:"PROVIDER2"`
+	PayID          string   `xml:"PAYID"`
+	PayID2         string   `xml:"PAYID2"`
+	OTP            string   `xml:"otp"`
+	Reference      string   `xml:"reference_number"`
+	ExtTxnID       string   `xml:"ext_txn_id"`
+}
 
-	payload := map[string]any{
-		"merchant_id":  merchantID,
-		"order_id":     orderID,
-		"amount":       int(amount),
-		"currency":     "XOF",
-		"phone":        phone,
-		"callback_url": callbackURL,
-		"description":  "Génération document fiscal FISCA",
-		"payment_id":   paymentID,
+type omResponse struct {
+	Status  string `xml:"status"`
+	Message string `xml:"message"`
+	TransID string `xml:"transID"`
+}
+
+func normalizeBFPhone(raw string) string {
+	p := strings.TrimSpace(raw)
+	p = strings.ReplaceAll(p, " ", "")
+	p = strings.TrimPrefix(p, "+226")
+	p = strings.TrimPrefix(p, "00226")
+	return p
+}
+
+func buildOMHTTPClient() (*http.Client, error) {
+	certFile := strings.TrimSpace(os.Getenv("OM_TLS_CERT_FILE"))
+	keyFile := strings.TrimSpace(os.Getenv("OM_TLS_KEY_FILE"))
+	caFile := strings.TrimSpace(os.Getenv("OM_TLS_CA_FILE"))
+	if certFile == "" || keyFile == "" {
+		return &http.Client{Timeout: 25 * time.Second}, nil
 	}
 
-	body, _ := json.Marshal(payload)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/initiate", bytes.NewReader(body))
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, fmt.Errorf("chargement cert/key OM impossible: %w", err)
+	}
+
+	tlsCfg := &tls.Config{
+		MinVersion:   tls.VersionTLS12,
+		Certificates: []tls.Certificate{cert},
+	}
+	if caFile != "" {
+		caPem, readErr := os.ReadFile(caFile)
+		if readErr != nil {
+			return nil, fmt.Errorf("lecture OM_TLS_CA_FILE impossible: %w", readErr)
+		}
+		pool := x509.NewCertPool()
+		if ok := pool.AppendCertsFromPEM(caPem); !ok {
+			return nil, fmt.Errorf("OM_TLS_CA_FILE invalide (PEM)")
+		}
+		tlsCfg.RootCAs = pool
+	}
+
+	return &http.Client{
+		Timeout:   25 * time.Second,
+		Transport: &http.Transport{TLSClientConfig: tlsCfg},
+	}, nil
+}
+
+func envFirst(keys ...string) string {
+	for _, k := range keys {
+		v := strings.TrimSpace(os.Getenv(k))
+		if v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+func envTruthy(key string) bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
+	return v == "1" || v == "true" || v == "yes" || v == "on"
+}
+
+func resolveOMURL() string {
+	// Override explicite prioritaire (si vous voulez forcer une URL unique).
+	if direct := envFirst("ORANGE_MONEY_API_URL", "OM_API_URL"); direct != "" {
+		return direct
+	}
+
+	// Sélection par environnement (dernière passe prod-ready).
+	omEnv := strings.ToLower(envFirst("ORANGE_MONEY_ENV"))
+	appEnv := strings.ToLower(envFirst("APP_ENV", "ENV"))
+	useProd := omEnv == "prod" || omEnv == "production" || appEnv == "prod" || appEnv == "production" || envTruthy("ORANGE_MONEY_USE_PROD")
+
+	if useProd {
+		return envFirst("ORANGE_MONEY_PROD_URL")
+	}
+	return envFirst("ORANGE_MONEY_TEST_URL")
+}
+
+// callOrangeMoney envoie la demande XML OMPREQ à l'API OM.
+// Variables: ORANGE_MONEY_API_URL (ou ORANGE_MONEY_TEST_URL), ORANGE_MONEY_API_USERNAME,
+// ORANGE_MONEY_API_PASSWORD, ORANGE_MONEY_MERCHANT_MSISDN.
+// Optionnelles: ORANGE_MONEY_PROVIDER/ORANGE_MONEY_PROVIDER2 (101),
+// ORANGE_MONEY_PAYID/ORANGE_MONEY_PAYID2 (12).
+func callOrangeMoney(ctx context.Context, baseURL, orderID, phone string, amount float64, otp string, _ string) error {
+	username := envFirst("ORANGE_MONEY_API_USERNAME", "OM_API_USERNAME")
+	password := envFirst("ORANGE_MONEY_API_PASSWORD", "OM_API_PASSWORD")
+	merchantMSISDN := envFirst("ORANGE_MONEY_MERCHANT_MSISDN", "OM_MERCHANT_MSISDN")
+	provider := envFirst("ORANGE_MONEY_PROVIDER", "OM_PROVIDER")
+	provider2 := envFirst("ORANGE_MONEY_PROVIDER2", "OM_PROVIDER2")
+	payID := envFirst("ORANGE_MONEY_PAYID", "OM_PAYID")
+	payID2 := envFirst("ORANGE_MONEY_PAYID2", "OM_PAYID2")
+
+	if username == "" || password == "" || merchantMSISDN == "" {
+		return fmt.Errorf("configuration OM manquante: OM_API_USERNAME/OM_API_PASSWORD/OM_MERCHANT_MSISDN")
+	}
+	if provider == "" {
+		provider = "101"
+	}
+	if provider2 == "" {
+		provider2 = provider
+	}
+	if payID == "" {
+		payID = "12"
+	}
+	if payID2 == "" {
+		payID2 = payID
+	}
+	cmd := omCommand{
+		Type:           "OMPREQ",
+		CustomerMSISDN: normalizeBFPhone(phone),
+		MerchantMSISDN: normalizeBFPhone(merchantMSISDN),
+		APIUsername:    username,
+		APIPassword:    password,
+		Amount:         strconv.Itoa(int(amount)),
+		Provider:       provider,
+		Provider2:      provider2,
+		PayID:          payID,
+		PayID2:         payID2,
+		OTP:            otp,
+		Reference:      orderID,
+		ExtTxnID:       orderID,
+	}
+	payload, err := xml.Marshal(cmd)
+	if err != nil {
+		return fmt.Errorf("construction xml OMPREQ impossible: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		strings.TrimRight(baseURL, "/"),
+		bytes.NewReader(append([]byte(xml.Header), payload...)),
+	)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-	req.Header.Set("X-Merchant-ID", merchantID)
+	req.Header.Set("Content-Type", "application/xml")
+	req.Header.Set("Accept", "application/xml")
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client, err := buildOMHTTPClient()
+	if err != nil {
+		return err
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("orange money unreachable: %w", err)
 	}
 	defer resp.Body.Close()
 
+	raw, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("orange money error HTTP %d", resp.StatusCode)
+		return fmt.Errorf("orange money error HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+	}
+
+	var rpc omResponse
+	if uErr := xml.Unmarshal(raw, &rpc); uErr != nil {
+		return fmt.Errorf("réponse OM non parsable: %v - raw: %s", uErr, strings.TrimSpace(string(raw)))
+	}
+	if strings.TrimSpace(rpc.Status) != "200" {
+		return fmt.Errorf("OM refusé status=%s message=%s", rpc.Status, rpc.Message)
 	}
 	return nil
 }

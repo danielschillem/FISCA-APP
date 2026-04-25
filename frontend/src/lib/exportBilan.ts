@@ -13,12 +13,13 @@ import {
 } from 'docx';
 import type { BilanData, Company } from '../types';
 import { fmt, fmtN } from './fiscalCalc';
+import { buildPdfTrace, drawTraceQr } from './pdfTrace';
 
 // --- Libellés ----------------------------------------------------------------
 const LIGNES: { label: string; key: keyof Omit<BilanData, 'annee' | 'total'> }[] = [
     { label: 'IUTS - Impôt Unique sur les Traitements et Salaires', key: 'iuts' },
     { label: 'TPA - Taxe Patronale et d\'Apprentissage', key: 'tpa' },
-    { label: 'CSS - Cotisations Salariales (CNSS/CARFO)', key: 'css' },
+    { label: 'CSS - Cotisations salariales (CNSS)', key: 'css' },
     { label: 'CNSS Patronal', key: 'cnss_patronal' },
     { label: 'TVA - Taxe sur la Valeur Ajoutée (nette)', key: 'tva' },
     { label: 'RAS - Retenues à la Source', key: 'ras' },
@@ -33,8 +34,13 @@ const pct = (v: number, total: number): string =>
     total > 0 ? ((v / total) * 100).toFixed(1) + ' %' : ' - ';
 
 // --- PDF ---------------------------------------------------------------------
-export function exportBilanPDF(b: BilanData, company?: Company) {
+export async function exportBilanPDF(b: BilanData, company?: Company) {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const trace = await buildPdfTrace('bilan', {
+        annee: b.annee,
+        ifu: company?.ifu ?? '',
+        total: b.total,
+    });
     const W = doc.internal.pageSize.getWidth();
     const M = 15;
     const BLACK: [number, number, number] = [0, 0, 0];
@@ -132,9 +138,16 @@ export function exportBilanPDF(b: BilanData, company?: Company) {
     doc.line(M, pH - 12, W - M, pH - 12);
     doc.setFontSize(6.5); doc.setFont('helvetica', 'italic'); doc.setTextColor(...MGRAY);
     doc.text(
-        `Généré par FISCA - ${new Date().toLocaleDateString('fr-FR')} - Document de synthèse fiscale - CGI 2025 Burkina Faso`,
+        `Genere par FISCA - ${new Date().toLocaleDateString('fr-FR')} - Trace ${trace.traceId} - CGI 2025 Burkina Faso`,
         W / 2, pH - 6, { align: 'center' },
     );
+    doc.setFontSize(6);
+    doc.text(`Hash ${trace.digest.slice(0, 16)}`, W - M, pH - 2.5, { align: 'right' });
+    try {
+        await drawTraceQr(doc, trace, W - M - 20, 9, 16);
+    } catch {
+        // Keep document export working if QR generation fails.
+    }
 
     doc.save(`Bilan-Fiscal-${b.annee}-${(company?.nom ?? 'entreprise').replace(/\s+/g, '_')}.pdf`);
 }

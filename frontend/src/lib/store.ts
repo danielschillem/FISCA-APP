@@ -4,11 +4,12 @@ import type { User, Plan } from '../types';
 
 interface AuthState {
     token: string | null;
+    refreshToken: string | null;
     user: User | null;
     companyId: string | null;
     impersonating: boolean;        // true quand un super_admin inspecte un user
     realAdminToken: string | null; // token original du super_admin pour restaurer
-    setAuth: (token: string, user: User) => void;
+    setAuth: (token: string, user: User, refreshToken?: string) => void;
     setCompanyId: (id: string) => void;
     startImpersonate: (token: string, user: User) => void;
     stopImpersonate: () => void;
@@ -19,13 +20,17 @@ export const useAuthStore = create<AuthState>()(
     persist(
         (set, get) => ({
             token: null,
+            refreshToken: null,
             user: null,
             companyId: null,
             impersonating: false,
             realAdminToken: null,
-            setAuth: (token, user) => {
+            setAuth: (token, user, refreshToken) => {
                 localStorage.setItem('fisca_token', token);
-                set({ token, user });
+                if (refreshToken) {
+                    localStorage.setItem('fisca_refresh_token', refreshToken);
+                }
+                set({ token, user, refreshToken: refreshToken ?? get().refreshToken });
             },
             setCompanyId: (id) => {
                 localStorage.setItem('fisca_company_id', id);
@@ -44,8 +49,9 @@ export const useAuthStore = create<AuthState>()(
             },
             logout: () => {
                 localStorage.removeItem('fisca_token');
+                localStorage.removeItem('fisca_refresh_token');
                 localStorage.removeItem('fisca_company_id');
-                set({ token: null, user: null, companyId: null });
+                set({ token: null, refreshToken: null, user: null, companyId: null });
             },
         }),
         { name: 'fisca-auth' }

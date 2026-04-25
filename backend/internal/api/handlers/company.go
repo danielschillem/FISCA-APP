@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/fisca-app/backend/internal/api/middleware"
 	"github.com/fisca-app/backend/internal/models"
@@ -19,7 +20,11 @@ func NewCompanyHandler(db *pgxpool.Pool) *CompanyHandler {
 
 // GET /api/company
 func (h *CompanyHandler) Get(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserID(r)
+	companyID := middleware.GetCompanyID(r)
+	if companyID == "" {
+		jsonError(w, "Entreprise introuvable", http.StatusNotFound)
+		return
+	}
 	var c models.Company
 	err := h.DB.QueryRow(r.Context(),
 		`SELECT id, user_id, nom,
@@ -30,7 +35,7 @@ func (h *CompanyHandler) Get(w http.ResponseWriter, r *http.Request) {
 		        COALESCE(TO_CHAR(date_debut_activite,'YYYY-MM-DD'),''),
 		        COALESCE(email_entreprise,''), COALESCE(ville,''),
 		        COALESCE(quartier,''), COALESCE(bp,''), COALESCE(fax,'')
-		 FROM companies WHERE user_id=$1 LIMIT 1`, userID,
+		 FROM companies WHERE id=$1 LIMIT 1`, companyID,
 	).Scan(&c.ID, &c.UserID, &c.Nom, &c.IFU, &c.RC, &c.Secteur, &c.Adresse, &c.Tel,
 		&c.FormeJuridique, &c.Regime, &c.CentreImpots, &c.CodeActivite,
 		&c.DateDebutActivite, &c.EmailEntreprise, &c.Ville, &c.Quartier, &c.BP, &c.Fax)
@@ -43,10 +48,23 @@ func (h *CompanyHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // PUT /api/company
 func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserID(r)
+	companyID := middleware.GetCompanyID(r)
+	if companyID == "" {
+		jsonError(w, "Entreprise introuvable", http.StatusNotFound)
+		return
+	}
 	var c models.Company
 	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
 		jsonError(w, "Données invalides", http.StatusBadRequest)
+		return
+	}
+	c.IFU = strings.TrimSpace(c.IFU)
+	if err := ensureIFUAvailable(h.DB, companyID, c.IFU); err != nil {
+		if err.Error() == "ifu_already_used" {
+			jsonError(w, "IFU déjà utilisé par une autre société", http.StatusConflict)
+			return
+		}
+		jsonError(w, "Erreur de contrôle IFU", http.StatusInternalServerError)
 		return
 	}
 
@@ -62,12 +80,12 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 		    forme_juridique=$7, regime=$8, centre_impots=$9, code_activite=$10,
 		    date_debut_activite=$11, email_entreprise=$12,
 		    ville=$13, quartier=$14, bp=$15, fax=$16
-		 WHERE user_id=$17`,
+		 WHERE id=$17`,
 		c.Nom, c.IFU, c.RC, c.Secteur, c.Adresse, c.Tel,
 		c.FormeJuridique, c.Regime, c.CentreImpots, c.CodeActivite,
 		dateDebut, c.EmailEntreprise,
 		c.Ville, c.Quartier, c.BP, c.Fax,
-		userID,
+		companyID,
 	)
 	if err != nil || tag.RowsAffected() == 0 {
 		jsonError(w, "Erreur mise à jour", http.StatusInternalServerError)

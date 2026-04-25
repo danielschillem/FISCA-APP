@@ -101,6 +101,7 @@ func (h *SimulationHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Transport:   req.Input.Transport,
 		Fonction:    req.Input.Fonction,
 		Charges:     req.Input.Charges,
+		Categorie:   req.Input.Categorie,
 		Cotisation:  req.Input.Cotisation,
 	})
 

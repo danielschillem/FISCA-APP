@@ -4,6 +4,8 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
+const isProd = process.env.NODE_ENV === 'production'
+
 export default defineConfig({
   test: {
     globals: true,
@@ -14,7 +16,8 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    VitePWA({
+    ...(isProd
+      ? [VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png', 'login_bg.jpg', 'register_bg.jpg'],
       manifest: {
@@ -53,7 +56,8 @@ export default defineConfig({
           },
         ],
       },
-    }),
+    })]
+      : []),
   ],
   build: {
     target: 'es2020',

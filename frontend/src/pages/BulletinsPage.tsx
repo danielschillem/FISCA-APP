@@ -11,6 +11,8 @@ import * as XLSX from 'xlsx';
 import { exportBulletinPDF, exportAllBulletinsPDF } from '../lib/pdfBulletin';
 import { usePaymentGate } from '../components/PaymentModal';
 
+const BULLETIN_BASE_AMOUNT = 5000;
+
 export default function BulletinsPage() {
     const { plan } = useAppStore();
     if (!PLAN_FEATURES[plan]?.has('bulletin')) {
@@ -81,7 +83,8 @@ function BulletinsContent() {
                         className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-green-500 focus:outline-none"
                     >
                         <option value="CNSS">CNSS (5,5 %)</option>
-                        <option value="CARFO">CARFO (6 %)</option>
+                        {/* CARFO désactivé — génération bulletins uniquement CNSS par défaut */}
+                        {/* <option value="CARFO">CARFO (6 %)</option> */}
                     </select>
                 </div>
                 <div className="flex items-center gap-3 ml-auto">
@@ -90,10 +93,14 @@ function BulletinsContent() {
                         <>
                             <Btn
                                 variant="outline"
-                                onClick={() => requestPayment('bulletin', `all-${annee}-${mois}`, () => exportAllBulletinsPDF(bulletins, company))}
+                                onClick={() =>
+                                    requestPayment('bulletin', `all-${annee}-${mois}`, () =>
+                                        exportAllBulletinsPDF(bulletins, company, { paymentBaseAmount: BULLETIN_BASE_AMOUNT })
+                                    )
+                                }
                                 title="Exporter tous les bulletins en PDF"
                             >
-                                <FileText className="w-4 h-4" /> PDF
+                                <FileText className="w-4 h-4" /> Exporter PDF
                             </Btn>
                             <Btn
                                 variant="outline"
@@ -120,7 +127,7 @@ function BulletinsContent() {
                         </>
                     )}
                     <Btn onClick={() => generate.mutate()} disabled={generate.isPending}>
-                        {generate.isPending ? 'Génération…' : <><Zap className="w-4 h-4" /> Générer bulletins</>}
+                        {generate.isPending ? 'Génération…' : <><Zap className="w-4 h-4" /> Générer tous les bulletins de paie</>}
                     </Btn>
                 </div>
             </div>
@@ -177,8 +184,12 @@ function BulletinCard({ bulletin: b, company, onPdf }: {
                     <p className="text-xs text-gray-500">{b.periode} - {b.categorie}</p>
                 </div>
                 <div className="flex gap-2">
-                    <Btn size="sm" variant="outline" onClick={() => onPdf('bulletin', b.id, () => exportBulletinPDF(b, company))}>
-                        <FileText className="w-3.5 h-3.5" /> PDF
+                    <Btn
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onPdf('bulletin', b.id, () => exportBulletinPDF(b, company, { paymentBaseAmount: BULLETIN_BASE_AMOUNT }))}
+                    >
+                        <FileText className="w-3.5 h-3.5" /> Exporter PDF
                     </Btn>
                 </div>
             </div>

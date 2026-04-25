@@ -33,7 +33,7 @@ export const REGIMES_INFO: Record<RegimeFiscal, RegimeInfo> = {
         bgColor: '#fef2f2',
         textColor: 'text-red-700',
         routes: [
-            '/saisie', '/declarations', '/tva', '/is', '/irf', '/ircm',
+            '/saisie', '/declarations', '/versements-iuts', '/tva', '/is', '/irf', '/ircm',
             '/retenues', '/cnss-patronal', '/patente', '/bulletins', '/simulateur', '/workflow',
         ],
         echeances: ['IUTS', 'CNSS', 'TVA', 'IS_acompte', 'IS_solde', 'Patente', 'IRF', 'IRCM', 'RAS', 'TP'],
@@ -54,7 +54,7 @@ export const REGIMES_INFO: Record<RegimeFiscal, RegimeInfo> = {
         bgColor: '#fffbeb',
         textColor: 'text-amber-700',
         routes: [
-            '/saisie', '/declarations', '/tva', '/is', '/irf', '/ircm',
+            '/saisie', '/declarations', '/versements-iuts', '/tva', '/is', '/irf', '/ircm',
             '/retenues', '/cnss-patronal', '/patente', '/bulletins', '/simulateur',
         ],
         echeances: ['IUTS', 'CNSS', 'TVA', 'IS_acompte', 'IS_solde', 'Patente', 'IRF', 'IRCM', 'RAS', 'TP'],
@@ -73,7 +73,7 @@ export const REGIMES_INFO: Record<RegimeFiscal, RegimeInfo> = {
         color: '#0d9488',
         bgColor: '#f0fdfa',
         textColor: 'text-teal-700',
-        routes: ['/cme', '/saisie', '/declarations', '/cnss-patronal'],
+        routes: ['/cme', '/saisie', '/declarations', '/versements-iuts', '/cnss-patronal'],
         echeances: ['CME', 'IUTS', 'CNSS'],
         obligations: [
             'CME mensuelle (forfait, avant le 15)',
@@ -89,7 +89,7 @@ export const REGIMES_INFO: Record<RegimeFiscal, RegimeInfo> = {
         bgColor: '#f5f3ff',
         textColor: 'text-violet-700',
         routes: [
-            '/saisie', '/declarations', '/tva', '/irf', '/ircm',
+            '/saisie', '/declarations', '/versements-iuts', '/tva', '/irf', '/ircm',
             '/retenues', '/patente', '/bulletins', '/simulateur',
         ],
         echeances: ['IUTS', 'CNSS', 'TVA', 'Patente', 'IRF', 'IRCM', 'RAS', 'TP'],
@@ -128,10 +128,10 @@ export function useRegime() {
     const regime = (company?.regime ?? '') as RegimeFiscal;
     const info = REGIMES_INFO[regime] ?? REGIMES_INFO[''];
 
-    /** Vrai si la route donnée (ex: '/tva') s'applique au régime courant */
+    /** Vrai si la route donnée (ex: '/tva' ou '/declarations/setup') s'applique au régime courant */
     const routeApplies = (route: string): boolean => {
         if (regime === '') return true; // pas de régime défini = tout visible
-        return info.routes.includes(route);
+        return info.routes.some((reg) => route === reg || route.startsWith(`${reg}/`));
     };
 
     return { regime, info, company, routeApplies };

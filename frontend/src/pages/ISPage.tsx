@@ -193,7 +193,7 @@ function ISContent() {
                                         <td className="py-2 text-right font-semibold text-red-700">{fmt(d.is_du)}</td>
                                         <td className="py-2 text-center">
                                             <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${d.statut === 'declare' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                                {d.statut === 'declare' ? 'Déclaré' : 'Brouillon'}
+                                                {d.statut === 'declare' ? 'Déclaré' : 'En cours'}
                                             </span>
                                         </td>
                                         <td className="py-2 text-right">
@@ -211,7 +211,7 @@ function ISContent() {
                                                     className="p-1 text-blue-600 hover:bg-blue-50 rounded">
                                                     <Download className="w-3.5 h-3.5" />
                                                 </button>
-                                                <button onClick={() => requestPayment('is', d.id, () => generateISForm(d, company))} title="Formulaire DGI"
+                                                <button onClick={() => requestPayment('is', d.id, () => generateISForm(d, company))} title="Exporter formulaire DGI (PDF)"
                                                     className="p-1 text-orange-500 hover:bg-orange-50 rounded">
                                                     <FileText className="w-3.5 h-3.5" />
                                                 </button>

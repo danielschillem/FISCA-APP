@@ -1,4 +1,5 @@
 // --- Fiscal calculation utilities (mirroring CGI 2025 engine) -
+import { getFiscalRules } from '../contribuable/fiscalRules';
 
 // Formateur PDF-safe : espace ASCII ordinaire comme séparateur de milliers.
 // toLocaleString('fr-FR') produit \u202F (espace fine insécable) non rendu
@@ -13,38 +14,24 @@ export const fmtN = (n: number): string => numFmt(n);
 export const pct = (n: number): string =>
     (n * 100).toFixed(1) + ' %';
 
-// IUTS tranches CGI 2025 : 9 tranches barème marginal (Art. 107-112)
-const IUTS_TRANCHES = [
-    { plafond: 30_000, taux: 0.00 },   // 0 - 30 000 : exonéré
-    { plafond: 50_000, taux: 0.12 },   // 30 001 - 50 000
-    { plafond: 80_000, taux: 0.14 },   // 50 001 - 80 000
-    { plafond: 120_000, taux: 0.16 },  // 80 001 - 120 000
-    { plafond: 170_000, taux: 0.18 },  // 120 001 - 170 000
-    { plafond: 250_000, taux: 0.20 },  // 170 001 - 250 000
-    { plafond: 400_000, taux: 0.24 },  // 250 001 - 400 000
-    { plafond: 600_000, taux: 0.28 },  // 400 001 - 600 000
-    { plafond: Infinity, taux: 0.30 }, // > 600 000
-];
-
 export function calcIUTS(baseImp: number): number {
+    const rules = getFiscalRules();
     let impot = 0;
     let prev = 0;
-    for (const t of IUTS_TRANCHES) {
+    for (const t of rules.iutsTranches) {
         if (baseImp <= prev) break;
-        const tranche = Math.min(baseImp, t.plafond) - prev;
+        const tranche = Math.min(baseImp, t.max) - prev;
         impot += tranche * t.taux;
-        prev = t.plafond;
-        if (!isFinite(t.plafond)) break;
+        prev = t.max;
+        if (!isFinite(t.max)) break;
     }
     return Math.round(impot);
 }
 
-// Abattement familial CGI 2025 Art. 113
-const ABATT_FAM: Record<number, number> = { 0: 0, 1: 0.08, 2: 0.10, 3: 0.12, 4: 0.14 };
-
 export function calcAbattFamilial(iutsBrut: number, charges: number): number {
+    const rules = getFiscalRules();
     const n = Math.min(Math.max(0, Math.round(charges)), 4);
-    return Math.round(iutsBrut * (ABATT_FAM[n] ?? 0));
+    return Math.round(iutsBrut * (rules.abattFam[n] ?? 0));
 }
 
 export const EXO = { LOGEMENT: 75_000, TRANSPORT: 30_000, FONCTION: 50_000 };
@@ -77,13 +64,15 @@ export interface EmployeeCalcResult {
 }
 
 export function calcEmploye(e: EmployeeInput): EmployeeCalcResult {
+    const rules = getFiscalRules();
     const remBrute = e.salaire_base + e.anciennete + e.heures_sup +
         e.logement + e.transport + e.fonction;
 
-    const taux = e.cotisation === 'CARFO' ? 0.06 : 0.055;
-    const baseCot = Math.min(remBrute, CNSS_PLAFOND);
+    // CARFO (6 %) : plus proposé en UI ; conservé pour bulletins / employés existants
+    const taux = e.cotisation === 'CARFO' ? 0.06 : rules.cnss.taux;
+    const baseCot = Math.min(remBrute, rules.cnss.plafond);
     const cotSoc = Math.round(baseCot * taux);
-    const tpa = Math.round(remBrute * 0.03);
+    const tpa = Math.round(remBrute * rules.tpaRate);
 
     const exoLog = Math.min(e.logement, EXO.LOGEMENT);
     const exoTrans = Math.min(e.transport, EXO.TRANSPORT);
@@ -120,22 +109,25 @@ export function calcEmploye(e: EmployeeInput): EmployeeCalcResult {
 }
 
 // TVA
-export function calcTVA(ht: number, taux = 0.18) {
-    const tva = Math.round(ht * taux);
+export function calcTVA(ht: number, taux?: number) {
+    const rules = getFiscalRules();
+    const t = taux ?? rules.tva.standardRate;
+    const tva = Math.round(ht * t);
     return { ht, tva, ttc: ht + tva };
 }
 
 // IRF CGI 2025
 export function calcIRF(loyerBrut: number) {
-    const abatt = Math.round(loyerBrut * 0.50);
+    const rules = getFiscalRules();
+    const abatt = Math.round(loyerBrut * rules.irf.abattementBase);
     const base = loyerBrut - abatt;
-    const seuil = 100_000;
+    const seuil = rules.irf.tranche1Max;
     let irf1 = 0, irf2 = 0;
     if (base <= seuil) {
-        irf1 = Math.round(base * 0.18);
+        irf1 = Math.round(base * rules.irf.tranche1Taux);
     } else {
-        irf1 = Math.round(seuil * 0.18);
-        irf2 = Math.round((base - seuil) * 0.25);
+        irf1 = Math.round(seuil * rules.irf.tranche1Taux);
+        irf2 = Math.round((base - seuil) * rules.irf.tranche2Taux);
     }
     const irfTotal = irf1 + irf2;
     return {

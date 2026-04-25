@@ -7,6 +7,7 @@ import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { Save, Trash2, Download, Lock, CheckCircle, FileText } from 'lucide-react';
 import type { PatenteDeclaration, Company } from '../types';
 import { generatePatenteForm } from '../lib/pdfDGI';
+import { usePaymentGate } from '../components/PaymentModal';
 
 export default function PatentePage() {
     const { plan } = useAppStore();
@@ -17,6 +18,7 @@ export default function PatentePage() {
 function PatenteContent() {
     const qc = useQueryClient();
     const toast = useToast();
+    const { requestPayment, PaymentModalComponent } = usePaymentGate();
     const [annee, setAnnee] = useState(new Date().getFullYear());
     const [ca, setCa] = useState(100_000_000);
     const [valeurLocative, setValeurLocative] = useState(2_400_000);
@@ -63,24 +65,32 @@ function PatenteContent() {
 
     // Tableau des droits fixes (Art. 238 CGI 2025)
     const DROITS_FIXES = [
-        { tranche: 'CA < 30 M', droit: 30_000 },
-        { tranche: '30 M - 60 M', droit: 75_000 },
-        { tranche: '60 M - 100 M', droit: 150_000 },
-        { tranche: '100 M - 200 M', droit: 250_000 },
-        { tranche: '200 M - 500 M', droit: 500_000 },
-        { tranche: '500 M - 1 Md', droit: 1_000_000 },
-        { tranche: '> 1 Md', droit: 2_000_000 },
+        { tranche: 'CA <= 5 M', droit: 10_000 },
+        { tranche: 'CA <= 7 M', droit: 15_000 },
+        { tranche: 'CA <= 10 M', droit: 25_000 },
+        { tranche: 'CA <= 15 M', droit: 40_000 },
+        { tranche: 'CA <= 20 M', droit: 60_000 },
+        { tranche: 'CA <= 30 M', droit: 85_000 },
+        { tranche: 'CA <= 50 M', droit: 120_000 },
+        { tranche: 'CA <= 75 M', droit: 170_000 },
+        { tranche: 'CA <= 100 M', droit: 220_000 },
+        { tranche: 'CA <= 150 M', droit: 280_000 },
+        { tranche: 'CA <= 200 M', droit: 350_000 },
+        { tranche: 'CA <= 300 M', droit: 430_000 },
+        { tranche: 'CA <= 500 M', droit: 530_000 },
+        { tranche: 'CA > 500 M', droit: 660_000 },
     ];
 
     return (
         <div className="max-w-3xl space-y-6">
+            {PaymentModalComponent}
             <Card title="Patente Professionnelle">
                 <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 237-240 - Droit fixe + 1 % valeur locative professionnelle</p>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Année fiscale</label>
-                        <input type="number" value={annee} onChange={(e) => setAnnee(+e.target.value)}
+                        <input type="number" min={2000} max={2100} value={annee} onChange={(e) => setAnnee(+e.target.value)}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
                     </div>
                     <div>
@@ -182,7 +192,7 @@ function PatenteContent() {
                                         <td className="py-2 text-right font-semibold text-red-700">{fmt(d.total_patente)}</td>
                                         <td className="py-2 text-center">
                                             <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${d.statut === 'declare' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                                {d.statut === 'declare' ? 'Déclaré' : 'Brouillon'}
+                                                {d.statut === 'declare' ? 'Déclaré' : 'En cours'}
                                             </span>
                                         </td>
                                         <td className="py-2 text-right">
@@ -200,7 +210,13 @@ function PatenteContent() {
                                                     className="p-1 text-blue-600 hover:bg-blue-50 rounded">
                                                     <Download className="w-3.5 h-3.5" />
                                                 </button>
-                                                <button onClick={() => generatePatenteForm(d, company)} title="Formulaire DGI"
+                                                <button
+                                                    onClick={() =>
+                                                        requestPayment('patente', d.id, () => {
+                                                            void generatePatenteForm(d, company);
+                                                        })
+                                                    }
+                                                    title="Exporter formulaire DGI (PDF)"
                                                     className="p-1 text-purple-600 hover:bg-purple-50 rounded">
                                                     <FileText className="w-3.5 h-3.5" />
                                                 </button>

@@ -3,11 +3,23 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 
-// Force le nouveau Service Worker à prendre le contrôle immédiatement
-if ('serviceWorker' in navigator) {
+// En dev: éviter tout cache PWA qui masque les changements UI.
+if (import.meta.env.DEV && 'serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then((registrations) => {
     for (const reg of registrations) {
-      reg.update(); // Vérifie s'il y a un nouveau SW disponible
+      reg.unregister();
+    }
+  });
+  if ('caches' in window) {
+    caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
+  }
+}
+
+// En prod: forcer la vérification de mise à jour SW.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const reg of registrations) {
+      reg.update();
     }
   });
 }

@@ -1,6 +1,6 @@
 ﻿import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { employeeApi, declarationApi, bulletinApi } from '../lib/api';
+import { employeeApi, declarationApi, bulletinApi, cnssApi } from '../lib/api';
 import { calcEmploye, fmtN } from '../lib/fiscalCalc';
 import { downloadCsvTemplate } from '../lib/importCsv';
 import type { Employee, Bulletin } from '../types';
@@ -78,10 +78,18 @@ export default function SaisiePage() {
         setSuccess('');
         setImportMsg('');
         try {
-            // Le backend recalcule depuis les employés : on n'envoie que la période
-            await declarationApi.create({ mois, annee });
+            // Génère toutes les déclarations mensuelles liées à la paie
+            // à partir des données employé déjà saisies.
+            await Promise.all([
+                declarationApi.create({ mois, annee }),
+                bulletinApi.generate({ mois, annee, cotisation }),
+                cnssApi.generate({ mois, annee }),
+            ]);
             qc.invalidateQueries({ queryKey: ['declarations'] });
-            setSuccess(`Déclaration ${MOIS_FR[mois - 1]} ${annee} générée.`);
+            qc.invalidateQueries({ queryKey: ['bulletins'] });
+            qc.invalidateQueries({ queryKey: ['cnss-patronal'] });
+            qc.invalidateQueries({ queryKey: ['cnss'] });
+            setSuccess(`Déclarations du mois (${MOIS_FR[mois - 1]} ${annee}) générées : IUTS/TPA, bulletins et CNSS.`);
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
                 ?? 'Erreur lors de la génération.';
@@ -176,6 +184,8 @@ export default function SaisiePage() {
                         <label className="block text-xs font-medium text-gray-700 mb-1">Année</label>
                         <input
                             type="number"
+                            min={2000}
+                            max={2100}
                             value={annee}
                             onChange={(e) => setAnnee(+e.target.value)}
                             className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
@@ -189,7 +199,8 @@ export default function SaisiePage() {
                             className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-green-500 focus:outline-none"
                         >
                             <option value="CNSS">CNSS (5,5 %)</option>
-                            <option value="CARFO">CARFO (6 %)</option>
+                            {/* CARFO désactivé en saisie — réactiver l’option si le régime est réintroduit */}
+                            {/* <option value="CARFO">CARFO (6 %)</option> */}
                         </select>
                     </div>
                     <div className="ml-auto flex gap-2">
@@ -254,11 +265,11 @@ export default function SaisiePage() {
                         )}
                         {canManageDeclarations ? (
                             <Btn onClick={handleGenerate} disabled={saving || employees.length === 0}>
-                                {saving ? 'Génération…' : <><FileText className="w-4 h-4" /> Générer déclaration</>}
+                                {saving ? 'Génération…' : <><FileText className="w-4 h-4" /> Générer les déclarations du mois</>}
                             </Btn>
                         ) : (
                             <Btn disabled title={isAuditeur ? 'Accès lecture seule' : 'Droits insuffisants'}>
-                                <FileText className="w-4 h-4" /> Générer déclaration
+                                <FileText className="w-4 h-4" /> Générer les déclarations du mois
                             </Btn>
                         )}
                     </div>
@@ -282,7 +293,7 @@ export default function SaisiePage() {
                     { label: 'Brut total', value: fmtN(totaux.brut), color: 'bg-gray-50' },
                     { label: 'IUTS net (DGI)', value: fmtN(totaux.iuts), color: 'bg-green-50' },
                     { label: 'TPA (3 %)', value: fmtN(totaux.tpa), color: 'bg-blue-50' },
-                    { label: `${cotisation} (5,5/6 %)`, value: fmtN(totaux.css), color: 'bg-orange-50' },
+                    { label: 'CNSS salariale (5,5 %)', value: fmtN(totaux.css), color: 'bg-orange-50' },
                     { label: 'Net à payer', value: fmtN(totaux.net), color: 'bg-gray-50' },
                 ].map((s) => (
                     <div key={s.label} className={`${s.color} rounded-xl p-4`}>

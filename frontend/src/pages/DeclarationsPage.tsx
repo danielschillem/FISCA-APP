@@ -650,7 +650,7 @@ export default function DeclarationsPage() {
                                         <td className="px-4 py-3 text-right">
                                             <div className="flex justify-end gap-1 items-center">
                                                 {d.type !== 'CNSS' && (
-                                                    <button onClick={() => handlePDF(d)} title="Formulaire DGI PDF"
+                                                    <button onClick={() => handlePDF(d)} title="Exporter le formulaire DGI en PDF"
                                                         disabled={downloadingPDF === d.id}
                                                         className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
                                                         {downloadingPDF === d.id

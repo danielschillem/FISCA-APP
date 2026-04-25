@@ -21,7 +21,7 @@ import {
 
 // --- calcIUTS -------------------------------------------------
 
-describe('calcIUTS : barème CGI 2025 (9 tranches)', () => {
+describe('calcIUTS : barème CGI 2025 (règles versionnées)', () => {
     it('base 0 → IUTS = 0', () => {
         expect(calcIUTS(0)).toBe(0)
     })
@@ -34,43 +34,43 @@ describe('calcIUTS : barème CGI 2025 (9 tranches)', () => {
         expect(calcIUTS(30_000)).toBe(0)
     })
 
-    it('base 50 000 → 2 400 (12% sur 20 000)', () => {
-        expect(calcIUTS(50_000)).toBe(2_400)
+    it('base 50 000 → 2 420 (12,1% sur 20 000)', () => {
+        expect(calcIUTS(50_000)).toBe(2_420)
     })
 
-    it('base 80 000 → 6 600', () => {
-        // 2 400 + 30k × 14% = 2400 + 4200 = 6600
-        expect(calcIUTS(80_000)).toBe(6_600)
+    it('base 80 000 → 6 590', () => {
+        // 2 420 + 30k × 13,9% = 2 420 + 4 170 = 6 590
+        expect(calcIUTS(80_000)).toBe(6_590)
     })
 
-    it('base 120 000 → 13 000', () => {
-        // 6600 + 40k × 16% = 6600 + 6400 = 13 000
-        expect(calcIUTS(120_000)).toBe(13_000)
+    it('base 120 000 → 12 870', () => {
+        // 6 590 + 40k × 15,7% = 6 590 + 6 280 = 12 870
+        expect(calcIUTS(120_000)).toBe(12_870)
     })
 
-    it('base 170 000 → 22 000', () => {
-        // 13 000 + 50k × 18% = 13 000 + 9 000 = 22 000
-        expect(calcIUTS(170_000)).toBe(22_000)
+    it('base 170 000 → 22 070', () => {
+        // 12 870 + 50k × 18,4% = 12 870 + 9 200 = 22 070
+        expect(calcIUTS(170_000)).toBe(22_070)
     })
 
-    it('base 250 000 → 38 000', () => {
-        // 22 000 + 80k × 20% = 22 000 + 16 000 = 38 000
-        expect(calcIUTS(250_000)).toBe(38_000)
+    it('base 250 000 → 39 430', () => {
+        // 22 070 + 80k × 21,7% = 22 070 + 17 360 = 39 430
+        expect(calcIUTS(250_000)).toBe(39_430)
     })
 
-    it('base 400 000 → 74 000', () => {
-        // 38 000 + 150k × 24% = 38 000 + 36 000 = 74 000
-        expect(calcIUTS(400_000)).toBe(74_000)
+    it('base 400 000 → 76 930', () => {
+        // 39 430 + 150k × 25% = 39 430 + 37 500 = 76 930
+        expect(calcIUTS(400_000)).toBe(76_930)
     })
 
-    it('base 600 000 → 130 000', () => {
-        // 74 000 + 200k × 28% = 74 000 + 56 000 = 130 000
-        expect(calcIUTS(600_000)).toBe(130_000)
+    it('base 600 000 → 126 930', () => {
+        // 76 930 + 200k × 25% = 76 930 + 50 000 = 126 930
+        expect(calcIUTS(600_000)).toBe(126_930)
     })
 
-    it('base 700 000 → 160 000 (tranche 30 %)', () => {
-        // 130 000 + 100k × 30% = 130 000 + 30 000 = 160 000
-        expect(calcIUTS(700_000)).toBe(160_000)
+    it('base 700 000 → 151 930 (tranche finale 25 %)', () => {
+        // 126 930 + 100k × 25% = 151 930
+        expect(calcIUTS(700_000)).toBe(151_930)
     })
 
     it('barème croissant : IUTS(500k) > IUTS(300k)', () => {

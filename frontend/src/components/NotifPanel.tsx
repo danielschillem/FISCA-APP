@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationApi } from '../lib/api';
 import type { Notification } from '../types';
 import { useAuthStore } from '../lib/store';
-import { AlertCircle, AlertTriangle, CheckCircle2, Info, Bell, X, CheckCheck } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle2, Info, Bell, X, CheckCheck, RefreshCw, ChevronRight } from 'lucide-react';
 
 const NIVEAU_ICON: Record<string, React.ReactNode> = {
     error: <AlertCircle className="w-4 h-4 text-red-500" />,
@@ -43,7 +43,7 @@ export default function NotifPanel() {
     return (
         <>
             <div className="fixed inset-0 z-40" onClick={toggleNotif} />
-            <div className="fixed top-0 right-0 h-screen w-80 bg-white border-l border-gray-200 z-50 flex flex-col shadow-xl">
+            <div className="fixed right-0 top-0 z-50 flex h-screen w-[min(100vw,22rem)] flex-col border-l border-slate-200/90 bg-white/95 shadow-2xl shadow-slate-900/10 backdrop-blur-md">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                     <h2 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
                         Notifications
@@ -66,11 +66,12 @@ export default function NotifPanel() {
                             </button>
                         )}
                         <button
+                            type="button"
                             onClick={() => qc.invalidateQueries({ queryKey: ['notifications'] })}
-                            className="text-xs text-gray-400 hover:text-gray-600"
+                            className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                             title="Actualiser"
                         >
-                            ↺
+                            <RefreshCw className="w-3.5 h-3.5" />
                         </button>
                         <button onClick={toggleNotif} className="text-gray-400 hover:text-gray-600 ml-1"><X className="w-4 h-4" /></button>
                     </div>
@@ -89,7 +90,7 @@ export default function NotifPanel() {
                                 className={`px-5 py-3 border-b border-gray-50 transition-opacity ${n.lu ? 'opacity-60' : ''} ${NIVEAU_BG[n.niveau] ?? ''}`}
                             >
                                 <div className="flex items-start gap-2">
-                                    <span className="shrink-0 mt-0.5">{NIVEAU_ICON[n.niveau] ?? 'ℹ️'}</span>
+                                    <span className="shrink-0 mt-0.5">{NIVEAU_ICON[n.niveau] ?? <Info className="w-4 h-4 text-blue-500" />}</span>
                                     <div className="min-w-0 flex-1">
                                         <p className={`text-xs font-semibold text-gray-800 ${!n.lu ? 'font-bold' : ''}`}>{n.titre}</p>
                                         <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{n.message}</p>
@@ -100,9 +101,10 @@ export default function NotifPanel() {
                                             <a
                                                 href={n.lien}
                                                 onClick={toggleNotif}
-                                                className="text-[10px] text-green-600 hover:underline mt-1 block"
+                                                className="text-[10px] text-green-600 hover:underline mt-1 inline-flex items-center gap-0.5 font-medium"
                                             >
-                                                Voir →
+                                                Voir
+                                                <ChevronRight className="w-3 h-3" />
                                             </a>
                                         )}
                                     </div>

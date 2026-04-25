@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/fisca-app/backend/internal/api/middleware"
 	"github.com/fisca-app/backend/internal/models"
@@ -50,6 +51,15 @@ func (h *CompaniesHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req models.Company
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Nom == "" {
 		jsonError(w, "nom requis", http.StatusBadRequest)
+		return
+	}
+	req.IFU = strings.TrimSpace(req.IFU)
+	if err := ensureIFUAvailable(h.DB, "", req.IFU); err != nil {
+		if err.Error() == "ifu_already_used" {
+			jsonError(w, "IFU déjà utilisé par une autre société", http.StatusConflict)
+			return
+		}
+		jsonError(w, "Erreur de contrôle IFU", http.StatusInternalServerError)
 		return
 	}
 
@@ -107,6 +117,15 @@ func (h *CompaniesHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var req models.Company
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		jsonError(w, "Données invalides", http.StatusBadRequest)
+		return
+	}
+	req.IFU = strings.TrimSpace(req.IFU)
+	if err := ensureIFUAvailable(h.DB, id, req.IFU); err != nil {
+		if err.Error() == "ifu_already_used" {
+			jsonError(w, "IFU déjà utilisé par une autre société", http.StatusConflict)
+			return
+		}
+		jsonError(w, "Erreur de contrôle IFU", http.StatusInternalServerError)
 		return
 	}
 

@@ -124,7 +124,7 @@ const SUGGESTIONS = [
     'Comment calculer l\'IUTS pour un cadre en 2025 ?',
     'Quelles sont les tranches d\'imposition CGI 2025 ?',
     'Comment déclarer la TVA au Burkina Faso ?',
-    'Quelle est la différence entre CNSS et CARFO ?',
+    'Comment est calculée la cotisation CNSS salariale ?',
     'Expliquez l\'abattement forfaitaire non-cadre',
     'Comment calculer la patente professionnelle ?',
 ];

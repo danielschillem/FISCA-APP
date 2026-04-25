@@ -24,7 +24,8 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://neondb_owner:npg_RgjhPUx4ra3u@ep-curly-feather-alu1ikkd-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require}
+      # Local by default (safe for development). Override via DATABASE_URL only when needed.
+      DATABASE_URL: ${DATABASE_URL:-postgres://fisca:${POSTGRES_PASSWORD:-password}@db:5432/fisca_dev?sslmode=disable}
       JWT_SECRET: ${JWT_SECRET:-dev_secret_change_in_production}
       PORT: "8080"
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-http://localhost:3000,http://localhost:5173}
@@ -37,7 +38,7 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-1jDYA7oooMGxqUOSspxRo1RmCgRjLHkO}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
     healthcheck:
       test: [ "CMD-SHELL", "wget -qO- http://localhost:8080/api/health || exit 1" ]
       interval: 10s

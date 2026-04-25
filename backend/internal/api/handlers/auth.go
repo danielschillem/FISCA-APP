@@ -47,28 +47,10 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Normaliser user_type et plan (rétro-compat si champs absents)
-	if req.UserType == "" {
-		req.UserType = "physique"
-	}
-	if req.Plan == "" {
-		req.Plan = "physique_starter"
-	}
-	// Valider que le plan correspond au type
-	planTypes := map[string]string{
-		"physique_starter": "physique",
-		"physique_pro":     "physique",
-		"moral_team":       "morale",
-		"moral_enterprise": "morale",
-		// Rétro-compat avec anciens plans
-		"starter":    "physique",
-		"pro":        "physique",
-		"enterprise": "morale",
-	}
-	if pt, ok := planTypes[req.Plan]; !ok || pt != req.UserType {
-		jsonError(w, "Plan incompatible avec le type de compte", http.StatusBadRequest)
-		return
-	}
+	// Compte unique Contribuable : plus de choix solo/pro/entreprise à l'inscription.
+	// On force une création standard contributable.
+	req.UserType = "physique"
+	req.Plan = "physique_pro"
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -76,119 +58,23 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.UserType == "physique" {
-		// -- Personne Physique : un compte solo ---------------------------------
-		var user models.User
-		err = h.DB.QueryRow(r.Context(),
-			`INSERT INTO users (email, password_hash, plan, role, user_type, is_active)
-			 VALUES ($1, $2, $3, 'user', 'physique', TRUE)
-			 RETURNING id, email, plan, role, user_type, org_id, org_role, is_active, created_at`,
-			req.Email, string(hash), req.Plan,
-		).Scan(&user.ID, &user.Email, &user.Plan, &user.Role, &user.UserType,
-			&user.OrgID, &user.OrgRole, &user.IsActive, &user.CreatedAt)
-		if err != nil {
-			jsonError(w, "Email déjà utilisé", http.StatusConflict)
-			return
-		}
-		// Créer une société par défaut
-		h.DB.Exec(r.Context(),
-			`INSERT INTO companies (user_id, nom) VALUES ($1, $2)`,
-			user.ID, req.Nom,
-		)
-		token, err := generateToken(user)
-		if err != nil {
-			jsonError(w, "Erreur génération token", http.StatusInternalServerError)
-			return
-		}
-		refreshToken, _ := h.storeRefreshToken(r.Context(), user.ID)
-		go mailer.SendWelcome(user.Email, req.Nom) //nolint:errcheck
-		jsonOK(w, models.AuthResponse{Token: token, RefreshToken: refreshToken, User: user})
-		return
-	}
-
-	// -- Personne Morale : organisation + admin interne -------------------------
-	maxUsers, maxCompanies, maxEmployees := planLimits(req.Plan)
-
-	tx, err := h.DB.Begin(r.Context())
-	if err != nil {
-		jsonError(w, "Erreur interne", http.StatusInternalServerError)
-		return
-	}
-	defer tx.Rollback(r.Context()) //nolint:errcheck
-
-	// 1. Créer l'utilisateur admin interne
-	var userID string
-	err = tx.QueryRow(r.Context(),
-		`INSERT INTO users (email, password_hash, plan, role, user_type, is_active)
-		 VALUES ($1, $2, $3, 'user', 'morale', TRUE)
-		 RETURNING id`,
-		req.Email, string(hash), req.Plan,
-	).Scan(&userID)
-	if err != nil {
-		if isPgDuplicate(err) {
-			jsonError(w, "Email déjà utilisé", http.StatusConflict)
-		} else {
-			jsonError(w, "Erreur interne", http.StatusInternalServerError)
-		}
-		return
-	}
-
-	// 2. Créer l'organisation
-	var orgID string
-	err = tx.QueryRow(r.Context(),
-		`INSERT INTO organizations (nom, plan, max_users, max_companies, max_employees, owner_id)
-		 VALUES ($1, $2, $3, $4, $5, $6)
-		 RETURNING id`,
-		req.Nom, req.Plan, maxUsers, maxCompanies, maxEmployees, userID,
-	).Scan(&orgID)
-	if err != nil {
-		jsonError(w, "Erreur interne", http.StatusInternalServerError)
-		return
-	}
-
-	// 3. Lier l'utilisateur à l'organisation comme org_admin
-	_, err = tx.Exec(r.Context(),
-		`UPDATE users SET org_id=$1, org_role='org_admin' WHERE id=$2`,
-		orgID, userID,
-	)
-	if err != nil {
-		jsonError(w, "Erreur interne", http.StatusInternalServerError)
-		return
-	}
-
-	// 4. Créer la première société liée à l'org
-	var companyID string
-	err = tx.QueryRow(r.Context(),
-		`INSERT INTO companies (user_id, nom, org_id) VALUES ($1, $2, $3) RETURNING id`,
-		userID, req.Nom, orgID,
-	).Scan(&companyID)
-	if err != nil {
-		jsonError(w, "Erreur interne", http.StatusInternalServerError)
-		return
-	}
-
-	// 5. Donner accès à la société au fondateur
-	_, err = tx.Exec(r.Context(),
-		`INSERT INTO org_company_access (user_id, company_id, granted_by) VALUES ($1,$2,$1)`,
-		userID, companyID,
-	)
-	if err != nil {
-		jsonError(w, "Erreur interne", http.StatusInternalServerError)
-		return
-	}
-
-	if err := tx.Commit(r.Context()); err != nil {
-		jsonError(w, "Erreur interne", http.StatusInternalServerError)
-		return
-	}
-
-	// Charger l'utilisateur complet
 	var user models.User
-	h.DB.QueryRow(r.Context(),
-		`SELECT id, email, plan, role, user_type, org_id, org_role, is_active, created_at
-		 FROM users WHERE id=$1`, userID,
+	err = h.DB.QueryRow(r.Context(),
+		`INSERT INTO users (email, password_hash, plan, role, user_type, is_active)
+		 VALUES ($1, $2, $3, 'user', 'physique', TRUE)
+		 RETURNING id, email, plan, role, user_type, org_id, org_role, is_active, created_at`,
+		req.Email, string(hash), req.Plan,
 	).Scan(&user.ID, &user.Email, &user.Plan, &user.Role, &user.UserType,
 		&user.OrgID, &user.OrgRole, &user.IsActive, &user.CreatedAt)
+	if err != nil {
+		jsonError(w, "Email déjà utilisé", http.StatusConflict)
+		return
+	}
+	// Créer une société de base ; l'utilisateur complètera ensuite dans Paramètres.
+	h.DB.Exec(r.Context(), //nolint:errcheck
+		`INSERT INTO companies (user_id, nom) VALUES ($1, $2)`,
+		user.ID, req.Nom,
+	)
 
 	token, err := generateToken(user)
 	if err != nil {

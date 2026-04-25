@@ -1,23 +1,24 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { dashboardApi, declarationApi } from '../lib/api';
 import { useAuthStore } from '../lib/store';
 import { usePermissions } from '../lib/permissions';
-import { StatCard, Card, Badge, Spinner } from '../components/ui';
+import { StatCard, Card, Badge } from '../components/ui';
 import { fmt, fmtN, calcPenalite } from '../lib/fiscalCalc';
+import { calcFSP } from '../contribuable/contribuableCalc';
 import { MOIS_FR } from '../types';
-import type { DashboardKPI } from '../types';
+import type { DashboardKPI, Declaration } from '../types';
+import { buildDeclarationFromAnnexes, computeDashboardKpiFromAnnexes } from '../lib/declarationAnalytics';
 import {
     BarChart2, TrendingUp, Users, User, AlertTriangle, CheckCircle2,
     Clock, Minus, CalendarDays, ArrowRight, Eye, FileText, Receipt,
     Home, BookOpen, PenLine, FileCheck, GitBranch, History,
-    WifiOff, UserPlus, Building2, Download,
+    UserPlus, Building2, Download,
 } from 'lucide-react';
 import { getProchaines, getEcheancesParRegime, TYPE_COLORS, type Echeance } from '../lib/fiscalCalendar';
 import { useRegime } from '../lib/regime';
+import { useContribuableStore } from '../contribuable/contribuableStore';
 
 const MOIS_COURT = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 
@@ -25,6 +26,7 @@ const MOIS_COURT = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'S
 function exportDashboardPDF(
     kpi: DashboardKPI,
     declarations: { mois: number; iuts_total: number; tpa_total: number; css_total: number; statut: string }[],
+    fspTotal: number,
     prochaines: Echeance[],
     nomEntreprise: string,
     annee: number,
@@ -59,9 +61,10 @@ function exportDashboardPDF(
         body: [
             ['IUTS Net', fmt(kpi.mois_courant?.iuts_total ?? 0), `${MOIS_FR[moisActuel]} ${annee}`],
             ['TPA (3 %)', fmt(kpi.mois_courant?.tpa_total ?? 0), `${kpi.nb_employes} salarié(s)`],
-            ['Cotisations CNSS/CARFO', fmt(kpi.mois_courant?.css_total ?? 0), 'Part salariale'],
+            ['Cotisations CNSS (salariales)', fmt(kpi.mois_courant?.css_total ?? 0), 'Part salariale'],
+            ['FSP (1 % net salarial)', fmt(fspTotal), 'Obligation de reversement'],
             ['Salariés actifs', String(kpi.nb_employes), 'Total effectif'],
-            ['Total obligations annuelles', fmt(kpi.total_annee?.total ?? 0), `Cumul ${annee}`],
+            ['Total obligations fiscales CGI', fmt(kpi.total_annee?.total ?? 0), `Cumul ${annee}`],
         ],
         styles: { fontSize: 9, cellPadding: 3 },
         headStyles: { fillColor: [22, 163, 74], textColor: 255, fontStyle: 'bold' },
@@ -79,7 +82,7 @@ function exportDashboardPDF(
         const rows = MOIS_COURT.map((m, i) => {
             const d = declarations.find(x => x.mois === i + 1);
             const iuts = d?.iuts_total ?? 0;
-            const statut = d ? (d.statut === 'ok' ? 'Déclaré' : d.statut === 'retard' ? 'Retard' : 'En cours') : '-';
+            const statut = d ? (d.statut === 'ok' ? 'Déclaré' : d.statut === 'retard' ? 'En retard' : 'En cours') : '-';
             return [m, iuts > 0 ? fmtN(iuts) + ' FCFA' : '-', statut];
         });
         autoTable(doc, {
@@ -161,18 +164,18 @@ export default function DashboardPage() {
     const { isAuditeur, isComptable, isGestionnaireRH, roleLabel, roleBadgeColor } = usePermissions();
     const { regime, info: regimeInfo } = useRegime();
 
-    const { data: kpi, isLoading: kpiLoading, isError: kpiError } = useQuery<DashboardKPI>({
-        queryKey: ['dashboard'],
-        queryFn: () => dashboardApi.get().then((r) => r.data),
-        retry: 2,
-    });
-
-    const { data: declarations = [] } = useQuery({
-        queryKey: ['declarations'],
-        queryFn: () => declarationApi.list().then((r) => r.data),
-    });
+    const period = useContribuableStore((s) => s.period);
+    const annexes = useContribuableStore((s) => s.annexes);
+    const localDeclaration: Declaration = buildDeclarationFromAnnexes(annexes, period);
+    const declarations: Declaration[] = localDeclaration.total > 0 ? [localDeclaration] : [];
+    const fspTotal = annexes.iuts.rows.reduce(
+        (s, r) => s + calcFSP(r.salaireB || 0, r.cnss || 0, r.iutsDu || 0),
+        0
+    );
 
     const now = new Date();
+    const kpi: DashboardKPI = computeDashboardKpiFromAnnexes(annexes, period, now);
+
     const moisActuel = now.getMonth(); // 0-based
     const anneeActuelle = now.getFullYear();
     const prochaines = regime !== ''
@@ -183,35 +186,15 @@ export default function DashboardPage() {
     const navigate = useNavigate();
 
     const retards = declarations.filter((d: { statut: string }) => d.statut === 'retard');
+    const totalAReverser = declarations.reduce((sum: number, d: { total: number }) => sum + (d.total || 0), 0);
     const totalPenalites = retards.reduce((sum: number, d: { iuts_total: number; mois: number; annee?: number }) => {
         const anneeDecl = d.annee ?? anneeActuelle;
         const moisRetard = (anneeActuelle - anneeDecl) * 12 + (moisActuel - d.mois + 1);
         return sum + calcPenalite(d.iuts_total, Math.max(0, moisRetard));
     }, 0);
 
-    if (kpiLoading) return <Spinner />;
-
-    // Etat d'erreur API
-    if (kpiError) return (
-        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-            <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
-                <WifiOff className="w-7 h-7 text-red-400" />
-            </div>
-            <div className="text-center max-w-sm">
-                <h2 className="text-lg font-bold text-gray-900 mb-1">Impossible de charger le tableau de bord</h2>
-                <p className="text-sm text-gray-500 mb-4">Le serveur ne répond pas. Vérifiez votre connexion et réessayez.</p>
-                <button
-                    onClick={() => window.location.reload()}
-                    className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-xl hover:bg-green-700 transition-colors"
-                >
-                    Réessayer
-                </button>
-            </div>
-        </div>
-    );
-
     // Empty state : nouveau compte sans données
-    const isNewUser = (kpi?.nb_employes ?? 0) === 0 && declarations.length === 0 && regime === '';
+    const isNewUser = (kpi.nb_employes ?? 0) === 0 && declarations.length === 0 && regime === '';
     if (isNewUser) return (
         <div className="space-y-6">
             <div className="bg-gradient-to-br from-green-50 to-teal-50 border border-green-100 rounded-2xl p-8 text-center">
@@ -236,7 +219,7 @@ export default function DashboardPage() {
                         },
                         {
                             step: '3', icon: FileCheck, label: 'Première déclaration',
-                            desc: 'Déclarez l\'IUTS du mois en cours auprès de la DGI.', to: '/declarations',
+                            desc: 'Déclarez l\'IUTS du mois en cours auprès de la DGI.', to: '/declarations/iuts',
                             cta: 'Créer une déclaration',
                         },
                     ].map(({ step, icon: Icon, label, desc, to, cta }) => (
@@ -293,15 +276,49 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-6">
-            {/* Bouton export PDF */}
-            <div className="flex justify-end">
-                <button
-                    onClick={() => exportDashboardPDF(kpi!, declarations, prochaines, user?.email ?? 'Mon entreprise', anneeActuelle, moisActuel)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
-                >
-                    <Download className="w-3.5 h-3.5" />
-                    Exporter PDF
-                </button>
+            {/* En-tête de page — lisibilité type prototype (carte + accent FISCA) */}
+            <div
+                className="overflow-hidden border border-gray-200 bg-white"
+                style={{ borderRadius: 'var(--card-radius)', boxShadow: 'var(--card-shadow)' }}
+            >
+                <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+                    <div className="flex min-w-0 gap-4">
+                        <div
+                            className="mt-1 hidden h-14 w-1 shrink-0 rounded-full sm:block"
+                            style={{ background: 'var(--primary)' }}
+                        />
+                        <div className="min-w-0">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
+                                Vue d&apos;ensemble
+                            </p>
+                            <h2 className="mt-0.5 text-xl font-extrabold tracking-tight text-gray-900 sm:text-[22px]">
+                                Vos obligations et indicateurs
+                            </h2>
+                            <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-gray-600">
+                                Calendrier IUTS, échéances et synthèse du mois — aligné sur le CGI 2025 (Burkina Faso).
+                                Les blocs ci-dessous reflètent vos données enregistrées dans FISCA.
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() =>
+                            exportDashboardPDF(
+                                kpi,
+                                declarations,
+                                fspTotal,
+                                prochaines,
+                                user?.email ?? 'Mon entreprise',
+                                anneeActuelle,
+                                moisActuel,
+                            )
+                        }
+                        className="inline-flex shrink-0 items-center gap-2 self-start rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-bold text-gray-700 shadow-sm transition-colors hover:border-[var(--primary)] hover:text-[var(--primary-dark)]"
+                    >
+                        <Download className="h-3.5 w-3.5" />
+                        Exporter PDF
+                    </button>
+                </div>
             </div>
             {regime === '' && (
                 <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
@@ -410,20 +427,22 @@ export default function DashboardPage() {
             )}
 
             {/* KPI cards - ordre adapté selon le rôle */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-3">
                 {isGestionnaireRH ? (
                     <>
-                        <StatCard label="Salariés" value={String(kpi?.nb_employes ?? 0)} sub="Employés actifs" color="green" icon={<User className="w-5 h-5" />} />
-                        <StatCard label="Cotisations CNSS/CARFO" value={fmt(kpi?.mois_courant?.css_total ?? 0)} sub="Part salariale" color="blue" icon={<Users className="w-5 h-5" />} />
-                        <StatCard label="IUTS Net" value={fmt(kpi?.mois_courant?.iuts_total ?? 0)} sub={`${MOIS_FR[moisActuel]} ${now.getFullYear()}`} color="orange" icon={<BarChart2 className="w-5 h-5" />} />
-                        <StatCard label="TPA (3 %)" value={fmt(kpi?.mois_courant?.tpa_total ?? 0)} sub={`${kpi?.nb_employes ?? 0} salarié(s)`} color="gray" icon={<TrendingUp className="w-5 h-5" />} />
+                        <StatCard label="Salariés" value={String(kpi.nb_employes ?? 0)} sub="Employés actifs" color="green" icon={<User className="w-5 h-5" />} />
+                        <StatCard label="Cotisations CNSS (salariales)" value={fmt(kpi.mois_courant?.css_total ?? 0)} sub="Part salariale" color="blue" icon={<Users className="w-5 h-5" />} />
+                        <StatCard label="FSP (1 %)" value={fmt(fspTotal)} sub="Sur net salarial" color="orange" icon={<Receipt className="w-5 h-5" />} />
+                        <StatCard label="IUTS Net" value={fmt(kpi.mois_courant?.iuts_total ?? 0)} sub={`${MOIS_FR[moisActuel]} ${now.getFullYear()}`} color="orange" icon={<BarChart2 className="w-5 h-5" />} />
+                        <StatCard label="TPA (3 %)" value={fmt(kpi.mois_courant?.tpa_total ?? 0)} sub={`${kpi.nb_employes ?? 0} salarié(s)`} color="gray" icon={<TrendingUp className="w-5 h-5" />} />
                     </>
                 ) : (
                     <>
-                        <StatCard label="IUTS Net" value={fmt(kpi?.mois_courant?.iuts_total ?? 0)} sub={`${MOIS_FR[moisActuel]} ${now.getFullYear()}`} color="green" icon={<BarChart2 className="w-5 h-5" />} />
-                        <StatCard label="TPA (3 %)" value={fmt(kpi?.mois_courant?.tpa_total ?? 0)} sub={`${kpi?.nb_employes ?? 0} salarié(s)`} color="blue" icon={<TrendingUp className="w-5 h-5" />} />
-                        <StatCard label="Cotisations CNSS/CARFO" value={fmt(kpi?.mois_courant?.css_total ?? 0)} sub="Part salariale" color="orange" icon={<Users className="w-5 h-5" />} />
-                        <StatCard label="Salariés" value={String(kpi?.nb_employes ?? 0)} sub="Employés actifs" color="gray" icon={<User className="w-5 h-5" />} />
+                        <StatCard label="IUTS Net" value={fmt(kpi.mois_courant?.iuts_total ?? 0)} sub={`${MOIS_FR[moisActuel]} ${now.getFullYear()}`} color="green" icon={<BarChart2 className="w-5 h-5" />} />
+                        <StatCard label="TPA (3 %)" value={fmt(kpi.mois_courant?.tpa_total ?? 0)} sub={`${kpi.nb_employes ?? 0} salarié(s)`} color="blue" icon={<TrendingUp className="w-5 h-5" />} />
+                        <StatCard label="Cotisations CNSS (salariales)" value={fmt(kpi.mois_courant?.css_total ?? 0)} sub="Part salariale" color="orange" icon={<Users className="w-5 h-5" />} />
+                        <StatCard label="FSP (1 %)" value={fmt(fspTotal)} sub="Sur net salarial" color="orange" icon={<Receipt className="w-5 h-5" />} />
+                        <StatCard label="Salariés" value={String(kpi.nb_employes ?? 0)} sub="Employés actifs" color="gray" icon={<User className="w-5 h-5" />} />
                     </>
                 )}
             </div>
@@ -456,7 +475,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex gap-4 mt-4 text-[11px] text-gray-500">
                         <span><span className="inline-block w-2 h-2 bg-green-400 rounded-full mr-1" />Déclaré</span>
-                        <span><span className="inline-block w-2 h-2 bg-red-400 rounded-full mr-1" />Retard</span>
+                        <span><span className="inline-block w-2 h-2 bg-red-400 rounded-full mr-1" />En retard</span>
                         <span><span className="inline-block w-2 h-2 bg-orange-400 rounded-full mr-1" />En cours</span>
                         <span><span className="inline-block w-2 h-2 bg-gray-300 rounded-full mr-1" />Attendu</span>
                     </div>
@@ -489,12 +508,16 @@ export default function DashboardPage() {
                                         </p>
                                     </div>
                                     <Badge color={d.statut === 'ok' ? 'green' : d.statut === 'retard' ? 'red' : 'orange'}>
-                                        {d.statut === 'ok' ? 'Déclaré' : d.statut === 'retard' ? 'Retard' : 'En cours'}
+                                        {d.statut === 'ok' ? 'Déclaré' : d.statut === 'retard' ? 'En retard' : 'En cours'}
                                     </Badge>
                                 </div>
                             ))}
                         </div>
                     )}
+                    <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
+                        <span className="text-gray-600">Total des obligations fiscales a reverser (CGI) : </span>
+                        <strong className="text-gray-900">{fmt(totalAReverser)}</strong>
+                    </div>
                 </Card>
             </div>
 
@@ -580,9 +603,14 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex gap-4 mt-4 text-[11px] text-gray-500">
                             <span><span className="inline-block w-2 h-2 bg-green-400 rounded-full mr-1" />Déclaré</span>
-                            <span><span className="inline-block w-2 h-2 bg-red-400 rounded-full mr-1" />Retard</span>
+                            <span><span className="inline-block w-2 h-2 bg-red-400 rounded-full mr-1" />En retard</span>
                             <span><span className="inline-block w-2 h-2 bg-amber-400 rounded-full mr-1" />En cours</span>
                             <span><span className="inline-block w-2 h-2 bg-gray-200 rounded-full mr-1" />Attendu</span>
+                        </div>
+                        <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
+                            <span className="text-gray-600">Total des obligations fiscales a reverser (CGI) : </span>
+                            <strong className="text-gray-900">{fmt(kpi.total_annee.total)}</strong>
+                            <span className="ml-2 text-gray-500">(dont FSP: {fmt(fspTotal)})</span>
                         </div>
                     </Card>
                 );

@@ -4,35 +4,45 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 type DocWithTable = jsPDF & { lastAutoTable?: { finalY: number } };
 import * as XLSX from 'xlsx';
-import { declarationApi, dashboardApi, companyApi } from '../lib/api';
+import { companyApi } from '../lib/api';
 import { fmt, fmtN } from '../lib/fiscalCalc';
-import { Card, Spinner, Btn } from '../components/ui';
+import { Card, Btn } from '../components/ui';
 import { MOIS_FR } from '../types';
 import type { Declaration, Company, DashboardKPI } from '../types';
+import { buildDeclarationFromAnnexes, computeDashboardKpiFromAnnexes } from '../lib/declarationAnalytics';
 import { Printer, FileDown, FileSpreadsheet } from 'lucide-react';
+import { useContribuableStore } from '../contribuable/contribuableStore';
+import { calcFSP } from '../contribuable/contribuableCalc';
 
 export default function RapportPage() {
     const now = new Date();
     const [selectedMois, setSelectedMois] = useState(now.getMonth() + 1);
     const [selectedAnnee, setSelectedAnnee] = useState(now.getFullYear());
     const printRef = useRef<HTMLDivElement>(null);
-
-    const { data: decls = [], isLoading: l1 } = useQuery<Declaration[]>({
-        queryKey: ['declarations', selectedAnnee],
-        queryFn: () => declarationApi.list(selectedAnnee).then((r) => r.data),
-    });
-
-    const { data: kpis, isLoading: l2 } = useQuery<DashboardKPI>({
-        queryKey: ['dashboard'],
-        queryFn: () => dashboardApi.get().then((r) => r.data),
-    });
+    const period = useContribuableStore((s) => s.period);
+    const annexes = useContribuableStore((s) => s.annexes);
+    const localDecl: Declaration = buildDeclarationFromAnnexes(annexes, period);
+    const decls: Declaration[] =
+        localDecl.total > 0 && localDecl.annee === selectedAnnee ? [localDecl] : [];
 
     const { data: company } = useQuery<Company>({
         queryKey: ['company'],
         queryFn: () => companyApi.get().then((r) => r.data),
     });
 
-    if (l1 || l2) return <Spinner />;
+    const kpis: DashboardKPI = computeDashboardKpiFromAnnexes(
+        annexes,
+        period,
+        new Date(selectedAnnee, selectedMois - 1, 1)
+    );
+    const fspTotal = annexes.iuts.rows.reduce(
+        (s, r) => s + calcFSP(r.salaireB || 0, r.cnss || 0, r.iutsDu || 0),
+        0
+    );
+    const fspForDeclaration = (d: Declaration) =>
+        d.annee === period.year && d.mois === period.month
+            ? fspTotal
+            : Math.round(Math.max(0, d.brut_total - d.css_total - d.iuts_total) * 0.01);
 
     const decl: Declaration | undefined = decls.find((d) => d.mois === selectedMois) ?? decls[0];
 
@@ -67,8 +77,9 @@ export default function RapportPage() {
             body: [
                 ['IUTS + TPA (annee)', fmtN(iutsTotal) + ' FCFA'],
                 ['CSS salaries (annee)', fmtN(kpis?.total_annee?.css_total ?? 0) + ' FCFA'],
+                ['FSP (1% net salarial)', fmtN(fspTotal) + ' FCFA'],
                 ['Nombre d\'employes', String(kpis?.nb_employes ?? 0)],
-                ['Total obligations (annee)', fmtN(iutsTotal + (kpis?.total_annee?.css_total ?? 0)) + ' FCFA'],
+                ['Total obligations fiscales CGI (annee)', fmtN(iutsTotal + (kpis?.total_annee?.css_total ?? 0) + fspTotal) + ' FCFA'],
             ],
             styles: { fontSize: 8, textColor: BLACK, cellPadding: 2 },
             columnStyles: { 0: { cellWidth: 60, fontStyle: 'bold', fillColor: LIGHT }, 1: { cellWidth: 55, halign: 'right' } },
@@ -80,11 +91,11 @@ export default function RapportPage() {
             doc.text(`DECLARATION - ${MOIS_FR[(decl.mois ?? 1) - 1].toUpperCase()} ${decl.annee}`, 14, tableY - 3);
             autoTable(doc, {
                 startY: tableY,
-                head: [['Periode', 'Brut', 'IUTS', 'TPA', 'CSS', 'Total du']],
-                body: [[`${MOIS_FR[decl.mois - 1]} ${decl.annee}`, fmtN(decl.brut_total), fmtN(decl.iuts_total), fmtN(decl.tpa_total), fmtN(decl.css_total), fmtN(decl.total)]],
+                head: [['Periode', 'Brut', 'IUTS', 'TPA', 'CSS', 'FSP', 'Total du']],
+                body: [[`${MOIS_FR[decl.mois - 1]} ${decl.annee}`, fmtN(decl.brut_total), fmtN(decl.iuts_total), fmtN(decl.tpa_total), fmtN(decl.css_total), fmtN(fspForDeclaration(decl)), fmtN(decl.total)]],
                 styles: { fontSize: 8, textColor: BLACK, cellPadding: 2 },
                 headStyles: { fillColor: LIGHT, textColor: BLACK, fontStyle: 'bold' },
-                columnStyles: { 0: { cellWidth: 35 }, 1: { halign: 'right', cellWidth: 30 }, 2: { halign: 'right', cellWidth: 25 }, 3: { halign: 'right', cellWidth: 22 }, 4: { halign: 'right', cellWidth: 25 }, 5: { halign: 'right', cellWidth: 30, fontStyle: 'bold' } },
+                columnStyles: { 0: { cellWidth: 30 }, 1: { halign: 'right', cellWidth: 26 }, 2: { halign: 'right', cellWidth: 22 }, 3: { halign: 'right', cellWidth: 20 }, 4: { halign: 'right', cellWidth: 22 }, 5: { halign: 'right', cellWidth: 20 }, 6: { halign: 'right', cellWidth: 28, fontStyle: 'bold' } },
             });
         }
         const pageH = doc.internal.pageSize.getHeight();
@@ -98,7 +109,7 @@ export default function RapportPage() {
         const rows = decls.map((d) => ({
             'Mois': MOIS_FR[d.mois - 1], 'Annee': d.annee, 'Nb salaries': d.nb_salaries,
             'Brut total (FCFA)': d.brut_total, 'IUTS (FCFA)': d.iuts_total,
-            'TPA (FCFA)': d.tpa_total, 'CSS (FCFA)': d.css_total,
+            'TPA (FCFA)': d.tpa_total, 'CSS (FCFA)': d.css_total, 'FSP (FCFA)': fspForDeclaration(d),
             'Total du (FCFA)': d.total, 'Statut': d.statut,
         }));
         const ws = XLSX.utils.json_to_sheet(rows);
@@ -121,7 +132,7 @@ export default function RapportPage() {
                 </select>
                 <div className="flex-1" />
                 <Btn variant="outline" size="sm" onClick={exportXLSX}><FileSpreadsheet className="w-4 h-4" /> Export XLSX</Btn>
-                <Btn variant="outline" size="sm" onClick={exportPDF}><FileDown className="w-4 h-4" /> PDF</Btn>
+                <Btn variant="outline" size="sm" onClick={exportPDF}><FileDown className="w-4 h-4" /> Exporter PDF</Btn>
                 <Btn variant="outline" size="sm" onClick={print}><Printer className="w-4 h-4" /> Imprimer</Btn>
             </div>
 
@@ -131,9 +142,10 @@ export default function RapportPage() {
                 <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                     {[
                         { label: 'IUTS / TPA', value: (kpis?.total_annee?.iuts_total ?? 0) + (kpis?.total_annee?.tpa_total ?? 0) },
-                        { label: 'CSS salaries', value: kpis?.total_annee?.css_total ?? 0 },
-                        { label: 'Nb employes', value: kpis?.nb_employes ?? 0, raw: true },
-                        { label: 'Total obligations', value: (kpis?.total_annee?.iuts_total ?? 0) + (kpis?.total_annee?.tpa_total ?? 0) + (kpis?.total_annee?.css_total ?? 0) },
+                        { label: 'CSS salariale', value: kpis?.total_annee?.css_total ?? 0 },
+                        { label: 'Nb employés', value: kpis?.nb_employes ?? 0, raw: true },
+                        { label: 'FSP (1% net salarial)', value: fspTotal },
+                        { label: 'Total des obligations fiscales a reverser (CGI)', value: (kpis?.total_annee?.iuts_total ?? 0) + (kpis?.total_annee?.tpa_total ?? 0) + (kpis?.total_annee?.css_total ?? 0) + fspTotal },
                     ].map(({ label, value, raw }) => (
                         <div key={label} className="bg-gray-50 rounded-xl p-4">
                             <p className="text-xs text-gray-500">{label}</p>
@@ -150,6 +162,7 @@ export default function RapportPage() {
                                 { label: 'IUTS', val: fmtN(decl.iuts_total) },
                                 { label: 'TPA', val: fmtN(decl.tpa_total) },
                                 { label: 'CSS', val: fmtN(decl.css_total) },
+                                { label: 'FSP', val: fmtN(fspForDeclaration(decl)) },
                                 { label: 'Total du', val: fmtN(decl.total) },
                             ].map(({ label, val }) => (
                                 <div key={label} className="bg-gray-50 rounded-lg p-3">
@@ -175,6 +188,7 @@ export default function RapportPage() {
                                         <th className="text-right py-2 px-3">IUTS</th>
                                         <th className="text-right py-2 px-3">TPA</th>
                                         <th className="text-right py-2 px-3">CSS</th>
+                                        <th className="text-right py-2 px-3">FSP</th>
                                         <th className="text-right py-2 px-3 font-bold">Total du</th>
                                         <th className="text-center py-2 px-3">Statut</th>
                                     </tr>
@@ -188,6 +202,7 @@ export default function RapportPage() {
                                             <td className="py-2 px-3 text-right font-mono text-xs text-gray-600">{fmtN(d.iuts_total)}</td>
                                             <td className="py-2 px-3 text-right font-mono text-xs text-gray-600">{fmtN(d.tpa_total)}</td>
                                             <td className="py-2 px-3 text-right font-mono text-xs text-gray-600">{fmtN(d.css_total)}</td>
+                                            <td className="py-2 px-3 text-right font-mono text-xs text-gray-600">{fmtN(fspForDeclaration(d))}</td>
                                             <td className="py-2 px-3 text-right font-mono text-xs font-bold text-gray-900">{fmtN(d.total)}</td>
                                             <td className="py-2 px-3 text-center">
                                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${d.statut === 'ok' || d.statut === 'approuve' ? 'bg-green-100 text-green-700' : d.statut === 'retard' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>{d.statut}</span>
@@ -197,11 +212,12 @@ export default function RapportPage() {
                                 </tbody>
                                 <tfoot className="border-t-2 border-gray-200">
                                     <tr className="text-xs font-bold text-gray-700 bg-gray-50">
-                                        <td className="py-2 px-3">TOTAL {selectedAnnee}</td>
+                                        <td className="py-2 px-3">TOTAL OBLIGATIONS CGI {selectedAnnee}</td>
                                         <td className="py-2 px-3 text-right font-mono">{fmtN(decls.reduce((s, d) => s + d.brut_total, 0))}</td>
                                         <td className="py-2 px-3 text-right font-mono">{fmtN(decls.reduce((s, d) => s + d.iuts_total, 0))}</td>
                                         <td className="py-2 px-3 text-right font-mono">{fmtN(decls.reduce((s, d) => s + d.tpa_total, 0))}</td>
                                         <td className="py-2 px-3 text-right font-mono">{fmtN(decls.reduce((s, d) => s + d.css_total, 0))}</td>
+                                        <td className="py-2 px-3 text-right font-mono">{fmtN(decls.reduce((s, d) => s + fspForDeclaration(d), 0))}</td>
                                         <td className="py-2 px-3 text-right font-mono">{fmtN(decls.reduce((s, d) => s + d.total, 0))}</td>
                                         <td />
                                     </tr>

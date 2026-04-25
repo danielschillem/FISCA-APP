@@ -6,6 +6,7 @@ import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import { useAuthStore } from '../lib/store';
 import type { Company } from '../types';
 import { X, Lock } from 'lucide-react';
+import { useContribuableStore } from '../contribuable/contribuableStore';
 
 export default function SocietesPage() {
     const { plan } = useAppStore();
@@ -18,6 +19,7 @@ function SocietesContent() {
     const { setCompanyId, companyId } = useAuthStore();
     const [showAdd, setShowAdd] = useState(false);
     const [form, setForm] = useState({ nom: '', ifu: '', rc: '', secteur: '', adresse: '', tel: '' });
+    const ensureContribuableScope = useContribuableStore((s) => s.ensureScope);
 
     const { data: companies = [], isLoading } = useQuery<Company[]>({
         queryKey: ['companies'],
@@ -74,7 +76,17 @@ function SocietesContent() {
                             </div>
                             <div className="flex gap-2 shrink-0 ml-3">
                                 {c.id !== companyId && (
-                                    <Btn size="sm" onClick={() => setCompanyId(c.id)}>Activer</Btn>
+                                    <Btn
+                                        size="sm"
+                                        onClick={() => {
+                                            setCompanyId(c.id);
+                                            if (useAuthStore.getState().user?.id) {
+                                                ensureContribuableScope(useAuthStore.getState().user!.id, c.id);
+                                            }
+                                        }}
+                                    >
+                                        Activer
+                                    </Btn>
                                 )}
                                 <button
                                     onClick={() => del.mutate(c.id)}

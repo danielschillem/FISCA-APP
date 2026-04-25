@@ -117,12 +117,22 @@ fisca-app/
 git clone https://github.com/danielschillem/FISCA-APP.git
 cd FISCA-APP
 
+# 1) Créer l'environnement local (ne pas committer .env)
+cp .env.example .env
+
 # Stack complète (backend + frontend + postgres locale)
 docker compose up --build
 
 # Frontend → http://localhost:5173
 # API      → http://localhost:8080/api/health
 ```
+
+### Séparation local / production (important)
+
+- Le fichier `docker-compose.yml` est orienté **dev local** par défaut (`db` Docker local).
+- La production n'utilise pas `docker-compose.yml` : Render/GitHub Actions injectent leurs propres variables d'environnement.
+- Ne mettez jamais d'identifiants prod dans `.env`, `.env.example` ou `docker-compose.yml`.
+- Pour forcer une DB distante ponctuellement en local, exportez seulement `DATABASE_URL` dans votre shell avant `docker compose up`.
 
 ### Backend seul
 

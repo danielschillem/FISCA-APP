@@ -86,38 +86,41 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
     const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'US';
 
     return (
-        <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm px-5 py-2.5 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        <header
+            className="sticky top-0 z-20 flex shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/85 px-4 backdrop-blur-md backdrop-saturate-150 sm:px-7"
+            style={{ minHeight: 'var(--header-h)', boxShadow: '0 1px 0 rgba(15, 23, 42, 0.04)' }}
+        >
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
                 <button
                     onClick={toggleSidebar}
-                    className="p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors text-gray-500 hover:text-gray-700"
+                    className="shrink-0 rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 active:bg-slate-200/80"
                     aria-label="Menu"
                 >
-                    <Menu className="w-5 h-5" />
+                    <Menu className="h-5 w-5" />
                 </button>
-                <div className="hidden sm:block">
-                    <h1 className="text-[15px] font-semibold text-gray-900 leading-tight">{title}</h1>
-                    {subtitle && <p className="text-[11px] text-gray-400">{subtitle}</p>}
+                <div className="hidden min-w-0 sm:block">
+                    <h1 className="truncate text-lg font-semibold leading-tight tracking-tight text-slate-900">{title}</h1>
+                    {subtitle && <p className="truncate text-[12px] text-slate-500 mt-0.5">{subtitle}</p>}
                 </div>
-                <h1 className="sm:hidden text-[15px] font-semibold text-gray-900">{title}</h1>
+                <h1 className="truncate text-lg font-semibold tracking-tight text-slate-900 sm:hidden">{title}</h1>
             </div>
 
             <div className="flex items-center gap-2">
                 {/* Date chip */}
-                <div className="hidden md:flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-full px-3 py-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-xs text-gray-500 font-medium">{dateStr}</span>
+                <div className="hidden md:flex items-center gap-2 rounded-full border border-slate-200/90 bg-slate-50/90 px-3.5 py-1.5 shadow-sm">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.25)]" />
+                    <span className="text-xs font-medium text-slate-600 tabular-nums">{dateStr}</span>
                 </div>
 
                 {/* Notifications */}
                 <button
                     onClick={toggleNotif}
-                    className="relative p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors text-gray-500 hover:text-gray-700"
+                    className="relative rounded-xl p-2 text-slate-500 ring-1 ring-slate-200/60 transition-colors hover:bg-slate-100 hover:text-slate-800 hover:ring-slate-300/80 active:bg-slate-200/60"
                     aria-label="Notifications"
                 >
                     <Bell className="w-5 h-5" />
                     {unread > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold shadow-sm">
+                        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-600 px-0.5 text-[9px] font-bold text-white shadow-sm ring-2 ring-white">
                             {unread > 9 ? '9+' : unread}
                         </span>
                     )}
@@ -125,8 +128,8 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
 
                 {/* User avatar */}
                 <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm cursor-default select-none"
-                    style={{ background: 'linear-gradient(135deg, #16a34a, #0d9488)' }}
+                    className="flex h-9 w-9 cursor-default select-none items-center justify-center rounded-full text-xs font-bold text-white shadow-md ring-2 ring-white"
+                    style={{ background: 'linear-gradient(135deg, #059669, #0d9488)' }}
                     title={user?.email}
                 >
                     {initials}

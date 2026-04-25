@@ -5,7 +5,7 @@ import { Card, Badge, Btn, Spinner } from '../components/ui';
 import { useAppStore, PLAN_FEATURES } from '../components/ui';
 import type { WorkflowEtape } from '../types';
 import { MOIS_FR } from '../types';
-import { MessageSquare, Check, X, Lock, History, ChevronUp } from 'lucide-react';
+import { MessageSquare, Check, X, Lock, History, ChevronUp, Undo2 } from 'lucide-react';
 
 const STATUT_COLOR: Record<string, 'green' | 'orange' | 'blue' | 'red' | 'gray'> = {
     approuve: 'green',
@@ -144,7 +144,7 @@ function WorkflowContent() {
                                 )}
                                 {e.statut === 'rejete' && (
                                     <Btn size="sm" variant="outline" onClick={() => transition.mutate({ id: e.id, action: 'reviser' })}>
-                                        ↩ Réviser
+                                        <Undo2 className="w-4 h-4" /> Réviser
                                     </Btn>
                                 )}
                                 <button

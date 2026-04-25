@@ -92,12 +92,12 @@ function CMEContent() {
         <div className="max-w-3xl space-y-6">
             {PaymentModalComponent}
             <Card title="CME : Contribution des Micro-Entreprises">
-                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 533-542 - Régime simplifié pour CA ≤ 150 M FCFA</p>
+                <p className="text-xs text-gray-500 mb-4">CGI 2025 : Art. 533-542 - Régime simplifié pour CA ≤ 15 M FCFA</p>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Année fiscale</label>
-                        <input type="number" value={annee} onChange={(e) => setAnnee(+e.target.value)}
+                        <input type="number" min={2000} max={2100} value={annee} onChange={(e) => setAnnee(+e.target.value)}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
                     </div>
                     <div>
@@ -213,7 +213,7 @@ function CMEContent() {
                                         <td className="py-2 text-right font-semibold text-red-700">{fmt(d.cme_net)}</td>
                                         <td className="py-2 text-center">
                                             <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${d.statut === 'declare' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                                {d.statut === 'declare' ? 'Déclaré' : 'Brouillon'}
+                                                {d.statut === 'declare' ? 'Déclaré' : 'En cours'}
                                             </span>
                                         </td>
                                         <td className="py-2 text-right">
@@ -231,7 +231,7 @@ function CMEContent() {
                                                     className="p-1 text-blue-600 hover:bg-blue-50 rounded">
                                                     <Download className="w-3.5 h-3.5" />
                                                 </button>
-                                                <button onClick={() => requestPayment('cme', d.id, () => generateCMEForm(d, company))} title="Formulaire DGI"
+                                                <button onClick={() => requestPayment('cme', d.id, () => generateCMEForm(d, company))} title="Exporter formulaire DGI (PDF)"
                                                     className="p-1 text-orange-500 hover:bg-orange-50 rounded">
                                                     <FileText className="w-3.5 h-3.5" />
                                                 </button>
@@ -254,7 +254,7 @@ function CMEContent() {
 
             <Card title="Base légale">
                 <ul className="text-xs text-gray-500 space-y-1">
-                    <li>- Art. 533 CGI 2025 : CME applicable aux micro-entreprises (CA ≤ 150 M)</li>
+                    <li>- Art. 533 CGI 2025 : CME applicable aux micro-entreprises (CA ≤ 15 M)</li>
                     <li>- 8 classes tarifaires selon CA et zone géographique (A, B, C, D)</li>
                     <li>- Art. 537 : Réduction de 25 % pour les adhérents d'un CGA agréé</li>
                     <li>- Paiement annuel avant le 30 avril</li>

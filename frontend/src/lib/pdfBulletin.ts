@@ -7,6 +7,8 @@ import autoTable from 'jspdf-autotable';
 import type { Bulletin, Company } from '../types';
 import { MOIS_FR } from '../types';
 import { fmtN } from './fiscalCalc';
+import { buildPdfTrace, drawTraceQr, type PdfTrace } from './pdfTrace';
+import { appendPaymentReceiptPage } from './paymentReceipt';
 
 type RGB = [number, number, number];
 const BLACK: RGB = [0, 0, 0];
@@ -68,6 +70,7 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
     // Calculs
     const fsp = b.fsp ?? 0;
     const totalRet = b.iuts_net + b.cotisation_sociale + fsp;
+    /* Affichage taux : CARFO uniquement pour anciens bulletins */
     const cotTaux = b.cotisation === 'CARFO' ? '6,000 %' : '5,500 %';
     const tauxH = b.salaire_base > 0 ? b.salaire_base / 173.33 : 0;
     const baseCNSS = Math.min(b.brut_total, 600_000);
@@ -81,20 +84,17 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(...BLACK);
-    doc.text(company?.nom ?? '', ML, 12);
+    doc.text(`Société : ${company?.nom || '-'}`, ML, 12);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(...DARK);
     const addrLines = [
-        company?.adresse ?? '',
-        company?.quartier ?? '',
-        [company?.bp ? 'BP ' + company.bp : '', company?.ville ?? ''].filter(Boolean).join('  '),
-        [
-            company?.ifu ? 'IFU : ' + company.ifu : '',
-            company?.rc ? 'RC : ' + company.rc : '',
-        ].filter(Boolean).join('   '),
-    ].filter(Boolean);
+        `Adresse : ${company?.adresse || '-'}`,
+        `Quartier : ${company?.quartier || '-'}`,
+        `Ville/BP : ${company?.ville || '-'}${company?.bp ? ` / BP ${company.bp}` : ''}`,
+        `IFU : ${company?.ifu || '-'}   RC : ${company?.rc || '-'}   Tel : ${company?.tel || '-'}`,
+    ];
     addrLines.forEach((line, i) => doc.text(line, ML, 17 + i * 4));
 
     doc.setFont('helvetica', 'bold');
@@ -186,8 +186,16 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
         `Cotisation ${b.cotisation} (part salariale)`,
         '', amt(baseCNSS), cotTaux, '', amt(b.cotisation_sociale),
     ));
-    if (fsp > 0)
-        body.push(dataRow('FSP - Fonds de Soutien Patriotique', '', amt(baseFSP), '1,000 %', '', amt(fsp)));
+    body.push(
+        dataRow(
+            'FSP - Fonds de Soutien Patriotique',
+            '',
+            amt(baseFSP),
+            '1,000 %',
+            '',
+            amt(fsp)
+        )
+    );
 
     // Charges patronales
     addSec('CHARGES PATRONALES (a titre indicatif)');
@@ -353,12 +361,8 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7);
         doc.setTextColor(...DARK);
-        doc.text('Date et signature du salarie (bon pour accord)', ML, sigY);
-        doc.setDrawColor(...BLACK);
-        doc.setLineWidth(0.4);
-        doc.rect(ML, sigY + 2, 84, 15);
-        doc.text("Cachet et signature de l'employeur", MR - 84, sigY);
-        doc.rect(MR - 84, sigY + 2, 84, 15);
+        doc.text('Date et signature du salarie (lu et approuve)', ML, sigY);
+        doc.text("Cachet et signature de l'employeur (lu et approuve)", MR - 84, sigY);
     }
 
     // == PIED DE PAGE =========================================================
@@ -375,19 +379,86 @@ function drawPage(doc: jsPDF, b: Bulletin, company?: Company, pageInfo?: string)
 }
 
 // == Exports ==================================================================
-export function exportBulletinPDF(b: Bulletin, company?: Company) {
+function drawTraceOnBulletin(doc: jsPDF, trace: PdfTrace) {
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(5.5);
+    doc.setTextColor(110, 110, 110);
+    doc.text(`Trace: ${trace.traceId}`, 13, H - 2.5);
+    doc.text(`Hash: ${trace.digest.slice(0, 16)}`, W - 13, H - 2.5, { align: 'right' });
+}
+
+export async function exportBulletinPDF(
+    b: Bulletin,
+    company?: Company,
+    opts?: { paymentBaseAmount?: number; paymentRef?: string }
+) {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const trace = await buildPdfTrace('bulletin', {
+        employe: b.nom_employe,
+        periode: `${b.mois}/${b.annee}`,
+        ifu: company?.ifu ?? '',
+        brut: b.brut_total,
+        net: b.salaire_net,
+    });
     drawPage(doc, b, company);
+    try {
+        const h = doc.internal.pageSize.getHeight();
+        await drawTraceQr(doc, trace, 184, h - 24, 13, { centerImageDataUrl: null });
+    } catch {
+        // Keep document export working if QR generation fails.
+    }
+    drawTraceOnBulletin(doc, trace);
+    await appendPaymentReceiptPage(doc, {
+        documentLabel: 'Bulletin de paie',
+        baseAmount: opts?.paymentBaseAmount ?? 5000,
+        feeRate: 0.015,
+        provider: 'Orange Money',
+        transactionRef: opts?.paymentRef ?? trace.traceId,
+        transactionId: opts?.paymentRef ?? trace.traceId,
+        transactionStatus: 'completed',
+        company,
+        periodLabel: `${String(b.mois).padStart(2, '0')}/${b.annee}`,
+    });
     doc.save(`Bulletin-${b.nom_employe.replace(/\s+/g, '_')}-${MOIS_FR[b.mois - 1]}-${b.annee}.pdf`);
 }
 
-export function exportAllBulletinsPDF(bulletins: Bulletin[], company?: Company) {
+export async function exportAllBulletinsPDF(
+    bulletins: Bulletin[],
+    company?: Company,
+    opts?: { paymentBaseAmount?: number; paymentRef?: string }
+) {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    bulletins.forEach((b, idx) => {
+    const trace = await buildPdfTrace('bulletins', {
+        count: bulletins.length,
+        periode: bulletins[0] ? `${bulletins[0].mois}/${bulletins[0].annee}` : '',
+        ifu: company?.ifu ?? '',
+    });
+    for (const [idx, b] of bulletins.entries()) {
         if (idx > 0) doc.addPage();
         drawPage(doc, b, company, `${idx + 1} / ${bulletins.length}`);
-    });
+        try {
+            // QR sur chaque bulletin/page sans logo central.
+            const h = doc.internal.pageSize.getHeight();
+            await drawTraceQr(doc, trace, 184, h - 24, 13, { centerImageDataUrl: null });
+        } catch {
+            // Keep document export working if QR generation fails.
+        }
+        drawTraceOnBulletin(doc, trace);
+    }
     const p = bulletins[0];
+    await appendPaymentReceiptPage(doc, {
+        documentLabel: 'Pack bulletins de paie',
+        baseAmount: opts?.paymentBaseAmount ?? 5000,
+        feeRate: 0.015,
+        provider: 'Orange Money',
+        transactionRef: opts?.paymentRef ?? trace.traceId,
+        transactionId: opts?.paymentRef ?? trace.traceId,
+        transactionStatus: 'completed',
+        company,
+        periodLabel: p ? `${String(p.mois).padStart(2, '0')}/${p.annee}` : undefined,
+    });
     const name = p ? `${MOIS_FR[p.mois - 1]}-${p.annee}` : 'bulletins';
     doc.save(`Bulletins-${name}.pdf`);
 }

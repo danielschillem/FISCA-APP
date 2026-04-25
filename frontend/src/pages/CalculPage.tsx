@@ -18,22 +18,24 @@ export default function CalculPage() {
     const [module, setModule] = useState<Module>('iuts');
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* Module tabs */}
-            <div className="flex flex-wrap gap-2">
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-3 shadow-sm">
+                <div className="flex flex-wrap gap-2">
                 {MODULES.map(({ id, label, Icon }) => (
                     <button
                         key={id}
                         onClick={() => setModule(id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${module === id
-                            ? 'bg-green-600 text-white'
-                            : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                        className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${module === id
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : 'bg-slate-50 border border-slate-200 text-slate-700 hover:bg-white'
                             }`}
                     >
                         <Icon className="w-4 h-4" />
                         {label}
                     </button>
                 ))}
+            </div>
             </div>
 
             {module === 'iuts' && <IUTSCalc />}
@@ -49,12 +51,12 @@ export default function CalculPage() {
 // --- IUTS Calculator -----------------------------------------
 function ResultRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
     return (
-        <div className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+        <div className="flex items-center justify-between py-2.5 border-b border-gray-100 last:border-0">
             <div>
-                <p className="text-sm text-gray-700">{label}</p>
+                <p className="text-sm text-gray-700 leading-snug">{label}</p>
                 {sub && <p className="text-[11px] text-gray-400">{sub}</p>}
             </div>
-            <p className="text-sm font-semibold text-gray-900">{value}</p>
+            <p className="text-sm font-semibold text-gray-900 whitespace-nowrap font-mono">{value}</p>
         </div>
     );
 }
@@ -101,9 +103,9 @@ function IUTSCalc() {
     );
 
     return (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div className="space-y-4">
-                <Card title="Paramètres salarié : CGI 2025">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+            <div className="space-y-4 xl:col-span-6">
+                <Card title="Paramètres salarié : CGI 2025" className="h-full">
                     <div className="grid grid-cols-2 gap-3">
                         <div className="col-span-2">
                             <label className="block text-xs font-medium text-gray-700 mb-1">Catégorie</label>
@@ -114,7 +116,7 @@ function IUTSCalc() {
                                         onClick={() => setForm((p) => ({ ...p, categorie: c }))}
                                         className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${numForm.categorie === c
                                             ? 'bg-green-600 text-white border-green-600'
-                                            : 'bg-white text-gray-700 border-gray-300'
+                                            : 'bg-slate-50 text-gray-700 border-gray-300 hover:bg-white'
                                             }`}
                                     >
                                         {c} : abatt. {c === 'Cadre' ? '20' : '25'} %
@@ -125,13 +127,16 @@ function IUTSCalc() {
                         <div className="col-span-2">
                             <label className="block text-xs font-medium text-gray-700 mb-1">Régime cotisation</label>
                             <div className="flex gap-2">
-                                {[['CNSS', '5,5 %'], ['CARFO', '6 %']].map(([v, l]) => (
+                                {[
+                                    ['CNSS', '5,5 %'],
+                                    /* ['CARFO', '6 %'], */ // CARFO masqué — calcul inchangé si cotisation CARFO en données
+                                ].map(([v, l]) => (
                                     <button
                                         key={v}
                                         onClick={() => setForm((p) => ({ ...p, cotisation: v }))}
                                         className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${numForm.cotisation === v
                                             ? 'bg-blue-600 text-white border-blue-600'
-                                            : 'bg-white text-gray-700 border-gray-300'
+                                            : 'bg-slate-50 text-gray-700 border-gray-300 hover:bg-white'
                                             }`}
                                     >
                                         {v} : {l}
@@ -221,7 +226,13 @@ function IUTSCalc() {
                 </Card>
             </div>
 
-            <Card title="Résultat : Détail fiscal CGI 2025">
+            <Card title="Résultat : Détail fiscal CGI 2025" className="xl:col-span-6 xl:sticky xl:top-4 h-fit">
+                <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+                    <p className="text-[11px] uppercase tracking-[0.08em] font-semibold text-emerald-700">Synthèse immédiate</p>
+                    <p className="text-sm text-emerald-800">
+                        IUTS net: <span className="font-bold">{fmt(r.iutsNet)}</span> | Net à payer: <span className="font-bold">{fmt(r.netAPayer)}</span> | Coût employeur: <span className="font-bold">{fmt(r.remBrute + r.tpa)}</span>
+                    </p>
+                </div>
                 <ResultRow label="Rémunération brute totale" value={fmt(r.remBrute)} />
                 <ResultRow label={`Cotisation ${numForm.cotisation}`} value={`- ${fmt(r.cotSoc)}`} sub={`${(r.cotSoc / r.remBrute * 100).toFixed(1)} %`} />
                 <ResultRow label="Exo. logement" value={`- ${fmt(r.exoLog)}`} sub="Plaf. 75 000" />
@@ -233,25 +244,25 @@ function IUTSCalc() {
                 <ResultRow label="Abatt. familial (Art.113)" value={`+ ${fmt(r.abattFam)}`} sub={`${numForm.charges} charge(s) : ${(r.abattFam / (r.iutsBrut || 1) * 100).toFixed(0)} %`} />
                 <ResultRow label="FSP : Fonds de Soutien Patriotique (1 %)" value={`- ${fmt(r.fsp)}`} sub="Décret présidentiel BF 2023" />
 
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                    <div className="bg-green-50 rounded-xl p-4">
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="bg-green-50 rounded-xl p-3.5 border border-green-100">
                         <p className="text-xs text-gray-500">IUTS net retenu</p>
                         <p className="text-xl font-bold text-green-700">{fmt(r.iutsNet)}</p>
                         <p className="text-[11px] text-gray-400">Taux eff. {r.tauxEffectif.toFixed(1)} %</p>
                     </div>
-                    <div className="bg-blue-50 rounded-xl p-4">
+                    <div className="bg-blue-50 rounded-xl p-3.5 border border-blue-100">
                         <p className="text-xs text-gray-500">TPA patronale (3 %)</p>
                         <p className="text-xl font-bold text-blue-700">{fmt(r.tpa)}</p>
                     </div>
-                    <div className="bg-red-50 rounded-xl p-4">
+                    <div className="bg-red-50 rounded-xl p-3.5 border border-red-100">
                         <p className="text-xs text-gray-500">FSP (1 % net)</p>
                         <p className="text-xl font-bold text-red-700">{fmt(r.fsp)}</p>
                     </div>
-                    <div className="bg-orange-50 rounded-xl p-4">
+                    <div className="bg-orange-50 rounded-xl p-3.5 border border-orange-100">
                         <p className="text-xs text-gray-500">Net à payer salarié</p>
                         <p className="text-xl font-bold text-orange-700">{fmt(r.netAPayer)}</p>
                     </div>
-                    <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="bg-gray-50 rounded-xl p-3.5 border border-gray-200 sm:col-span-2">
                         <p className="text-xs text-gray-500">Coût total employeur</p>
                         <p className="text-xl font-bold text-gray-700">{fmt(r.remBrute + r.tpa)}</p>
                     </div>
