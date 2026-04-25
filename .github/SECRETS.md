@@ -10,8 +10,6 @@ Configurer ces secrets dans :
 | `DO_PREPROD_HOST` | IP publique du droplet pré-prod | DigitalOcean → Droplets |
 | `DO_PREPROD_USER` | Utilisateur SSH (`root` recommandé en pré-prod) | Configuration droplet |
 | `DO_PREPROD_SSH_KEY` | Clé privée SSH (format OpenSSH) | Clé locale utilisée pour le droplet |
-| `DOCKERHUB_USERNAME` | Nom d'utilisateur Docker Hub | Docker Hub account |
-| `DOCKERHUB_TOKEN` | Access token Docker Hub | Docker Hub → Account Settings → Security |
 
 ## Procédure de premier déploiement
 

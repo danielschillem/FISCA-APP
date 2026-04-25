@@ -33,7 +33,7 @@ GitHub (danielschillem/FISCA-APP) — branche main
 │                                                         │
 │   1. Build backend  (linux/amd64, multi-stage Go)       │
 │   2. Build frontend (linux/amd64, VITE_API_URL baked)   │
-│   3. Push images Docker Hub publiques                    │
+│   3. Push images GHCR publiques                           │
 │   4. SSH deploy sur droplet DigitalOcean                 │
 └─────────────────────────────────────────────────────────┘
          │ docker pull :latest
@@ -240,8 +240,8 @@ git push origin main
     │   ├─ docker buildx build --platform linux/amd64 ./backend
     │   │    └─ CGO_ENABLED=0, GOOS=linux, -ldflags="-s -w"
     │   ├─ docker buildx build --platform linux/amd64 ./frontend
-    │   ├─ docker push schillem7/fisca-backend:latest
-    │   ├─ docker push schillem7/fisca-frontend:latest
+    │   ├─ docker push ghcr.io/danielschillem/fisca-app-backend:latest
+    │   ├─ docker push ghcr.io/danielschillem/fisca-app-frontend:latest
     │   │
     │   └─ SSH sur droplet DO :
     │       docker compose pull && docker compose up -d
@@ -341,11 +341,11 @@ cd backend && go test ./... -v
 cd frontend && npm test
 
 # Build manuel des images Docker
-docker build --platform linux/amd64 -t schillem7/fisca-backend:latest ./backend
-docker build --platform linux/amd64 -t schillem7/fisca-frontend:latest ./frontend
+docker build --platform linux/amd64 -t ghcr.io/danielschillem/fisca-app-backend:latest ./backend
+docker build --platform linux/amd64 -t ghcr.io/danielschillem/fisca-app-frontend:latest ./frontend
 
-# Pousser sur Docker Hub (images publiques)
-docker push schillem7/fisca-backend:latest
-docker push schillem7/fisca-frontend:latest
+# Pousser sur GHCR (images publiques)
+docker push ghcr.io/danielschillem/fisca-app-backend:latest
+docker push ghcr.io/danielschillem/fisca-app-frontend:latest
 ```
 

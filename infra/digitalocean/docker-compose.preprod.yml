@@ -1,6 +1,6 @@
 services:
   backend:
-    image: schillem7/fisca-backend:latest
+    image: ghcr.io/danielschillem/fisca-app-backend:latest
     container_name: fisca-backend
     restart: unless-stopped
     env_file:
@@ -17,7 +17,7 @@ services:
       start_period: 10s
 
   frontend:
-    image: schillem7/fisca-frontend:latest
+    image: ghcr.io/danielschillem/fisca-app-frontend:latest
     container_name: fisca-frontend
     restart: unless-stopped
     depends_on:
