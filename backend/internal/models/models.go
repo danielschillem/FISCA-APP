@@ -8,36 +8,37 @@ import (
 // --- PAYMENT -------------------------------------------------
 
 type Payment struct {
-	ID              string     `json:"id"`
-	CompanyID       string     `json:"company_id"`
-	UserID          string     `json:"user_id"`
-	DocumentType    string     `json:"document_type"`
-	DocumentID      string     `json:"document_id"`
-	MontantBase     float64    `json:"montant_base"`
-	TauxFrais       float64    `json:"taux_frais"`
-	Frais           float64    `json:"frais"`
-	Total           float64    `json:"total"`
-	Telephone       string     `json:"telephone"`
-	Statut          string     `json:"statut"` // pending | completed | failed | expired
-	OMReference     *string    `json:"om_reference,omitempty"`
-	OMOrderID       *string    `json:"om_order_id,omitempty"`
-	WebhookReceived bool       `json:"webhook_received"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
+	ID              string    `json:"id"`
+	CompanyID       string    `json:"company_id"`
+	UserID          string    `json:"user_id"`
+	DocumentType    string    `json:"document_type"`
+	DocumentID      string    `json:"document_id"`
+	MontantBase     float64   `json:"montant_base"`
+	TauxFrais       float64   `json:"taux_frais"`
+	Frais           float64   `json:"frais"`
+	Total           float64   `json:"total"`
+	Telephone       string    `json:"telephone"`
+	Statut          string    `json:"statut"` // pending | completed | failed | expired
+	OMReference     *string   `json:"om_reference,omitempty"`
+	OMOrderID       *string   `json:"om_order_id,omitempty"`
+	WebhookReceived bool      `json:"webhook_received"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 type InitiatePaymentRequest struct {
-	DocumentType string  `json:"document_type"` // 'iuts','tva','retenues','is','ircm','cme','irf','bulletin','patente'
+	DocumentType string  `json:"document_type"` // + 'annexe','duplicata','annexe_bulletin'
 	DocumentID   string  `json:"document_id"`
 	Telephone    string  `json:"telephone"`    // ex: "70123456" ou "+22670123456"
-	MontantBase  float64 `json:"montant_base"` // optionnel, défaut 2000
+	OTP          string  `json:"otp"`          // OTP saisi par le client après USSD
+	MontantBase  float64 `json:"montant_base"` // optionnel, défaut selon type de document
 }
 
 type PaymentStatusResponse struct {
-	ID       string  `json:"id"`
-	Statut   string  `json:"statut"`
-	Total    float64 `json:"total"`
-	Frais    float64 `json:"frais"`
+	ID     string  `json:"id"`
+	Statut string  `json:"statut"`
+	Total  float64 `json:"total"`
+	Frais  float64 `json:"frais"`
 }
 
 // --- COMPANY ------------------------------------------------
@@ -139,7 +140,7 @@ type RegisterRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	Nom      string `json:"nom"`       // nom de l'entreprise (physique) ou de la structure (morale)
-	Plan     string `json:"plan"`      // physique_starter | physique_pro | moral_team | moral_enterprise
+	Plan     string `json:"plan"`      // optionnel : défaut physique_starter (physique) ou moral_team (morale)
 	UserType string `json:"user_type"` // "physique" | "morale"
 }
 
@@ -516,14 +517,9 @@ type AdminStats struct {
 	TotalUsers      int     `json:"total_users"`
 	ActiveUsers     int     `json:"active_users"`
 	SuspendedUsers  int     `json:"suspended_users"`
-	TrialUsers      int     `json:"trial_users"`
-	PlanStarter     int     `json:"plan_starter"`
-	PlanPro         int     `json:"plan_pro"`
-	PlanEnterprise  int     `json:"plan_enterprise"`
 	TotalCompanies  int     `json:"total_companies"`
 	ActiveCompanies int     `json:"active_companies"`
 	NewUsersLast30d int     `json:"new_users_last30d"`
-	EstimatedMRR    float64 `json:"estimated_mrr"`
 }
 
 type AdminUser struct {

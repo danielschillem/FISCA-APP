@@ -27,6 +27,7 @@ export interface Employee {
     company_id: string;
     nom: string;
     categorie: 'Cadre' | 'Non-cadre';
+    /** CNSS par défaut ; `CARFO` réservé aux enregistrements existants (non proposé en saisie). */
     cotisation: 'CNSS' | 'CARFO';
     charges: number;
     salaire_base: number;
@@ -46,6 +47,7 @@ export interface CalculRequest {
     fonction: number;
     charges: number;
     categorie: 'Cadre' | 'Non-cadre';
+    /** Idem `Employee.cotisation` — CARFO hors choix UI. */
     cotisation: 'CNSS' | 'CARFO';
 }
 
@@ -567,14 +569,102 @@ export interface AdminStats {
     total_users: number;
     active_users: number;
     suspended_users: number;
-    trial_users: number;
-    plan_starter: number;
-    plan_pro: number;
-    plan_enterprise: number;
     total_companies: number;
     active_companies: number;
     new_users_last30d: number;
-    estimated_mrr: number;
+}
+
+export interface AdminOpsDocumentStat {
+    document_type: string;
+    count: number;
+    total: number;
+}
+
+export interface AdminOpsMonthlyRevenue {
+    month: string;
+    count: number;
+    total: number;
+    frais: number;
+}
+
+export interface AdminOpsRecentPayment {
+    id: string;
+    company_name: string;
+    user_email: string;
+    document_type: string;
+    statut: 'pending' | 'completed' | 'failed' | 'expired' | string;
+    total: number;
+    frais: number;
+    telephone: string;
+    created_at: string;
+}
+
+export interface AdminOpsOverview {
+    payments_total_count: number;
+    payments_completed_count: number;
+    payments_pending_count: number;
+    payments_failed_count: number;
+    payments_expired_count: number;
+    payments_volume: number;
+    fees_collected: number;
+    avg_ticket: number;
+    payments_last30d_count: number;
+    payments_prev30d_count: number;
+    payments_growth_pct: number;
+    audit_last24h: number;
+    audit_last7d: number;
+    audit_last30d: number;
+    top_document_types: AdminOpsDocumentStat[];
+    monthly_revenue: AdminOpsMonthlyRevenue[];
+    recent_payments: AdminOpsRecentPayment[];
+    recent_audits: AuditLog[];
+}
+
+export interface PaginatedResponse<T> {
+    items: T[];
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+}
+
+export interface AdminTransactionItem {
+    id: string;
+    company_name: string;
+    user_email: string;
+    document_type: string;
+    document_id: string;
+    statut: string;
+    total: number;
+    frais: number;
+    telephone: string;
+    om_reference: string;
+    om_order_id: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface AdminFinanceMonthly {
+    month: string;
+    count: number;
+    total: number;
+    frais: number;
+}
+
+export interface AdminFinanceByDocument {
+    document_type: string;
+    count: number;
+    total: number;
+}
+
+export interface AdminFinanceOverview {
+    window_days: number;
+    total_revenue: number;
+    total_fees: number;
+    tx_count: number;
+    avg_ticket: number;
+    monthly: AdminFinanceMonthly[];
+    by_document: AdminFinanceByDocument[];
 }
 
 export interface AuditLog {

@@ -92,6 +92,8 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 	orgH := handlers.NewOrgHandler(db)
 	checklistH := handlers.NewChecklistHandler(db)
 	paymentH := handlers.NewPaymentHandler(db)
+	contribuableValidationH := handlers.NewContribuableValidationHandler()
+	contribuableStateH := handlers.NewContribuableStateHandler(db)
 
 	// Routes publiques
 	r.Route("/api", func(r chi.Router) {
@@ -131,7 +133,6 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			r.Get("/me", userH.Me)
 			r.Put("/me", userH.UpdateMe)
 			r.Put("/me/password", userH.ChangePassword)
-			r.Patch("/me/plan", userH.SetPlan)
 
 			// Dashboard KPIs
 			r.Get("/dashboard", dashH.Get)
@@ -249,6 +250,11 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 			r.Put("/exercice/{id}", exerciceH.Update)
 			r.Put("/exercice/{id}/cloturer", exerciceH.Cloturer)
 
+			// Validation serveur des annexes contribuable (miroir front)
+			r.Post("/contribuable/validate", contribuableValidationH.Validate)
+			r.Get("/contribuable/state", contribuableStateH.Get)
+			r.Put("/contribuable/state", contribuableStateH.Upsert)
+
 			// IRF - Revenus Fonciers [Plan: Pro+]
 			r.Get("/irf", irfH.List)
 			r.Post("/irf", irfH.Create)
@@ -338,6 +344,14 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 
 			// Journal d'audit
 			r.Get("/admin/audit", adminH.ListAudit)
+			// FISCA Gestion (ops/finance/traçabilité)
+			r.Get("/admin/ops-overview", adminH.OpsOverview)
+			r.Get("/admin/transactions", adminH.ListTransactions)
+			r.Get("/admin/transactions/export", adminH.ExportTransactionsCSV)
+			r.Get("/admin/finance", adminH.FinanceOverview)
+			r.Get("/admin/finance/export", adminH.ExportFinanceCSV)
+			r.Get("/admin/observability", adminH.Observability)
+			r.Get("/admin/observability/export", adminH.ExportObservabilityCSV)
 		})
 	})
 

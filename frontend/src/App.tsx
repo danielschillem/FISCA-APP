@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppLayout from './layouts/AppLayout';
 import AdminLayout from './layouts/AdminLayout';
+import DeclarationsLayout from './layouts/DeclarationsLayout';
+import ContribuableLegacyRedirect from './ContribuableLegacyRedirect';
+import RootRedirect from './RootRedirect';
 
 // Auth pages : chargées immédiatement (point d'entrée)
 import LoginPage from './pages/auth/LoginPage';
@@ -27,7 +30,6 @@ const CNSSPatronalPage = lazy(() => import('./pages/CNSSPatronalPage'));
 const HistoriquePage = lazy(() => import('./pages/HistoriquePage'));
 const DeclarationsPage = lazy(() => import('./pages/DeclarationsPage'));
 const ParametresPage = lazy(() => import('./pages/ParametresPage'));
-const AbonnementPage = lazy(() => import('./pages/AbonnementPage'));
 const ExercicePage = lazy(() => import('./pages/ExercicePage'));
 const IRFPage = lazy(() => import('./pages/IRFPage'));
 const IRCMPage = lazy(() => import('./pages/IRCMPage'));
@@ -39,11 +41,26 @@ const ChecklistPage = lazy(() => import('./pages/ChecklistPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const MentionsLegalesPage = lazy(() => import('./pages/MentionsLegalesPage'));
 
+const ContribuableIUTSPage = lazy(() => import('./contribuable/pages/ContribuableIUTSPage'));
+const ContribuableROSPage = lazy(() => import('./contribuable/pages/ContribuableROSPage'));
+const ContribuableTPAPage = lazy(() => import('./contribuable/pages/ContribuableTPAPage'));
+const ContribuableRSFONPage = lazy(() => import('./contribuable/pages/ContribuableRSFONPage'));
+const ContribuableRSLIBPage = lazy(() => import('./contribuable/pages/ContribuableRSLIBPage'));
+const ContribuableRSETRPage = lazy(() => import('./contribuable/pages/ContribuableRSETRPage'));
+const ContribuableRSPREPage = lazy(() => import('./contribuable/pages/ContribuableRSPREPage'));
+const ContribuableRSTVAPage = lazy(() => import('./contribuable/pages/ContribuableRSTVAPage'));
+const ContribuableTVAPage = lazy(() => import('./contribuable/pages/ContribuableTVAPage'));
+const ContribuablePrelPage = lazy(() => import('./contribuable/pages/ContribuablePrelPage'));
+const DeclarationGenerationPage = lazy(() => import('./pages/DeclarationGenerationPage'));
+
 // Admin pages : lazy loaded
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
 const AdminCompaniesPage = lazy(() => import('./pages/admin/AdminCompaniesPage'));
 const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage'));
+const AdminTransactionsPage = lazy(() => import('./pages/admin/AdminTransactionsPage'));
+const AdminFinancePage = lazy(() => import('./pages/admin/AdminFinancePage'));
+const AdminObservabilityPage = lazy(() => import('./pages/admin/AdminObservabilityPage'));
 
 // Org Admin pages : lazy loaded
 const OrgMembersPage = lazy(() => import('./pages/org/OrgMembersPage'));
@@ -61,7 +78,7 @@ function App() {
         <Suspense fallback={
           <div className="flex items-center justify-center h-screen bg-slate-50">
             <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+              <div className="w-9 h-9 border-2 border-emerald-600/30 border-t-emerald-600 rounded-full animate-spin" />
               <p className="text-sm text-gray-400">Chargement…</p>
             </div>
           </div>
@@ -71,7 +88,25 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/" element={<RootRedirect />} />
+            <Route path="/contribuable/*" element={<ContribuableLegacyRedirect />} />
+
             <Route element={<AppLayout />}>
+              <Route path="/declarations" element={<DeclarationsLayout />}>
+                <Route index element={<Navigate to="generer" replace />} />
+                <Route path="setup" element={<Navigate to="/parametres" replace />} />
+                <Route path="generer" element={<DeclarationGenerationPage />} />
+                <Route path="iuts" element={<ContribuableIUTSPage />} />
+                <Route path="ros" element={<ContribuableROSPage />} />
+                <Route path="tpa" element={<ContribuableTPAPage />} />
+                <Route path="rsfon" element={<ContribuableRSFONPage />} />
+                <Route path="rslib" element={<ContribuableRSLIBPage />} />
+                <Route path="rsetr" element={<ContribuableRSETRPage />} />
+                <Route path="rspre" element={<ContribuableRSPREPage />} />
+                <Route path="rstva" element={<ContribuableRSTVAPage />} />
+                <Route path="tva" element={<ContribuableTVAPage />} />
+                <Route path="prel" element={<ContribuablePrelPage />} />
+              </Route>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/saisie" element={<SaisiePage />} />
               <Route path="/calcul" element={<CalculPage />} />
@@ -93,12 +128,10 @@ function App() {
               <Route path="/is" element={<ISPage />} />
               <Route path="/patente" element={<PatentePage />} />
               <Route path="/historique" element={<HistoriquePage />} />
-              <Route path="/declarations" element={<DeclarationsPage />} />
+              <Route path="/versements-iuts" element={<DeclarationsPage />} />
               <Route path="/exercice" element={<ExercicePage />} />
               <Route path="/parametres" element={<ParametresPage />} />
-              <Route path="/abonnement" element={<AbonnementPage />} />
               <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
               {/* Organisation Admin */}
               <Route path="/org/info" element={<OrgInfoPage />} />
               <Route path="/org/membres" element={<OrgMembersPage />} />
@@ -108,6 +141,9 @@ function App() {
             {/* Super Admin : accès restreint role=super_admin */}
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<AdminDashboardPage />} />
+              <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
+              <Route path="/admin/finance" element={<AdminFinancePage />} />
+              <Route path="/admin/observability" element={<AdminObservabilityPage />} />
               <Route path="/admin/users" element={<AdminUsersPage />} />
               <Route path="/admin/companies" element={<AdminCompaniesPage />} />
               <Route path="/admin/audit" element={<AdminAuditPage />} />

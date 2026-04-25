@@ -1,4 +1,6 @@
 ﻿import axios from 'axios';
+import { useAuthStore } from './store';
+import type { User } from '../types';
 
 // VITE_API_URL est injecté au build (ex: build:android le fixe à l'URL Render)
 // Sur le web Netlify, /api est proxifié par Netlify vers le backend
@@ -8,6 +10,16 @@ export const api = axios.create({
     baseURL: BASE,
     headers: { 'Content-Type': 'application/json' },
 });
+
+let refreshInFlight: Promise<string | null> | null = null;
+
+function clearSessionAndRedirect() {
+    const { logout } = useAuthStore.getState();
+    logout();
+    if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+    }
+}
 
 // Attach JWT from localStorage on every request
 api.interceptors.request.use((config) => {
@@ -22,9 +34,48 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (res) => res,
     async (err) => {
-        if (err.response?.status === 401) {
-            localStorage.removeItem('fisca_token');
-            window.location.href = '/login';
+        const status = err.response?.status;
+        const originalConfig = err.config as (typeof err.config & { _retry?: boolean });
+        const requestUrl = String(originalConfig?.url ?? '');
+
+        const isAuthEndpoint =
+            requestUrl.includes('/auth/login') ||
+            requestUrl.includes('/auth/register') ||
+            requestUrl.includes('/auth/refresh');
+
+        if (status === 401 && originalConfig && !originalConfig._retry && !isAuthEndpoint) {
+            originalConfig._retry = true;
+            const refreshToken = localStorage.getItem('fisca_refresh_token');
+
+            if (!refreshToken) {
+                clearSessionAndRedirect();
+                return Promise.reject(err);
+            }
+
+            if (!refreshInFlight) {
+                refreshInFlight = api
+                    .post('/auth/refresh', { refresh_token: refreshToken })
+                    .then((res) => {
+                        const payload = res.data as { token?: string; refresh_token?: string; user?: User };
+                        if (!payload?.token || !payload?.refresh_token || !payload?.user) return null;
+                        useAuthStore.getState().setAuth(payload.token, payload.user, payload.refresh_token);
+                        return payload.token;
+                    })
+                    .catch(() => null)
+                    .finally(() => {
+                        refreshInFlight = null;
+                    });
+            }
+
+            const newAccessToken = await refreshInFlight;
+            if (!newAccessToken) {
+                clearSessionAndRedirect();
+                return Promise.reject(err);
+            }
+
+            originalConfig.headers = originalConfig.headers ?? {};
+            originalConfig.headers.Authorization = `Bearer ${newAccessToken}`;
+            return api.request(originalConfig);
         }
         return Promise.reject(err);
     }
@@ -34,17 +85,18 @@ api.interceptors.response.use(
 export const authApi = {
     login: (data: { email: string; password: string }) =>
         api.post('/auth/login', data),
-    register: (data: { email: string; password: string; nom: string; plan: string; user_type: string }) =>
+    register: (data: { email: string; password: string; nom: string }) =>
         api.post('/auth/register', data),
     forgotPassword: (email: string) =>
         api.post('/auth/forgot-password', { email }),
     resetPassword: (token: string, password: string) =>
         api.post('/auth/reset-password', { token, password }),
-    logout: () => api.post('/auth/logout'),
+    logout: () => api.post('/auth/logout', {
+        refresh_token: localStorage.getItem('fisca_refresh_token') ?? '',
+    }),
     me: () => api.get('/me'),
     updateMe: (data: object) => api.put('/me', data),
     changePassword: (data: object) => api.put('/me/password', data),
-    setPlan: (plan: string) => api.patch('/me/plan', { plan }),
 };
 
 // -- Employees -------------------------------------------------
@@ -256,6 +308,19 @@ export const assistantApi = {
 // -- Super Admin -----------------------------------------------
 export const adminApi = {
     stats: () => api.get('/admin/stats'),
+    opsOverview: (window_days = 30) => api.get('/admin/ops-overview', { params: { window_days } }),
+    transactions: (params?: { page?: number; limit?: number; status?: string; document_type?: string; search?: string; from?: string; to?: string }) =>
+        api.get('/admin/transactions', { params }),
+    exportTransactions: (params?: { status?: string; document_type?: string; search?: string; from?: string; to?: string }) =>
+        api.get('/admin/transactions/export', { params, responseType: 'blob' }),
+    finance: (params?: { window_days?: number }) =>
+        api.get('/admin/finance', { params }),
+    exportFinance: (params?: { window_days?: number }) =>
+        api.get('/admin/finance/export', { params, responseType: 'blob' }),
+    observability: (params?: { page?: number; limit?: number; action?: string; target_type?: string; search?: string; from?: string; to?: string }) =>
+        api.get('/admin/observability', { params }),
+    exportObservability: (params?: { action?: string; target_type?: string; search?: string; from?: string; to?: string }) =>
+        api.get('/admin/observability/export', { params, responseType: 'blob' }),
     // Utilisateurs
     listUsers: (params?: { search?: string; plan?: string; status?: string }) =>
         api.get('/admin/users', { params }),
@@ -299,10 +364,17 @@ export const orgApi = {
 
 // -- Paiements Orange Money (génération PDF) -------------------
 export const paymentApi = {
-    initiate: (data: { document_type: string; document_id: string; telephone: string }) =>
+    initiate: (data: { document_type: string; document_id: string; telephone: string; otp: string; montant_base?: number }) =>
         api.post('/payments/initiate', data),
     status: (id: string) => api.get(`/payments/${id}/status`),
     check: (document_type: string, document_id: string) =>
         api.get('/payments', { params: { document_type, document_id } }),
+};
+
+// -- Contribuable (annexes) ------------------------------------
+export const contribuableApi = {
+    validate: (data: object) => api.post('/contribuable/validate', data),
+    getState: () => api.get('/contribuable/state'),
+    saveState: (state: object) => api.put('/contribuable/state', { state }),
 };
 

@@ -1,9 +1,12 @@
 import { Outlet, Navigate, NavLink, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
-import { BarChart3, Users, Building2, ScrollText, ShieldCheck, LogOut, ChevronRight, Activity } from 'lucide-react';
+import { BarChart3, Users, Building2, ScrollText, ShieldCheck, LogOut, ChevronRight, Activity, Wallet, HandCoins, Radar } from 'lucide-react';
 
 const NAV = [
     { to: '/admin', label: 'Vue d\'ensemble', icon: BarChart3, end: true },
+    { to: '/admin/transactions', label: 'Transactions', icon: Wallet },
+    { to: '/admin/finance', label: 'Finance', icon: HandCoins },
+    { to: '/admin/observability', label: 'Observabilité', icon: Radar },
     { to: '/admin/users', label: 'Utilisateurs', icon: Users },
     { to: '/admin/companies', label: 'Sociétés', icon: Building2 },
     { to: '/admin/audit', label: 'Journal d\'audit', icon: ScrollText },
@@ -11,6 +14,9 @@ const NAV = [
 
 const PAGE_TITLES: Record<string, string> = {
     '/admin': 'Vue d\'ensemble',
+    '/admin/transactions': 'Drill-down transactions',
+    '/admin/finance': 'Drill-down finance',
+    '/admin/observability': 'Observabilité',
     '/admin/users': 'Gestion des utilisateurs',
     '/admin/companies': 'Gestion des sociétés',
     '/admin/audit': 'Journal d\'audit',
@@ -28,7 +34,7 @@ export default function AdminLayout() {
     const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'SA';
 
     return (
-        <div className="flex h-screen overflow-hidden bg-slate-50">
+        <div className="flex h-screen overflow-hidden bg-slate-100">
             {/* Sidebar Admin */}
             <aside className="w-56 bg-slate-900 text-white flex flex-col shrink-0 border-r border-slate-800">
                 {/* Logo */}
@@ -101,7 +107,7 @@ export default function AdminLayout() {
             {/* Content area */}
             <div className="flex-1 flex flex-col overflow-y-auto min-w-0">
                 {/* Header */}
-                <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0 sticky top-0 z-10">
+                <header className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/85 px-6 py-3.5 backdrop-blur-md">
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                         <span className="text-gray-400">Admin</span>
                         <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
@@ -113,7 +119,7 @@ export default function AdminLayout() {
                 </header>
 
                 {/* Page content */}
-                <main className="flex-1 p-6">
+                <main className="flex-1 bg-gradient-to-b from-slate-50/80 to-slate-100 p-6 sm:p-8">
                     <Outlet />
                 </main>
             </div>
